@@ -1,3 +1,4 @@
+#include <string.h>
 #include "wif.h"
 #include "ini.h" //TODO(Vidar): Write this ourselves
 
@@ -73,7 +74,7 @@ static uint32_t handler(void* user_data, const char* section, const char* name,
             return 0;
         }
         if(data->tieup == 0){
-            data->tieup = (uint8_t*)calloc(num_tieup_entries*sizeof(uint8_t));
+            data->tieup = (uint8_t*)calloc(num_tieup_entries,sizeof(uint8_t));
         }
         x = data->num_treadles - atoi(name);
         for(p = value; p != NULL;
@@ -90,7 +91,7 @@ static uint32_t handler(void* user_data, const char* section, const char* name,
             return 0;
         }
         if(data->threading == 0){
-            data->threading = (uint32_t*)calloc(w*sizeof(uint32_t));
+            data->threading = (uint32_t*)calloc(w,sizeof(uint32_t));
         }
         data->threading[(atoi(name)-1)] = data->num_shafts - atoi(value);
     }
@@ -102,7 +103,7 @@ static uint32_t handler(void* user_data, const char* section, const char* name,
             return 0;
         }
         if(data->treadling == 0){
-            data->treadling = (uint32_t*)calloc(w*sizeof(uint32_t));
+            data->treadling = (uint32_t*)calloc(w,sizeof(uint32_t));
         }
         data->treadling[(atoi(name)-1)] = data->num_treadles - atoi(value);
     }
@@ -113,7 +114,7 @@ WeaveData *wif_read(const char *filename)
 {
     WeaveData *data;
     FILE *fp;
-    data = (WeaveData*)calloc(sizeof(WeaveData));
+    data = (WeaveData*)calloc(1,sizeof(WeaveData));
     fp = fopen(filename,"rt");
     if (ini_parse(filename, handler, data) < 0) {
         printf("Could not read \"%s\"\n",filename);

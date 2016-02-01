@@ -1,0 +1,6 @@
+default:build run
+build:
+	gcc main.c ini.c wif.c -o wif_reader
+
+run:
+	./wif_reader
