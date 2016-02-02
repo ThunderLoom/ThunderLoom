@@ -1,5 +1,5 @@
 #pragma once
-#include <stdint.h>
+#include "common.h"
 typedef struct{
     uint32_t num_threads;
     float spacing, thickness;

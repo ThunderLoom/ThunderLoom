@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdint.h>
+#include "common.h"
 #include "wif.h"
 
-int main(int argc, char **argv)
+int main(UNUSED int argc, UNUSED char **argv)
 {
     const char *filename = "data/41753.wif";
     WeaveData *data = wif_read(filename);

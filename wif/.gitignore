@@ -3,3 +3,4 @@
 *.exe
 *.obj
 Makefile
+wif_reader

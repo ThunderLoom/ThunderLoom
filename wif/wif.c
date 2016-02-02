@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 #include "wif.h"
 #include "ini.h" //TODO(Vidar): Write this ourselves
 
@@ -11,9 +12,9 @@ static int string_to_float(const char *str, float *val)
         if(*str == '.'){
             dot_encountered = 1;
         }else{
-            uint32_t a = *str - '0';
+            int32_t a = *str - '0';
             if(a >= 0 && a <= 9){
-                accum = 10*accum + a;
+                accum = 10*accum + (uint32_t)a;
                 if(dot_encountered){
                     scale *=10;
                 }
@@ -28,7 +29,7 @@ static int string_to_float(const char *str, float *val)
     return 1;
 }
 
-static uint32_t handler(void* user_data, const char* section, const char* name,
+static int32_t handler(void* user_data, const char* section, const char* name,
                    const char* value)
 {
     WeaveData *data = (WeaveData*)user_data;
@@ -41,7 +42,7 @@ static uint32_t handler(void* user_data, const char* section, const char* name,
     }
     if(wdata){
         if(strcmp("Threads",name)==0){
-            wdata->num_threads = atoi(value);
+            wdata->num_threads = (uint32_t)atoi(value);
         }
         if(strcmp("Spacing",name)==0){
             if(!string_to_float(value,&wdata->spacing)){
@@ -58,10 +59,10 @@ static uint32_t handler(void* user_data, const char* section, const char* name,
     }
     if(strcmp("WEAVING",section)==0){
         if(strcmp("Shafts",name)==0){
-            data->num_shafts = atoi(value);
+            data->num_shafts = (uint32_t)atoi(value);
         }
         if(strcmp("Treadles",name)==0){
-            data->num_treadles = atoi(value);
+            data->num_treadles = (uint32_t)atoi(value);
         }
     }
     if(strcmp("TIEUP",section)==0){
@@ -76,10 +77,10 @@ static uint32_t handler(void* user_data, const char* section, const char* name,
         if(data->tieup == 0){
             data->tieup = (uint8_t*)calloc(num_tieup_entries,sizeof(uint8_t));
         }
-        x = data->num_treadles - atoi(name);
+        x = data->num_treadles - (uint32_t)atoi(name);
         for(p = value; p != NULL;
                 p = (const char*)strchr(p, ','), p = (p == NULL)? NULL: p+1) {
-            int y = data->num_shafts - atoi(p);
+            uint32_t y = data->num_shafts - (uint32_t)atoi(p);
             data->tieup[x + y*data->num_treadles] = 1;
         }
     }
@@ -93,7 +94,8 @@ static uint32_t handler(void* user_data, const char* section, const char* name,
         if(data->threading == 0){
             data->threading = (uint32_t*)calloc(w,sizeof(uint32_t));
         }
-        data->threading[(atoi(name)-1)] = data->num_shafts - atoi(value);
+        data->threading[((uint32_t)atoi(name)-1)] = data->num_shafts
+            - (uint32_t)atoi(value);
     }
     if(strcmp("TREADLING",section)==0){
         uint32_t w = data->weft.num_threads ;
@@ -105,7 +107,8 @@ static uint32_t handler(void* user_data, const char* section, const char* name,
         if(data->treadling == 0){
             data->treadling = (uint32_t*)calloc(w,sizeof(uint32_t));
         }
-        data->treadling[(atoi(name)-1)] = data->num_treadles - atoi(value);
+        data->treadling[((uint32_t)atoi(name)-1)] = data->num_treadles
+            - (uint32_t)atoi(value);
     }
     return 1;
 }

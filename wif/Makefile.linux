@@ -1,6 +1,14 @@
 default:build run
+
+compiler_flags = -g
+warnings = -Wall -Weverything
+#optimization  = -O0
+#optimization = -Os
+optimization  = -O1 -fsanitize=address -fno-omit-frame-pointer
+
 build:
-	gcc main.c ini.c wif.c -o wif_reader
+	clang main.c ini.c wif.c $(compiler_flags) $(warnings) $(optimization)\
+	   	-o wif_reader
 
 run:
 	./wif_reader
