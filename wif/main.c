@@ -42,6 +42,7 @@ int main(UNUSED int argc, UNUSED char **argv)
             }
             printf("\n");
         }
+        wif_free_pattern(pattern);
     }
     wif_free_weavedata(data);
     return 0;

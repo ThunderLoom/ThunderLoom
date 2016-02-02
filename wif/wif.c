@@ -152,3 +152,7 @@ uint8_t *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h)
     return pattern;
 }
 
+void wif_free_pattern(uint8_t *pattern)
+{
+    free(pattern);
+}
