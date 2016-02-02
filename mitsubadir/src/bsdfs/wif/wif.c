@@ -123,7 +123,7 @@ static int32_t handler(void* user_data, const char* section, const char* name,
             return 0;
         }
         if(data->colors == 0){
-            data->colors = calloc(data->num_colors,sizeof(float)*3);
+            data->colors = (float*)calloc(data->num_colors,sizeof(float)*3);
         }
         uint32_t i = (uint32_t)atoi(name)-1;
         //TODO(Vidar):Make sure all entries exist, handle different formats
@@ -165,9 +165,7 @@ static int32_t handler(void* user_data, const char* section, const char* name,
 WeaveData *wif_read(const char *filename)
 {
     WeaveData *data;
-    FILE *fp;
     data = (WeaveData*)calloc(1,sizeof(WeaveData));
-    fp = fopen(filename,"rt");
     if (ini_parse(filename, handler, data) < 0) {
         printf("Could not read \"%s\"\n",filename);
     }
@@ -193,7 +191,7 @@ PaletteEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h)
     PaletteEntry *pattern;
     *w = data->warp.num_threads;
     *h = data->weft.num_threads;
-    pattern = malloc((*w)*(*h)*sizeof(PaletteEntry));
+    pattern = (PaletteEntry*)malloc((*w)*(*h)*sizeof(PaletteEntry));
     for(y=0;y<*h;y++){
         for(x=0;x<*w;x++){
             uint32_t v = data->threading[x];
