@@ -29,6 +29,7 @@ static int string_to_float(const char *str, float *val)
     return 1;
 }
 
+//TODO(Vidar): Bounds check! IMPORTANT!
 static int32_t handler(void* user_data, const char* section, const char* name,
                    const char* value)
 {
@@ -110,6 +111,54 @@ static int32_t handler(void* user_data, const char* section, const char* name,
         data->treadling[((uint32_t)atoi(name)-1)] = data->num_treadles
             - (uint32_t)atoi(value);
     }
+    if(strcmp("COLOR PALETTE",section)==0){
+        if(strcmp("Entries",name)==0){
+            data->num_colors = (uint32_t)atoi(value);
+        }
+    }
+    if(strcmp("COLOR TABLE",section)==0){
+        if(data->num_colors==0){
+            printf("ERROR! COLOR TABLE appeared before specification of "
+                    "COLOR PALETTE\n");
+            return 0;
+        }
+        if(data->colors == 0){
+            data->colors = calloc(data->num_colors,sizeof(float)*3);
+        }
+        uint32_t i = (uint32_t)atoi(name)-1;
+        //TODO(Vidar):Make sure all entries exist, handle different formats
+        const char *p = value;
+        data->colors[i*3+0] = (float)(atoi(p))/255.0f;
+        p = strchr(p, ',')+1;
+        data->colors[i*3+1] = (float)(atoi(p))/255.0f;
+        p = strchr(p, ',')+1;
+        data->colors[i*3+2] = (float)(atoi(p))/255.0f;
+    }
+    if(strcmp("WARP COLORS",section)==0){
+        uint32_t w = data->warp.num_threads ;
+        if(w <= 0){
+            printf("ERROR! WARP COLORS section appeared before specification of "
+                    "warp threads!\n");
+            return 0;
+        }
+        if(data->warp.colors == 0){
+            data->warp.colors = (uint32_t*)calloc(w,sizeof(uint32_t));
+        }
+        data->warp.colors[((uint32_t)atoi(name)-1)] = (uint32_t)atoi(value)-1;
+    }
+    if(strcmp("WEFT COLORS",section)==0){
+        //TODO(Vidar): Join with the case above...
+        uint32_t w = data->weft.num_threads ;
+        if(w <= 0){
+            printf("ERROR! WEFT COLORS section appeared before specification of "
+                    "weft threads!\n");
+            return 0;
+        }
+        if(data->weft.colors == 0){
+            data->weft.colors = (uint32_t*)calloc(w,sizeof(uint32_t));
+        }
+        data->weft.colors[((uint32_t)atoi(name)-1)] = (uint32_t)atoi(value)-1;
+    }
     return 1;
 }
 
@@ -131,28 +180,37 @@ void wif_free_weavedata(WeaveData *data)
     FREE_IF_NOT_NULL(data->tieup);
     FREE_IF_NOT_NULL(data->treadling);
     FREE_IF_NOT_NULL(data->threading);
+    FREE_IF_NOT_NULL(data->colors);
+    FREE_IF_NOT_NULL(data->warp.colors);
+    FREE_IF_NOT_NULL(data->weft.colors);
     FREE_IF_NOT_NULL(data);
 }
 
 
-uint8_t *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h)
+PaletteEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h)
 {
     uint8_t x,y;
-    uint8_t *pattern;
+    PaletteEntry *pattern;
     *w = data->warp.num_threads;
     *h = data->weft.num_threads;
-    pattern = (uint8_t*)malloc((*w)*(*h)*sizeof(uint8_t));
+    pattern = malloc((*w)*(*h)*sizeof(PaletteEntry));
     for(y=0;y<*h;y++){
         for(x=0;x<*w;x++){
             uint32_t v = data->threading[x];
             uint32_t u = data->treadling[y];
-            pattern[x+y*(*w)] = data->tieup[u+v*data->num_treadles];
+            uint8_t  warp_above = data->tieup[u+v*data->num_treadles];
+            float *col = data->colors + (warp_above ? data->warp.colors[x]
+                : data->weft.colors[y])*3;
+            pattern[x+y*(*w)].warp_above = warp_above;
+            pattern[x+y*(*w)].color[0] = col[0];
+            pattern[x+y*(*w)].color[1] = col[1];
+            pattern[x+y*(*w)].color[2] = col[2];
         }
     }
     return pattern;
 }
 
-void wif_free_pattern(uint8_t *pattern)
+void wif_free_pattern(PaletteEntry *pattern)
 {
     free(pattern);
 }

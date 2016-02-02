@@ -5,7 +5,7 @@
 
 int main(UNUSED int argc, UNUSED char **argv)
 {
-    const char *filename = "data/41753.wif";
+    const char *filename = "data/2229.wif";
     WeaveData *data = wif_read(filename);
     {
         uint32_t x,y;
@@ -33,12 +33,15 @@ int main(UNUSED int argc, UNUSED char **argv)
     }
     {
         uint32_t x,y,w,h;
-        uint8_t *pattern = wif_get_pattern(data,&w,&h);
+        PaletteEntry *pattern = wif_get_pattern(data,&w,&h);
 
         printf("\nPattern:\n");
         for(y = 0; y < h; y++){
             for(x = 0; x < w; x++){
-                printf("%c",pattern[x+y*w] ? ' ' : 'X');
+                PaletteEntry entry = pattern[x+y*w];
+                float col = entry.color[0];
+                printf("%c", col > 0.5f ? 'X' : ' ');
+                //printf("%c", entry.warp_above ? ' ' : 'X');
             }
             printf("\n");
         }
