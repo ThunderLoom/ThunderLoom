@@ -160,10 +160,105 @@
         AssertEx(pattern_x < m_pattern_width, "pattern_x larger than pwidth");
         AssertEx(pattern_y < m_pattern_height, "pattern_y larger than pheight");
 
-        float * col = m_pattern_entry[pattern_x + pattern_y*m_pattern_width].color;        
-
+        //color from wif file
+        //float * col = m_pattern_entry[pattern_x + pattern_y*m_pattern_width].color;        
+        
+        //color from based on if thread is warp or weft
         Spectrum color;
-        color.fromSRGB(col[0], col[1], col[2]); 
+
+        PaletteEntry current_point = m_pattern_entry[pattern_x + pattern_y*m_pattern_width];        
+        if (current_point.warp_above) {
+            color.fromSRGB(1.0, 0.0, 0.0); 
+        } else {
+            color.fromSRGB(0.0, 1.0, 0.0); 
+        }
+
+        //color based on how long current thread is.
+        //warp
+        if (current_point.warp_above) {
+            uint32_t current_x = pattern_x;
+            uint32_t steps_right = 0;
+            uint32_t steps_left = 0;
+            do{
+                current_x++;
+                if(current_x == m_pattern_width){
+                    current_x = 0;
+                }
+                if(!m_pattern_entry[current_x + pattern_y*m_pattern_width].warp_above){
+                    break;
+                }
+                steps_right++;
+            }
+            while(current_x != pattern_x);
+
+            current_x = pattern_x;
+            do{
+                if(current_x == 0){
+                    current_x = m_pattern_width;
+                }
+                current_x--;
+                if(!m_pattern_entry[current_x + pattern_y*m_pattern_width].warp_above){
+                    break;
+                }
+                steps_left++;
+                }
+                while(current_x != pattern_x);
+
+            float length = steps_left + steps_right + 1;
+
+            color.fromSRGB(0.0, 1.0*(float)length/10.f, 0.0); 
+
+        } else {
+            uint32_t current_y = pattern_y;
+            uint32_t steps_right = 0;
+            uint32_t steps_left = 0;
+            do{
+                current_y++;
+                if(current_y == m_pattern_height){
+                    current_y = 0;
+                }
+                if(m_pattern_entry[pattern_x + current_y*m_pattern_width].warp_above){
+                    break;
+                }
+                steps_right++;
+            }
+            while(current_y != pattern_y);
+
+            current_y = pattern_y;
+            do{
+                if(current_y == 0){
+                    current_y = m_pattern_height;
+                }
+                current_y--;
+                if(m_pattern_entry[pattern_x + current_y*m_pattern_width].warp_above){
+                    break;
+                }
+                steps_left++;
+                }
+                while(current_y != pattern_y);
+
+            float length = steps_left + steps_right + 1;
+
+            color.fromSRGB(1.0*(float)length/10.f, 0.0, 0.0); 
+        
+        }
+
+
+        // TODO:
+        // instead of getting color:
+        // get if warp or weft is viewable at current position.
+        // Want to construct our "therad reactangle".
+        //      For this we need to know how long the current visible thread is.
+        //          If warp
+        //              walk along x in both directions on the pattern and return # of steps to the left and right before we encounter a weft.
+        //          If weft
+        //              -- // --
+        //          Use step data to find location in rectangle.
+        //              new uv coordinates
+        //              ??? calculate normal in original uv coordinates. ???
+        //              Somehow get normal in xyz, shading space.
+        //  Then do simple test.
+
         return color;
     }
 

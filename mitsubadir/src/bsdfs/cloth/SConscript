@@ -1,0 +1,5 @@
+Import('env', 'plugins')
+
+plugins += env.SharedLibrary('cloth', ['cloth.cpp'])
+
+Export('plugins')
