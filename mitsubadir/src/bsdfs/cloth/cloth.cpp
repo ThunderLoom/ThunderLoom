@@ -140,8 +140,16 @@
 		return m_reflectance->eval(its);
 	}
 
-    Spectrum getPatternColor(const BSDFSamplingRecord &bRec) const {
-        //....
+    struct PatternData
+    {
+        Spectrum color;
+        Vector normal;
+    };
+
+    PatternData getPatternColor(const BSDFSamplingRecord &bRec) const {
+
+        PatternData ret_data = {};
+
         float u = fmod(bRec.its.uv.x,1.f);
         float v = fmod(bRec.its.uv.y,1.f);
 
@@ -155,30 +163,16 @@
         uint32_t pattern_x = (uint32_t)(u*(float)(m_pattern_width));
         uint32_t pattern_y = (uint32_t)(v*(float)(m_pattern_height));
 
-        //printf("u: %g, v: %g, pattern_x: %d, pattern_y: %d \n", u, v, pattern_x, pattern_y);
-
         AssertEx(pattern_x < m_pattern_width, "pattern_x larger than pwidth");
         AssertEx(pattern_y < m_pattern_height, "pattern_y larger than pheight");
 
-        //color from wif file
-        //float * col = m_pattern_entry[pattern_x + pattern_y*m_pattern_width].color;        
-        
-        //color from based on if thread is warp or weft
-        Spectrum color;
-
         PaletteEntry current_point = m_pattern_entry[pattern_x + pattern_y*m_pattern_width];        
-        if (current_point.warp_above) {
-            color.fromSRGB(1.0, 0.0, 0.0); 
-        } else {
-            color.fromSRGB(0.0, 1.0, 0.0); 
-        }
 
-        //color based on how long current thread is.
-        //warp
+        uint32_t steps_left_warp = 0, steps_right_warp = 0;
+        uint32_t steps_left_weft = 0, steps_right_weft = 0;
+
         if (current_point.warp_above) {
             uint32_t current_x = pattern_x;
-            uint32_t steps_right = 0;
-            uint32_t steps_left = 0;
             do{
                 current_x++;
                 if(current_x == m_pattern_width){
@@ -187,9 +181,8 @@
                 if(!m_pattern_entry[current_x + pattern_y*m_pattern_width].warp_above){
                     break;
                 }
-                steps_right++;
-            }
-            while(current_x != pattern_x);
+                steps_right_warp++;
+            } while(current_x != pattern_x);
 
             current_x = pattern_x;
             do{
@@ -200,18 +193,11 @@
                 if(!m_pattern_entry[current_x + pattern_y*m_pattern_width].warp_above){
                     break;
                 }
-                steps_left++;
-                }
-                while(current_x != pattern_x);
-
-            float length = steps_left + steps_right + 1;
-
-            color.fromSRGB(0.0, 1.0*(float)length/10.f, 0.0); 
+                steps_left_warp++;
+            } while(current_x != pattern_x);
 
         } else {
             uint32_t current_y = pattern_y;
-            uint32_t steps_right = 0;
-            uint32_t steps_left = 0;
             do{
                 current_y++;
                 if(current_y == m_pattern_height){
@@ -220,9 +206,8 @@
                 if(m_pattern_entry[pattern_x + current_y*m_pattern_width].warp_above){
                     break;
                 }
-                steps_right++;
-            }
-            while(current_y != pattern_y);
+                steps_right_weft++;
+            } while(current_y != pattern_y);
 
             current_y = pattern_y;
             do{
@@ -233,16 +218,63 @@
                 if(m_pattern_entry[pattern_x + current_y*m_pattern_width].warp_above){
                     break;
                 }
-                steps_left++;
-                }
-                while(current_y != pattern_y);
-
-            float length = steps_left + steps_right + 1;
-
-            color.fromSRGB(1.0*(float)length/10.f, 0.0, 0.0); 
-        
+                steps_left_weft++;
+            } while(current_y != pattern_y);
         }
 
+        float u_max = 0.2f; //TODO(Vidar): This should be a parameter!
+
+        float thread_u, thread_v;
+        {
+            //TODO(Vidar):Fix divisions
+
+            float w = (steps_left_warp + steps_right_warp + 1.f);
+            float x = ((u*(float)(m_pattern_width) - (float)pattern_x)
+                    + steps_left_warp)/w;
+
+            float h = (steps_left_weft + steps_right_weft + 1.f);
+            float y = ((v*(float)(m_pattern_height) - (float)pattern_y)
+                    + steps_left_weft)/h;
+
+            //Rescale x and y to [-1,1]
+            x = x*2.f - 1.f;
+            y = y*2.f - 1.f;
+
+            //Switch X and Y for weft, so that we always have the cylinder
+            // going along the x axis
+            if(!current_point.warp_above){
+                float tmp = x;
+                x = y;
+                y = tmp;
+            }
+
+            //Calculate the u and v coordinates along the curved cylinder
+            thread_u = asinf(x*sinf(u_max));
+            thread_v = asinf(y);
+
+        }
+
+        //Calculate the normal in thread-local coordinates
+        float normal[3] = {sinf(thread_u), sinf(thread_v)*cosf(thread_u),
+            cosf(thread_v)*cosf(thread_u)};
+
+        //Get the world space coordinate vectors going along the texture u&v
+        //axes
+        Vector dpdu = normalize(bRec.its.dpdu);
+        Vector dpdv = normalize(bRec.its.dpdv);
+        //Calculate the world space normal
+        Vector world_n = cross(dpdv,dpdu);
+
+        //Switch the x & y again to get back to uv space
+        if(!current_point.warp_above){
+            float tmp = normal[0];
+            normal[0] = normal[1];
+            normal[1] = tmp;
+        }
+
+        ret_data.normal = normal[0] * dpdu + normal[1] *dpdv + normal[2]*world_n;
+
+        ret_data.color.fromSRGB(0.8f,0.8f,0.8f);
 
         // TODO:
         // instead of getting color:
@@ -259,7 +291,7 @@
         //              Somehow get normal in xyz, shading space.
         //  Then do simple test.
 
-        return color;
+        return ret_data;
     }
 
 	Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
@@ -270,7 +302,8 @@
 
 		/*return m_reflectance->eval(bRec.its)
 			* (INV_PI * Frame::cosTheta(bRec.wo));*/
-        return getPatternColor(bRec) * (INV_PI * Frame::cosTheta(bRec.wo));
+        PatternData pattern_data = getPatternColor(bRec);
+        return pattern_data.color * (INV_PI * Frame::cosTheta(bRec.wo));
 	}
 
 	Float pdf(const BSDFSamplingRecord &bRec, EMeasure measure) const {
@@ -290,8 +323,8 @@
 		bRec.eta = 1.0f;
 		bRec.sampledComponent = 0;
 		bRec.sampledType = EDiffuseReflection;
-        return getPatternColor(bRec);
-		//return m_reflectance->eval(bRec.its);
+        PatternData pattern_data = getPatternColor(bRec);
+        return pattern_data.color;
 	}
 
 	Spectrum sample(BSDFSamplingRecord &bRec, Float &pdf, const Point2 &sample) const {
@@ -303,8 +336,8 @@
 		bRec.sampledComponent = 0;
 		bRec.sampledType = EDiffuseReflection;
 		pdf = warp::squareToCosineHemispherePdf(bRec.wo);
-		//return m_reflectance->eval(bRec.its);
-        return getPatternColor(bRec);
+        PatternData pattern_data = getPatternColor(bRec);
+        return pattern_data.color;
 	}
 
 	void addChild(const std::string &name, ConfigurableObject *child) {
