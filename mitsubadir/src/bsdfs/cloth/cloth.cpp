@@ -16,6 +16,7 @@
         along with this program. If not, see <http://www.gnu.org/licenses/>.
     */
 
+#include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/hw/basicshader.h>
@@ -80,6 +81,9 @@
 	        PaletteEntry * m_pattern_entry;
 	        uint32_t m_pattern_height;
 	        uint32_t m_pattern_width;
+            float m_umax;
+            float m_uscale;
+            float m_vscale;
             Cloth(const Properties &props)
                 : BSDF(props) {
                 /* For better compatibility with other models, support both
@@ -87,6 +91,9 @@
             m_reflectance = new ConstantSpectrumTexture(props.getSpectrum(
                 props.hasProperty("reflectance") ? "reflectance"
                     : "diffuseReflectance", Spectrum(.5f)));
+            m_umax = props.getFloat("umax", 0.7f);
+            m_uscale = props.getFloat("uscale", 10.0f);
+            m_vscale = props.getFloat("vscale", 10.0f);
        
             // LOAD WIF FILE
             std::string wiffilename = Thread::getThread()->getFileResolver()->resolve(props.getString("wiffile")).string();
@@ -144,14 +151,15 @@
     {
         Spectrum color;
         Vector normal;
+        Frame frame;
     };
 
     PatternData getPatternColor(const BSDFSamplingRecord &bRec) const {
 
         PatternData ret_data = {};
 
-        float u = fmod(bRec.its.uv.x,1.f);
-        float v = fmod(bRec.its.uv.y,1.f);
+        float u = fmod(bRec.its.uv.x*m_uscale,1.f);
+        float v = fmod(bRec.its.uv.y*m_vscale,1.f);
 
         if (u < 0.f) {
             u = u - floor(u);
@@ -222,8 +230,6 @@
             } while(current_y != pattern_y);
         }
 
-        float u_max = 0.2f; //TODO(Vidar): This should be a parameter!
-
         float thread_u, thread_v;
         {
             //TODO(Vidar):Fix divisions
@@ -249,7 +255,7 @@
             }
 
             //Calculate the u and v coordinates along the curved cylinder
-            thread_u = asinf(x*sinf(u_max));
+            thread_u = asinf(x*sinf(m_umax));
             thread_v = asinf(y);
 
         }
@@ -260,10 +266,10 @@
 
         //Get the world space coordinate vectors going along the texture u&v
         //axes
-        Vector dpdu = normalize(bRec.its.dpdu);
-        Vector dpdv = normalize(bRec.its.dpdv);
+        //Vector dpdu = normalize(bRec.its.dpdu);
+        //Vector dpdv = normalize(bRec.its.dpdv);
         //Calculate the world space normal
-        Vector world_n = cross(dpdv,dpdu);
+        //Vector world_n = cross(dpdv,dpdu);
 
         //Switch the x & y again to get back to uv space
         if(!current_point.warp_above){
@@ -272,9 +278,34 @@
             normal[1] = tmp;
         }
 
-        ret_data.normal = normal[0] * dpdu + normal[1] *dpdv + normal[2]*world_n;
+        //ret_data.normal = normal[0] * dpdu + normal[1] *dpdv + normal[2]*world_n;
 
-        ret_data.color.fromSRGB(0.8f,0.8f,0.8f);
+        ret_data.color.fromSRGB(current_point.color[0], current_point.color[1], current_point.color[2]);
+        
+
+		Float dDispDu = normal[1];
+		Float dDispDv = normal[0];
+
+		/* Build a perturbed frame -- ignores the usually
+		   negligible normal derivative term */
+		Vector dpdu = bRec.its.dpdu + bRec.its.shFrame.n * (
+				dDispDu - dot(bRec.its.shFrame.n, bRec.its.dpdu));
+		Vector dpdv = bRec.its.dpdv + bRec.its.shFrame.n * (
+				dDispDv - dot(bRec.its.shFrame.n, bRec.its.dpdv));
+
+        //set frame
+		Frame result;
+		result.n = normalize(cross(dpdu, dpdv));
+		//result.n = normalize(ret_data.normal);
+		result.s = normalize(dpdu - result.n
+			* dot(result.n, dpdu));
+		result.t = cross(result.n, result.s);
+
+		if (dot(result.n, bRec.its.geoFrame.n) < 0)
+			result.n *= -1;
+    
+        ret_data.frame = result;
+        
 
         // TODO:
         // instead of getting color:
@@ -302,8 +333,22 @@
 
 		/*return m_reflectance->eval(bRec.its)
 			* (INV_PI * Frame::cosTheta(bRec.wo));*/
+
+        // Perturb the sampling record, in turn normal to match our thread normals
         PatternData pattern_data = getPatternColor(bRec);
-        return pattern_data.color * (INV_PI * Frame::cosTheta(bRec.wo));
+		const Intersection& its = bRec.its;
+		Intersection perturbed(its);
+		perturbed.shFrame = pattern_data.frame;
+
+		BSDFSamplingRecord perturbedQuery(perturbed,
+			perturbed.toLocal(its.toWorld(bRec.wi)),
+			perturbed.toLocal(its.toWorld(bRec.wo)), bRec.mode);
+		if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbedQuery.wo) <= 0)
+			return Spectrum(0.0f);
+		perturbedQuery.sampler = bRec.sampler;
+		perturbedQuery.typeMask = bRec.typeMask;
+		perturbedQuery.component = bRec.component;
+        return pattern_data.color * (INV_PI * Frame::cosTheta(perturbedQuery.wo));
 	}
 
 	Float pdf(const BSDFSamplingRecord &bRec, EMeasure measure) const {
@@ -318,17 +363,56 @@
 	Spectrum sample(BSDFSamplingRecord &bRec, const Point2 &sample) const {
 		if (!(bRec.typeMask & EDiffuseReflection) || Frame::cosTheta(bRec.wi) <= 0)
 			return Spectrum(0.0f);
-
-		bRec.wo = warp::squareToCosineHemisphere(sample);
-		bRec.eta = 1.0f;
-		bRec.sampledComponent = 0;
-		bRec.sampledType = EDiffuseReflection;
+        
+        /* OLD
+        // Perturb the sampling record, in turn normal to match our thread normals
         PatternData pattern_data = getPatternColor(bRec);
-        return pattern_data.color;
+		const Intersection& its = bRec.its;
+		Intersection perturbed(its);
+		perturbed.shFrame = pattern_data.frame;
+
+		BSDFSamplingRecord perturbedQuery(perturbed,
+			perturbed.toLocal(its.toWorld(bRec.wi)),
+			perturbed.toLocal(its.toWorld(bRec.wo)), bRec.mode);
+		if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbedQuery.wo) <= 0)
+			return Spectrum(0.0f);
+		perturbedQuery.sampler = bRec.sampler;
+		perturbedQuery.typeMask = bRec.typeMask;
+		perturbedQuery.component = bRec.component;
+        //return pattern_data.color * (INV_PI * Frame::cosTheta(perturbedQuery.wo));
+        */
+
+		const Intersection& its = bRec.its;
+		Intersection perturbed(its);
+        PatternData pattern_data = getPatternColor(bRec);
+		perturbed.shFrame = pattern_data.frame;
+
+		BSDFSamplingRecord perturbedQuery(perturbed, bRec.sampler, bRec.mode);
+		perturbedQuery.wi = perturbed.toLocal(its.toWorld(bRec.wi));
+		perturbedQuery.sampler = bRec.sampler;
+		perturbedQuery.typeMask = bRec.typeMask;
+		perturbedQuery.component = bRec.component;
+		
+        //Do our usual sampling (not perturb specific)
+		perturbedQuery.wo = warp::squareToCosineHemisphere(sample);
+		perturbedQuery.eta = 1.0f;
+		perturbedQuery.sampledComponent = 0;
+		perturbedQuery.sampledType = EDiffuseReflection;
+        Spectrum result = pattern_data.color;
+        
+        if (!result.isZero()) {
+			bRec.sampledComponent = perturbedQuery.sampledComponent;
+			bRec.sampledType = perturbedQuery.sampledType;
+			bRec.wo = its.toLocal(perturbed.toWorld(perturbedQuery.wo));
+			bRec.eta = perturbedQuery.eta;
+			if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbedQuery.wo) <= 0)
+				return Spectrum(0.0f);
+		}
+		return result;
 	}
 
 	Spectrum sample(BSDFSamplingRecord &bRec, Float &pdf, const Point2 &sample) const {
-		if (!(bRec.typeMask & EDiffuseReflection) || Frame::cosTheta(bRec.wi) <= 0)
+		/*if (!(bRec.typeMask & EDiffuseReflection) || Frame::cosTheta(bRec.wi) <= 0)
 			return Spectrum(0.0f);
 
 		bRec.wo = warp::squareToCosineHemisphere(sample);
@@ -338,6 +422,41 @@
 		pdf = warp::squareToCosineHemispherePdf(bRec.wo);
         PatternData pattern_data = getPatternColor(bRec);
         return pattern_data.color;
+
+        */
+
+
+		if (!(bRec.typeMask & EDiffuseReflection) || Frame::cosTheta(bRec.wi) <= 0)
+			return Spectrum(0.0f);
+        
+       	const Intersection& its = bRec.its;
+		Intersection perturbed(its);
+        PatternData pattern_data = getPatternColor(bRec);
+		perturbed.shFrame = pattern_data.frame;
+
+		BSDFSamplingRecord perturbedQuery(perturbed, bRec.sampler, bRec.mode);
+		perturbedQuery.wi = perturbed.toLocal(its.toWorld(bRec.wi));
+		perturbedQuery.sampler = bRec.sampler;
+		perturbedQuery.typeMask = bRec.typeMask;
+		perturbedQuery.component = bRec.component;
+		
+        //Do our usual sampling (not perturb specific)
+		perturbedQuery.wo = warp::squareToCosineHemisphere(sample);
+		perturbedQuery.eta = 1.0f;
+		perturbedQuery.sampledComponent = 0;
+		perturbedQuery.sampledType = EDiffuseReflection;
+		pdf = warp::squareToCosineHemispherePdf(perturbedQuery.wo);
+        Spectrum result = pattern_data.color;
+        
+        if (!result.isZero()) {
+			bRec.sampledComponent = perturbedQuery.sampledComponent;
+			bRec.sampledType = perturbedQuery.sampledType;
+			bRec.wo = its.toLocal(perturbed.toWorld(perturbedQuery.wo));
+			bRec.eta = perturbedQuery.eta;
+			if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbedQuery.wo) <= 0)
+				return Spectrum(0.0f);
+		}
+		return result;
 	}
 
 	void addChild(const std::string &name, ConfigurableObject *child) {

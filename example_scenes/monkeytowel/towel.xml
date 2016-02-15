@@ -31,7 +31,7 @@
 			<rotate y="1" angle="-180"/>
 			<matrix value="-0.224951 -0.000001 -0.974370 0.000000 -0.974370 0.000000 0.224951 0.000000 0.000000 1.000000 -0.000001 8.870000 0.000000 0.000000 0.000000 1.000000 "/>
 		</transform>
-		<float name="scale" value="3"/>
+		<float name="scale" value="1"/>
 	</emitter>
 
 	<bsdf type="diffuse" id="__diffmat">
@@ -39,7 +39,10 @@
 	</bsdf>
     
     <bsdf type="cloth" id="__cloth">
-        <string name="wiffile" value="18067.wif"/>
+        <string name="wiffile" value="34779.wif"/>
+        <float name="umax" value="0.7"/>
+        <float name="uscale" value="2.0"/>
+        <float name="vscale" value="2.0"/>
 	</bsdf>
 
 	<texture type="checkerboard" id="__planetex">
