@@ -7,8 +7,10 @@ https://github.com/benhoyt/inih
 
 */
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"
+#endif
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
@@ -196,4 +198,6 @@ int ini_parse(const char* filename, ini_handler handler, void* user)
     return error;
 }
 
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif

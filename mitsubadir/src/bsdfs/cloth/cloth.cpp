@@ -1,20 +1,20 @@
-    /*
-        This file is part of Mitsuba, a physically based rendering system.
+/*
+   This file is part of Mitsuba, a physically based rendering system.
 
-        Copyright (c) 2007-2014 by Wenzel Jakob and others.
+   Copyright (c) 2007-2014 by Wenzel Jakob and others.
 
-        Mitsuba is free software; you can redistribute it and/or modify
-        it under the terms of the GNU General Public License Version 3
-        as published by the Free Software Foundation.
+   Mitsuba is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License Version 3
+   as published by the Free Software Foundation.
 
-        Mitsuba is distributed in the hope that it will be useful,
-        but WITHOUT ANY WARRANTY; without even the implied warranty of
-        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-        GNU General Public License for more details.
+   Mitsuba is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
 
-        You should have received a copy of the GNU General Public License
-        along with this program. If not, see <http://www.gnu.org/licenses/>.
-    */
+   You should have received a copy of the GNU General Public License
+   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
@@ -25,521 +25,416 @@
 #include "wif/wif.c"
 #include "wif/ini.c" //TODO Snygga till! (använda scons?!)
 
-    MTS_NAMESPACE_BEGIN
+//TODO(Vidar): Enable floating point exceptions
 
-    /*!\plugin{diffuse_copy}{Smooth diffuse material}
-     * \order{1}
-     * \icon{bsdf_diffuse}
-     * \parameters{
-     *     \parameter{reflectance}{\Spectrum\Or\Texture}{
-     *       Specifies the diffuse albedo of the
-     *       material \default{0.5}
-         *     }
-         * }
-         *
-         * \renderings{
-         *     \rendering{Homogeneous reflectance, see \lstref{diffuse-uniform}}
-         *         {bsdf_diffuse_plain}
-         *     \rendering{Textured reflectance, see \lstref{diffuse-textured}}
-         *         {bsdf_diffuse_textured}
-         * }
-         *
-         * The smooth diffuse material (also referred to as ``Lambertian'')
-         * represents an ideally diffuse material with a user-specified amount of
-         * reflectance. Any received illumination is scattered so that the surface
-         * looks the same independently of the direction of observation.
-         *
-         * Apart from a  homogeneous reflectance value, the plugin can also accept
-         * a nested or referenced texture map to be used as the source of reflectance
-         * information, which is then mapped onto the shape based on its UV
-         * parameterization. When no parameters are specified, the model uses the default
-         * of 50% reflectance.
-         *
-         * Note that this material is one-sided---that is, observed from the
-         * back side, it will be completely black. If this is undesirable,
-         * consider using the \pluginref{twosided} BRDF adapter plugin.
-         * \vspace{4mm}
-         *
-         * \begin{xml}[caption={A diffuse material, whose reflectance is specified
-         *     as an sRGB color}, label=lst:diffuse-uniform]
-         * <bsdf type="diffuse">
-         *     <srgb name="reflectance" value="#6d7185"/>
-         * </bsdf>
-         * \end{xml}
-         *
-         * \begin{xml}[caption=A diffuse material with a texture map,
-         *     label=lst:diffuse-textured]
-         * <bsdf type="diffuse">
-         *     <texture type="bitmap" name="reflectance">
-         *         <string name="filename" value="wood.jpg"/>
-         *     </texture>
-         * </bsdf>
-         * \end{xml}
-         */
-        class Cloth : public BSDF {
-        public:
-	        PaletteEntry * m_pattern_entry;
-	        uint32_t m_pattern_height;
-	        uint32_t m_pattern_width;
-            float m_umax;
-            float m_uscale;
-            float m_vscale;
-            Cloth(const Properties &props)
-                : BSDF(props) {
+MTS_NAMESPACE_BEGIN
+
+//TODO(Vidar): Write documentation
+
+/*!\plugin{diffuse_copy}{Smooth diffuse material}
+ * \order{1}
+ * \icon{bsdf_diffuse}
+ * \parameters{
+ *     \parameter{reflectance}{\Spectrum\Or\Texture}{
+ *       Specifies the diffuse albedo of the
+ *       material \default{0.5}
+ *     }
+ * }
+ *
+ * \renderings{
+ *     \rendering{Homogeneous reflectance, see \lstref{diffuse-uniform}}
+ *         {bsdf_diffuse_plain}
+ *     \rendering{Textured reflectance, see \lstref{diffuse-textured}}
+ *         {bsdf_diffuse_textured}
+ * }
+ *
+ * The smooth diffuse material (also referred to as ``Lambertian'')
+ * represents an ideally diffuse material with a user-specified amount of
+ * reflectance. Any received illumination is scattered so that the surface
+ * looks the same independently of the direction of observation.
+ *
+ * Apart from a  homogeneous reflectance value, the plugin can also accept
+ * a nested or referenced texture map to be used as the source of reflectance
+ * information, which is then mapped onto the shape based on its UV
+ * parameterization. When no parameters are specified, the model uses the default
+ * of 50% reflectance.
+ *
+ * Note that this material is one-sided---that is, observed from the
+ * back side, it will be completely black. If this is undesirable,
+ * consider using the \pluginref{twosided} BRDF adapter plugin.
+ * \vspace{4mm}
+ *
+ * \begin{xml}[caption={A diffuse material, whose reflectance is specified
+ *     as an sRGB color}, label=lst:diffuse-uniform]
+ * <bsdf type="diffuse">
+ *     <srgb name="reflectance" value="#6d7185"/>
+ * </bsdf>
+ * \end{xml}
+ *
+ * \begin{xml}[caption=A diffuse material with a texture map,
+ *     label=lst:diffuse-textured]
+ * <bsdf type="diffuse">
+ *     <texture type="bitmap" name="reflectance">
+ *         <string name="filename" value="wood.jpg"/>
+ *     </texture>
+ * </bsdf>
+ * \end{xml}
+ */
+class Cloth : public BSDF {
+    public:
+        PaletteEntry * m_pattern_entry;
+        uint32_t m_pattern_height;
+        uint32_t m_pattern_width;
+        float m_umax;
+        float m_uscale;
+        float m_vscale;
+        Cloth(const Properties &props)
+            : BSDF(props) {
                 /* For better compatibility with other models, support both
                    'reflectance' and 'diffuseReflectance' as parameter names */
-            m_reflectance = new ConstantSpectrumTexture(props.getSpectrum(
-                props.hasProperty("reflectance") ? "reflectance"
-                    : "diffuseReflectance", Spectrum(.5f)));
-            m_umax = props.getFloat("umax", 0.7f);
-            m_uscale = props.getFloat("uscale", 10.0f);
-            m_vscale = props.getFloat("vscale", 10.0f);
-       
-            // LOAD WIF FILE
-            std::string wiffilename = Thread::getThread()->getFileResolver()->resolve(props.getString("wiffile")).string();
-            const char *filename = wiffilename.c_str();
-            WeaveData *data = wif_read(filename);
+                m_umax = props.getFloat("umax", 0.7f);
+                m_uscale = props.getFloat("utiling", 1.0f);
+                m_vscale = props.getFloat("vtiling", 1.0f);
 
-            uint32_t x,y,w,h;
-            m_pattern_entry = wif_get_pattern(data,&w,&h);
-            m_pattern_height = h;
-            m_pattern_width = w;
+                // LOAD WIF FILE
+                std::string wiffilename =
+                    Thread::getThread()->getFileResolver()->
+                    resolve(props.getString("wiffile")).string();
+                const char *filename = wiffilename.c_str();
+                WeaveData *data = wif_read(filename);
 
-            printf("\nPattern:\n");
-        for(y = 0; y < h; y++){
-            for(x = 0; x < w; x++){
-                PaletteEntry entry = m_pattern_entry[x+y*w];
-                float col = entry.color[0];
-                printf("%c", col > 0.5f ? 'X' : ' ');
-                //printf("%c", entry.warp_above ? ' ' : 'X');
+                m_pattern_entry = wif_get_pattern(data,&m_pattern_height,
+                         &m_pattern_width);
+                wif_free_weavedata(data);
+
             }
-            printf("\n");
+
+        Cloth(Stream *stream, InstanceManager *manager)
+            : BSDF(stream, manager) {
+                //TODO(Vidar):Read parameters from stream
+
+                configure();
+            }
+        ~Cloth() {
+            wif_free_pattern(m_pattern_entry);
         }
 
-        wif_free_weavedata(data);
+        void configure() {
+            /* Verify the input parameter and fix them if necessary */
+            m_components.clear();
+            m_components.push_back(EDiffuseReflection | EFrontSide
+                    | ESpatiallyVarying);
+            m_usesRayDifferentials = true;
 
-	}
-
-	Cloth(Stream *stream, InstanceManager *manager)
-		: BSDF(stream, manager) {
-		m_reflectance = static_cast<Texture *>(manager->getInstance(stream));
-
-		configure();
-	}
-    ~Cloth() {
-        wif_free_pattern(m_pattern_entry);
-    }
-
-	void configure() {
-		/* Verify the input parameter and fix them if necessary */
-		m_reflectance = ensureEnergyConservation(m_reflectance, "reflectance", 1.0f);
-
-		m_components.clear();
-		if (m_reflectance->getMaximum().max() > 0)
-			m_components.push_back(EDiffuseReflection | EFrontSide
-				| (m_reflectance->isConstant() ? 0 : ESpatiallyVarying));
-			m_usesRayDifferentials = m_reflectance->usesRayDifferentials();
-
-		BSDF::configure();
-	}
-
-	Spectrum getDiffuseReflectance(const Intersection &its) const {
-		return m_reflectance->eval(its);
-	}
-
-    struct PatternData
-    {
-        Spectrum color;
-        Vector normal;
-        Frame frame;
-    };
-
-    PatternData getPatternColor(const BSDFSamplingRecord &bRec) const {
-
-        PatternData ret_data = {};
-
-        float u = fmod(bRec.its.uv.x*m_uscale,1.f);
-        float v = fmod(bRec.its.uv.y*m_vscale,1.f);
-
-        if (u < 0.f) {
-            u = u - floor(u);
-        }
-        if (v < 0.f) {
-            v = v - floor(v);
-        }
-        
-        uint32_t pattern_x = (uint32_t)(u*(float)(m_pattern_width));
-        uint32_t pattern_y = (uint32_t)(v*(float)(m_pattern_height));
-
-        AssertEx(pattern_x < m_pattern_width, "pattern_x larger than pwidth");
-        AssertEx(pattern_y < m_pattern_height, "pattern_y larger than pheight");
-
-        PaletteEntry current_point = m_pattern_entry[pattern_x + pattern_y*m_pattern_width];        
-
-        uint32_t steps_left_warp = 0, steps_right_warp = 0;
-        uint32_t steps_left_weft = 0, steps_right_weft = 0;
-
-        if (current_point.warp_above) {
-            uint32_t current_x = pattern_x;
-            do{
-                current_x++;
-                if(current_x == m_pattern_width){
-                    current_x = 0;
-                }
-                if(!m_pattern_entry[current_x + pattern_y*m_pattern_width].warp_above){
-                    break;
-                }
-                steps_right_warp++;
-            } while(current_x != pattern_x);
-
-            current_x = pattern_x;
-            do{
-                if(current_x == 0){
-                    current_x = m_pattern_width;
-                }
-                current_x--;
-                if(!m_pattern_entry[current_x + pattern_y*m_pattern_width].warp_above){
-                    break;
-                }
-                steps_left_warp++;
-            } while(current_x != pattern_x);
-
-        } else {
-            uint32_t current_y = pattern_y;
-            do{
-                current_y++;
-                if(current_y == m_pattern_height){
-                    current_y = 0;
-                }
-                if(m_pattern_entry[pattern_x + current_y*m_pattern_width].warp_above){
-                    break;
-                }
-                steps_right_weft++;
-            } while(current_y != pattern_y);
-
-            current_y = pattern_y;
-            do{
-                if(current_y == 0){
-                    current_y = m_pattern_height;
-                }
-                current_y--;
-                if(m_pattern_entry[pattern_x + current_y*m_pattern_width].warp_above){
-                    break;
-                }
-                steps_left_weft++;
-            } while(current_y != pattern_y);
+            BSDF::configure();
         }
 
-        float thread_u, thread_v;
+        Spectrum getDiffuseReflectance(const Intersection &its) const {
+            PatternData pattern_data = getPatternData(its);
+            return pattern_data.color;
+        }
+
+        struct PatternData
         {
-            //TODO(Vidar):Fix divisions
+            Spectrum color;
+            Frame frame;
+        };
 
-            float w = (steps_left_warp + steps_right_warp + 1.f);
-            float x = ((u*(float)(m_pattern_width) - (float)pattern_x)
-                    + steps_left_warp)/w;
+        void calculateLengthOfSegment(bool warp_above, uint32_t pattern_x,
+                uint32_t pattern_y, uint32_t *steps_left,
+                uint32_t *steps_right) const
+        {
 
-            float h = (steps_left_weft + steps_right_weft + 1.f);
-            float y = ((v*(float)(m_pattern_height) - (float)pattern_y)
-                    + steps_left_weft)/h;
+            uint32_t current_x = pattern_x;
+            uint32_t current_y = pattern_y;
+            uint32_t *incremented_coord = warp_above ? &current_x : &current_y;
+            uint32_t max_size = warp_above ? m_pattern_width: m_pattern_height;
+            uint32_t initial_coord = warp_above ? pattern_x: pattern_y;
+            *steps_right = 0;
+            *steps_left  = 0;
+            do{
+                (*incremented_coord)++;
+                if(*incremented_coord == max_size){
+                    *incremented_coord = 0;
+                }
+                if(m_pattern_entry[current_x +
+                        current_y*m_pattern_width].warp_above != warp_above){
+                    break;
+                }
+                (*steps_right)++;
+            } while(*incremented_coord != initial_coord);
 
-            //Rescale x and y to [-1,1]
-            x = x*2.f - 1.f;
-            y = y*2.f - 1.f;
+            *incremented_coord = initial_coord;
+            do{
+                if(*incremented_coord == 0){
+                    *incremented_coord = max_size;
+                }
+                (*incremented_coord)--;
+                if(m_pattern_entry[current_x +
+                        current_y*m_pattern_width].warp_above != warp_above){
+                    break;
+                }
+                (*steps_left)++;
+            } while(*incremented_coord != initial_coord);
+        }
 
-            //Switch X and Y for weft, so that we always have the cylinder
-            // going along the x axis
-            if(!current_point.warp_above){
-                float tmp = x;
-                x = y;
-                y = tmp;
+        PatternData getPatternData(const Intersection &its) const {
+            float u = fmod(its.uv.x*m_uscale,1.f);
+            float v = fmod(its.uv.y*m_vscale,1.f);
+            //TODO(Vidar): Check why this crashes sometimes
+            if (u < 0.f) {
+                u = u - floor(u);
+            }
+            if (v < 0.f) {
+                v = v - floor(v);
+            }
+            uint32_t pattern_x = (uint32_t)(u*(float)(m_pattern_width));
+            uint32_t pattern_y = (uint32_t)(v*(float)(m_pattern_height));
+
+            AssertEx(pattern_x < m_pattern_width, "pattern_x larger than pwidth");
+            AssertEx(pattern_y < m_pattern_height, "pattern_y larger than pheight");
+
+            PaletteEntry current_point = m_pattern_entry[pattern_x +
+                pattern_y*m_pattern_width];        
+
+            //Calculate the size of the segment
+            uint32_t steps_left_warp = 0, steps_right_warp = 0;
+            uint32_t steps_left_weft = 0, steps_right_weft = 0;
+            if (current_point.warp_above) {
+                calculateLengthOfSegment(current_point.warp_above, pattern_x,
+                        pattern_y, &steps_left_warp, &steps_right_warp);
+            }else{
+                calculateLengthOfSegment(current_point.warp_above, pattern_x,
+                        pattern_y, &steps_left_weft, &steps_right_weft);
             }
 
-            //Calculate the u and v coordinates along the curved cylinder
-            thread_u = asinf(x*sinf(m_umax));
-            thread_v = asinf(y);
+            //Get the u v coordinates withing the thread segment
+            float segment_u, segment_v;
+            {
+                float w = (steps_left_warp + steps_right_warp + 1.f);
+                float x = ((u*(float)(m_pattern_width) - (float)pattern_x)
+                        + steps_left_warp)/w;
+
+                float h = (steps_left_weft + steps_right_weft + 1.f);
+                float y = ((v*(float)(m_pattern_height) - (float)pattern_y)
+                        + steps_left_weft)/h;
+
+                //Rescale x and y to [-1,1]
+                x = x*2.f - 1.f;
+                y = y*2.f - 1.f;
+
+                //Switch X and Y for weft, so that we always have the thread
+                // cylinder going along the x axis
+                if(!current_point.warp_above){
+                    float tmp = x;
+                    x = y;
+                    y = tmp;
+                }
+
+                //Calculate the u and v coordinates along the curved cylinder
+                //NOTE: This is different from how Irawan does it
+                segment_u = asinf(x*sinf(m_umax));
+                segment_v = asinf(y);
+                //TODO(Vidar): Use a parameter for choosing model?
+                /*segment_u = x*m_umax;
+                segment_v = y*M_PI_2;*/
+
+            }
+
+            //Calculate the normal in thread-local coordinates
+            float normal[3] = {sinf(segment_u), sinf(segment_v)*cosf(segment_u),
+                cosf(segment_v)*cosf(segment_u)};
+
+            //Switch the x & y again to get back to uv space
+            if(!current_point.warp_above){
+                float tmp = normal[0];
+                normal[0] = normal[1];
+                normal[1] = tmp;
+            }
+
+            //Get the world space coordinate vectors going along the texture u&v
+            //axes
+            Float dDispDu = normal[1];
+            Float dDispDv = normal[0];
+            Vector dpdu = its.dpdu + its.shFrame.n * (
+                    dDispDu - dot(its.shFrame.n, its.dpdu));
+            Vector dpdv = its.dpdv + its.shFrame.n * (
+                    dDispDv - dot(its.shFrame.n, its.dpdv));
+
+            //set frame
+            Frame result;
+            result.n = normalize(cross(dpdu, dpdv));
+
+            result.s = normalize(dpdu - result.n
+                    * dot(result.n, dpdu));
+            result.t = cross(result.n, result.s);
+
+            //Flip the normal if it points in the wrong direction
+            if (dot(result.n, its.geoFrame.n) < 0)
+                result.n *= -1;
+
+            //return the results
+            PatternData ret_data = {};
+            ret_data.frame = result;
+            ret_data.color.fromSRGB(current_point.color[0], current_point.color[1],
+                    current_point.color[2]);
+            return ret_data;
+        }
+
+        Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
+            if (!(bRec.typeMask & EDiffuseReflection) || measure != ESolidAngle
+                    || Frame::cosTheta(bRec.wi) <= 0
+                    || Frame::cosTheta(bRec.wo) <= 0)
+                return Spectrum(0.0f);
+
+            // Perturb the sampling record, in turn normal to match our thread normals
+            PatternData pattern_data = getPatternData(bRec.its);
+            Intersection perturbed(bRec.its);
+            perturbed.shFrame = pattern_data.frame;
+
+            Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
+            //Return black if the perturbed direction lies below the surface
+            if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbed_wo) <= 0)
+                return Spectrum(0.0f);
+            return pattern_data.color * (INV_PI * Frame::cosTheta(perturbed_wo));
+        }
+
+        Float pdf(const BSDFSamplingRecord &bRec, EMeasure measure) const {
+            if (!(bRec.typeMask & EDiffuseReflection) || measure != ESolidAngle
+                    || Frame::cosTheta(bRec.wi) <= 0
+                    || Frame::cosTheta(bRec.wo) <= 0)
+                return 0.0f;
+
+            const Intersection& its = bRec.its;
+            PatternData pattern_data = getPatternData(its);
+            Intersection perturbed(its);
+            perturbed.shFrame = pattern_data.frame;
+
+            return warp::squareToCosineHemispherePdf(perturbed.toLocal(
+                        its.toWorld(bRec.wo)));
 
         }
 
-        //Calculate the normal in thread-local coordinates
-        float normal[3] = {sinf(thread_u), sinf(thread_v)*cosf(thread_u),
-            cosf(thread_v)*cosf(thread_u)};
-
-        //Get the world space coordinate vectors going along the texture u&v
-        //axes
-        //Vector dpdu = normalize(bRec.its.dpdu);
-        //Vector dpdv = normalize(bRec.its.dpdv);
-        //Calculate the world space normal
-        //Vector world_n = cross(dpdv,dpdu);
-
-        //Switch the x & y again to get back to uv space
-        if(!current_point.warp_above){
-            float tmp = normal[0];
-            normal[0] = normal[1];
-            normal[1] = tmp;
+        Spectrum sample(BSDFSamplingRecord &bRec, const Point2 &sample) const {
+            if (!(bRec.typeMask & EDiffuseReflection) || Frame::cosTheta(bRec.wi) <= 0)
+                return Spectrum(0.0f);
+            const Intersection& its = bRec.its;
+            PatternData pattern_data = getPatternData(its);
+            Intersection perturbed(its);
+            perturbed.shFrame = pattern_data.frame;
+            bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
+            Vector perturbed_wo = warp::squareToCosineHemisphere(sample);
+            if (!pattern_data.color.isZero()) {
+                bRec.sampledComponent = 0;
+                bRec.sampledType = EDiffuseReflection;
+                bRec.wo = its.toLocal(perturbed.toWorld(perturbed_wo));
+                bRec.eta = 1.f;
+                if (Frame::cosTheta(perturbed_wo) * Frame::cosTheta(bRec.wo) <= 0)
+                    return Spectrum(0.0f);
+            }
+            return pattern_data.color;
         }
 
-        //ret_data.normal = normal[0] * dpdu + normal[1] *dpdv + normal[2]*world_n;
+        Spectrum sample(BSDFSamplingRecord &bRec, Float &pdf, const Point2 &sample) const {
+            if (!(bRec.typeMask & EDiffuseReflection) || Frame::cosTheta(bRec.wi) <= 0)
+                return Spectrum(0.0f);
 
-        ret_data.color.fromSRGB(current_point.color[0], current_point.color[1], current_point.color[2]);
-        
+            const Intersection& its = bRec.its;
+            Intersection perturbed(its);
+            PatternData pattern_data = getPatternData(its);
+            perturbed.shFrame = pattern_data.frame;
+            bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
 
-		Float dDispDu = normal[1];
-		Float dDispDv = normal[0];
+            Vector perturbed_wo = warp::squareToCosineHemisphere(sample);
+            pdf = warp::squareToCosineHemispherePdf(perturbed_wo);
 
-		/* Build a perturbed frame -- ignores the usually
-		   negligible normal derivative term */
-		Vector dpdu = bRec.its.dpdu + bRec.its.shFrame.n * (
-				dDispDu - dot(bRec.its.shFrame.n, bRec.its.dpdu));
-		Vector dpdv = bRec.its.dpdv + bRec.its.shFrame.n * (
-				dDispDv - dot(bRec.its.shFrame.n, bRec.its.dpdv));
+            if (!pattern_data.color.isZero()) {
+                bRec.sampledComponent = 0;
+                bRec.sampledType = EDiffuseReflection;
+                bRec.wo = its.toLocal(perturbed.toWorld(
+                    perturbed_wo));
+                bRec.eta = 1.f;
+                if (Frame::cosTheta(perturbed_wo) * Frame::cosTheta(bRec.wo) <= 0)
+                    return Spectrum(0.0f);
+            }
+            return pattern_data.color;
+        }
 
-        //set frame
-		Frame result;
-		result.n = normalize(cross(dpdu, dpdv));
-		//result.n = normalize(ret_data.normal);
-		result.s = normalize(dpdu - result.n
-			* dot(result.n, dpdu));
-		result.t = cross(result.n, result.s);
+        void addChild(const std::string &name, ConfigurableObject *child) {
+            BSDF::addChild(name, child);
+        }
 
-		if (dot(result.n, bRec.its.geoFrame.n) < 0)
-			result.n *= -1;
-    
-        ret_data.frame = result;
-        
+        void serialize(Stream *stream, InstanceManager *manager) const {
+            BSDF::serialize(stream, manager);
+            //TODO(Vidar): Serialize our parameters
+        }
 
-        // TODO:
-        // instead of getting color:
-        // get if warp or weft is viewable at current position.
-        // Want to construct our "therad reactangle".
-        //      For this we need to know how long the current visible thread is.
-        //          If warp
-        //              walk along x in both directions on the pattern and return # of steps to the left and right before we encounter a weft.
-        //          If weft
-        //              -- // --
-        //          Use step data to find location in rectangle.
-        //              new uv coordinates
-        //              ??? calculate normal in original uv coordinates. ???
-        //              Somehow get normal in xyz, shading space.
-        //  Then do simple test.
+        Float getRoughness(const Intersection &its, int component) const {
+            return std::numeric_limits<Float>::infinity();
+        }
 
-        return ret_data;
-    }
+        std::string toString() const {
+            //TODO(Vidar): Add our parameters here...
+            std::ostringstream oss;
+            oss << "Cloth[" << endl
+                << "  id = \"" << getID() << "\"," << endl
+                << "]";
+            return oss.str();
+        }
 
-	Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
-		if (!(bRec.typeMask & EDiffuseReflection) || measure != ESolidAngle
-			|| Frame::cosTheta(bRec.wi) <= 0
-			|| Frame::cosTheta(bRec.wo) <= 0)
-			return Spectrum(0.0f);
+        Shader *createShader(Renderer *renderer) const;
 
-		/*return m_reflectance->eval(bRec.its)
-			* (INV_PI * Frame::cosTheta(bRec.wo));*/
-
-        // Perturb the sampling record, in turn normal to match our thread normals
-        PatternData pattern_data = getPatternColor(bRec);
-		const Intersection& its = bRec.its;
-		Intersection perturbed(its);
-		perturbed.shFrame = pattern_data.frame;
-
-		BSDFSamplingRecord perturbedQuery(perturbed,
-			perturbed.toLocal(its.toWorld(bRec.wi)),
-			perturbed.toLocal(its.toWorld(bRec.wo)), bRec.mode);
-		if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbedQuery.wo) <= 0)
-			return Spectrum(0.0f);
-		perturbedQuery.sampler = bRec.sampler;
-		perturbedQuery.typeMask = bRec.typeMask;
-		perturbedQuery.component = bRec.component;
-        return pattern_data.color * (INV_PI * Frame::cosTheta(perturbedQuery.wo));
-	}
-
-	Float pdf(const BSDFSamplingRecord &bRec, EMeasure measure) const {
-		if (!(bRec.typeMask & EDiffuseReflection) || measure != ESolidAngle
-			|| Frame::cosTheta(bRec.wi) <= 0
-			|| Frame::cosTheta(bRec.wo) <= 0)
-			return 0.0f;
-
-		return warp::squareToCosineHemispherePdf(bRec.wo);
-	}
-
-	Spectrum sample(BSDFSamplingRecord &bRec, const Point2 &sample) const {
-		if (!(bRec.typeMask & EDiffuseReflection) || Frame::cosTheta(bRec.wi) <= 0)
-			return Spectrum(0.0f);
-        
-        /* OLD
-        // Perturb the sampling record, in turn normal to match our thread normals
-        PatternData pattern_data = getPatternColor(bRec);
-		const Intersection& its = bRec.its;
-		Intersection perturbed(its);
-		perturbed.shFrame = pattern_data.frame;
-
-		BSDFSamplingRecord perturbedQuery(perturbed,
-			perturbed.toLocal(its.toWorld(bRec.wi)),
-			perturbed.toLocal(its.toWorld(bRec.wo)), bRec.mode);
-		if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbedQuery.wo) <= 0)
-			return Spectrum(0.0f);
-		perturbedQuery.sampler = bRec.sampler;
-		perturbedQuery.typeMask = bRec.typeMask;
-		perturbedQuery.component = bRec.component;
-        //return pattern_data.color * (INV_PI * Frame::cosTheta(perturbedQuery.wo));
-        */
-
-		const Intersection& its = bRec.its;
-		Intersection perturbed(its);
-        PatternData pattern_data = getPatternColor(bRec);
-		perturbed.shFrame = pattern_data.frame;
-
-		BSDFSamplingRecord perturbedQuery(perturbed, bRec.sampler, bRec.mode);
-		perturbedQuery.wi = perturbed.toLocal(its.toWorld(bRec.wi));
-		perturbedQuery.sampler = bRec.sampler;
-		perturbedQuery.typeMask = bRec.typeMask;
-		perturbedQuery.component = bRec.component;
-		
-        //Do our usual sampling (not perturb specific)
-		perturbedQuery.wo = warp::squareToCosineHemisphere(sample);
-		perturbedQuery.eta = 1.0f;
-		perturbedQuery.sampledComponent = 0;
-		perturbedQuery.sampledType = EDiffuseReflection;
-        Spectrum result = pattern_data.color;
-        
-        if (!result.isZero()) {
-			bRec.sampledComponent = perturbedQuery.sampledComponent;
-			bRec.sampledType = perturbedQuery.sampledType;
-			bRec.wo = its.toLocal(perturbed.toWorld(perturbedQuery.wo));
-			bRec.eta = perturbedQuery.eta;
-			if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbedQuery.wo) <= 0)
-				return Spectrum(0.0f);
-		}
-		return result;
-	}
-
-	Spectrum sample(BSDFSamplingRecord &bRec, Float &pdf, const Point2 &sample) const {
-		/*if (!(bRec.typeMask & EDiffuseReflection) || Frame::cosTheta(bRec.wi) <= 0)
-			return Spectrum(0.0f);
-
-		bRec.wo = warp::squareToCosineHemisphere(sample);
-		bRec.eta = 1.0f;
-		bRec.sampledComponent = 0;
-		bRec.sampledType = EDiffuseReflection;
-		pdf = warp::squareToCosineHemispherePdf(bRec.wo);
-        PatternData pattern_data = getPatternColor(bRec);
-        return pattern_data.color;
-
-        */
-
-
-		if (!(bRec.typeMask & EDiffuseReflection) || Frame::cosTheta(bRec.wi) <= 0)
-			return Spectrum(0.0f);
-        
-       	const Intersection& its = bRec.its;
-		Intersection perturbed(its);
-        PatternData pattern_data = getPatternColor(bRec);
-		perturbed.shFrame = pattern_data.frame;
-
-		BSDFSamplingRecord perturbedQuery(perturbed, bRec.sampler, bRec.mode);
-		perturbedQuery.wi = perturbed.toLocal(its.toWorld(bRec.wi));
-		perturbedQuery.sampler = bRec.sampler;
-		perturbedQuery.typeMask = bRec.typeMask;
-		perturbedQuery.component = bRec.component;
-		
-        //Do our usual sampling (not perturb specific)
-		perturbedQuery.wo = warp::squareToCosineHemisphere(sample);
-		perturbedQuery.eta = 1.0f;
-		perturbedQuery.sampledComponent = 0;
-		perturbedQuery.sampledType = EDiffuseReflection;
-		pdf = warp::squareToCosineHemispherePdf(perturbedQuery.wo);
-        Spectrum result = pattern_data.color;
-        
-        if (!result.isZero()) {
-			bRec.sampledComponent = perturbedQuery.sampledComponent;
-			bRec.sampledType = perturbedQuery.sampledType;
-			bRec.wo = its.toLocal(perturbed.toWorld(perturbedQuery.wo));
-			bRec.eta = perturbedQuery.eta;
-			if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbedQuery.wo) <= 0)
-				return Spectrum(0.0f);
-		}
-		return result;
-	}
-
-	void addChild(const std::string &name, ConfigurableObject *child) {
-		if (child->getClass()->derivesFrom(MTS_CLASS(Texture))
-				&& (name == "reflectance" || name == "diffuseReflectance")) {
-			m_reflectance = static_cast<Texture *>(child);
-		} else {
-			BSDF::addChild(name, child);
-		}
-	}
-
-	void serialize(Stream *stream, InstanceManager *manager) const {
-		BSDF::serialize(stream, manager);
-
-		manager->serialize(stream, m_reflectance.get());
-	}
-
-	Float getRoughness(const Intersection &its, int component) const {
-		return std::numeric_limits<Float>::infinity();
-	}
-
-	std::string toString() const {
-		std::ostringstream oss;
-		oss << "Cloth[" << endl
-			<< "  id = \"" << getID() << "\"," << endl
-			<< "  reflectance = " << indent(m_reflectance->toString()) << endl
-			<< "]";
-		return oss.str();
-	}
-
-	Shader *createShader(Renderer *renderer) const;
-
-	MTS_DECLARE_CLASS()
-private:
-	ref<Texture> m_reflectance;
+        MTS_DECLARE_CLASS()
+    private:
+            ref<Texture> m_reflectance;
 };
 
 // ================ Hardware shader implementation ================
 
 class SmoothDiffuseShader : public Shader {
-public:
-	SmoothDiffuseShader(Renderer *renderer, const Texture *reflectance)
-		: Shader(renderer, EBSDFShader), m_reflectance(reflectance) {
-		m_reflectanceShader = renderer->registerShaderForResource(m_reflectance.get());
-	}
+    public:
+        SmoothDiffuseShader(Renderer *renderer, const Texture *reflectance)
+            : Shader(renderer, EBSDFShader), m_reflectance(reflectance) {
+                m_reflectanceShader = renderer->registerShaderForResource(m_reflectance.get());
+            }
 
-	bool isComplete() const {
-		return m_reflectanceShader.get() != NULL;
-	}
+        bool isComplete() const {
+            return m_reflectanceShader.get() != NULL;
+        }
 
-	void cleanup(Renderer *renderer) {
-		renderer->unregisterShaderForResource(m_reflectance.get());
-	}
+        void cleanup(Renderer *renderer) {
+            renderer->unregisterShaderForResource(m_reflectance.get());
+        }
 
-	void putDependencies(std::vector<Shader *> &deps) {
-		deps.push_back(m_reflectanceShader.get());
-	}
+        void putDependencies(std::vector<Shader *> &deps) {
+            deps.push_back(m_reflectanceShader.get());
+        }
 
-	void generateCode(std::ostringstream &oss,
-			const std::string &evalName,
-			const std::vector<std::string> &depNames) const {
-		oss << "vec3 " << evalName << "(vec2 uv, vec3 wi, vec3 wo) {" << endl
-			<< "    if (cosTheta(wi) < 0.0 || cosTheta(wo) < 0.0)" << endl
-			<< "    	return vec3(0.0);" << endl
-			<< "    return " << depNames[0] << "(uv) * inv_pi * cosTheta(wo);" << endl
-			<< "}" << endl
-			<< endl
-			<< "vec3 " << evalName << "_diffuse(vec2 uv, vec3 wi, vec3 wo) {" << endl
-			<< "    return " << evalName << "(uv, wi, wo);" << endl
-			<< "}" << endl;
-	}
+        void generateCode(std::ostringstream &oss,
+                const std::string &evalName,
+                const std::vector<std::string> &depNames) const {
+            oss << "vec3 " << evalName << "(vec2 uv, vec3 wi, vec3 wo) {" << endl
+                << "    if (cosTheta(wi) < 0.0 || cosTheta(wo) < 0.0)" << endl
+                << "    	return vec3(0.0);" << endl
+                << "    return " << depNames[0] << "(uv) * inv_pi * cosTheta(wo);" << endl
+                << "}" << endl
+                << endl
+                << "vec3 " << evalName << "_diffuse(vec2 uv, vec3 wi, vec3 wo) {" << endl
+                << "    return " << evalName << "(uv, wi, wo);" << endl
+                << "}" << endl;
+        }
 
-	MTS_DECLARE_CLASS()
-private:
-	ref<const Texture> m_reflectance;
-	ref<Shader> m_reflectanceShader;
+        MTS_DECLARE_CLASS()
+    private:
+            ref<const Texture> m_reflectance;
+            ref<Shader> m_reflectanceShader;
 };
 
 Shader *Cloth::createShader(Renderer *renderer) const {
-	return new SmoothDiffuseShader(renderer, m_reflectance.get());
+    return new SmoothDiffuseShader(renderer, m_reflectance.get());
 }
 
-MTS_IMPLEMENT_CLASS(SmoothDiffuseShader, false, Shader)
+    MTS_IMPLEMENT_CLASS(SmoothDiffuseShader, false, Shader)
 MTS_IMPLEMENT_CLASS_S(Cloth, false, BSDF)
-MTS_EXPORT_PLUGIN(Cloth, "Smooth diffuse BRDF")
-MTS_NAMESPACE_END
+    MTS_EXPORT_PLUGIN(Cloth, "Smooth diffuse BRDF")
+    MTS_NAMESPACE_END
