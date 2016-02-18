@@ -254,8 +254,8 @@ class Cloth : public BSDF {
 
             //Get the world space coordinate vectors going along the texture u&v
             //axes
-            Float dDispDu = normal[1];
-            Float dDispDv = normal[0];
+            Float dDispDu = -normal[0];
+            Float dDispDv = -normal[1];
             Vector dpdu = its.dpdu + its.shFrame.n * (
                     dDispDu - dot(its.shFrame.n, its.dpdu));
             Vector dpdv = its.dpdv + its.shFrame.n * (
