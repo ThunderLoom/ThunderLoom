@@ -138,6 +138,9 @@ class Cloth : public BSDF {
         {
             Spectrum color;
             Frame frame;
+            float u, v; //Segment uv coordinates (in angles)
+            float x, y; //position within segment. 
+            bool warp_above; 
         };
 
         void calculateLengthOfSegment(bool warp_above, uint32_t pattern_x,
@@ -210,36 +213,33 @@ class Cloth : public BSDF {
 
             //Get the u v coordinates withing the thread segment
             float segment_u, segment_v;
-            {
-                float w = (steps_left_warp + steps_right_warp + 1.f);
-                float x = ((u*(float)(m_pattern_width) - (float)pattern_x)
-                        + steps_left_warp)/w;
+            float w = (steps_left_warp + steps_right_warp + 1.f);
+            float x = ((u*(float)(m_pattern_width) - (float)pattern_x)
+                    + steps_left_warp)/w;
 
-                float h = (steps_left_weft + steps_right_weft + 1.f);
-                float y = ((v*(float)(m_pattern_height) - (float)pattern_y)
-                        + steps_left_weft)/h;
+            float h = (steps_left_weft + steps_right_weft + 1.f);
+            float y = ((v*(float)(m_pattern_height) - (float)pattern_y)
+                    + steps_left_weft)/h;
 
-                //Rescale x and y to [-1,1]
-                x = x*2.f - 1.f;
-                y = y*2.f - 1.f;
+            //Rescale x and y to [-1,1]
+            x = x*2.f - 1.f;
+            y = y*2.f - 1.f;
 
-                //Switch X and Y for weft, so that we always have the thread
-                // cylinder going along the x axis
-                if(!current_point.warp_above){
-                    float tmp = x;
-                    x = y;
-                    y = tmp;
-                }
-
-                //Calculate the u and v coordinates along the curved cylinder
-                //NOTE: This is different from how Irawan does it
-                segment_u = asinf(x*sinf(m_umax));
-                segment_v = asinf(y);
-                //TODO(Vidar): Use a parameter for choosing model?
-                /*segment_u = x*m_umax;
-                segment_v = y*M_PI_2;*/
-
+            //Switch X and Y for weft, so that we always have the thread
+            // cylinder going along the x axis
+            if(!current_point.warp_above){
+                float tmp = x;
+                x = y;
+                y = tmp;
             }
+
+            //Calculate the u and v coordinates along the curved cylinder
+            //NOTE: This is different from how Irawan does it
+            /*segment_u = asinf(x*sinf(m_umax));
+              segment_v = asinf(y);*/
+            //TODO(Vidar): Use a parameter for choosing model?
+            segment_u = x*m_umax;
+            segment_v = y*M_PI_2;
 
             //Calculate the normal in thread-local coordinates
             float normal[3] = {sinf(segment_u), sinf(segment_v)*cosf(segment_u),
@@ -273,12 +273,63 @@ class Cloth : public BSDF {
             if (dot(result.n, its.geoFrame.n) < 0)
                 result.n *= -1;
 
-            //return the results
+
             PatternData ret_data = {};
             ret_data.frame = result;
             ret_data.color.fromSRGB(current_point.color[0], current_point.color[1],
                     current_point.color[2]);
+            //ret_data.color.fromSRGB(1.f, 1.f, 1.f);
+            ret_data.u = segment_u;
+            ret_data.v = segment_v;
+            ret_data.x = x; 
+            ret_data.y = y; 
+            ret_data.warp_above = current_point.warp_above; 
+
+            //return the results
             return ret_data;
+        }
+
+        float specularReflectionPattern(Vector wi, Vector wo, PatternData data) const {
+            //Fiber staple twist
+            //u = segment_u
+            float u = data.u;
+            //float v = data.v;
+            //float x = data.x;
+            float y = data.y;
+            
+            // Half-vector
+            Vector H = normalize(wi + wo);
+            if(!data.warp_above){
+                float tmp = H.x;
+                H.x = H.y;
+                H.y = tmp;
+            }
+
+            float staple_psi = 0.45; // pi/7 
+
+            float D;
+            {
+                float a = H.y*sin(u) + H.z*cos(u);
+                D = (H.y*cos(u)-H.z*sin(u))/(sqrt(H.x*H.x + a*a)) / tan(staple_psi);
+            }
+
+            float reflection = 0.f;
+
+            float specular_v = atan2(-H.y*sin(u) - H.z*cos(u), H.x) + acos(D); //Plus eller minus i sista termen.
+            if (fabsf(specular_v) < M_PI_2) {
+                //we have specular ereflection
+                
+                //get specular_y, using irawans transformation.
+
+                float specular_y = specular_v/M_PI_2;
+
+                float deltaY = 0.4; // [0,0.1]
+                if (fabsf(specular_y - y) < deltaY) {
+                    reflection = 1.f;
+                }
+            }
+
+            return reflection;
         }
 
         Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
@@ -292,11 +343,15 @@ class Cloth : public BSDF {
             Intersection perturbed(bRec.its);
             perturbed.shFrame = pattern_data.frame;
 
+            float specularStrength = 0.4f;
+
             Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
             //Return black if the perturbed direction lies below the surface
             if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbed_wo) <= 0)
                 return Spectrum(0.0f);
-            return pattern_data.color * (INV_PI * Frame::cosTheta(perturbed_wo));
+            
+            Spectrum specular(specularStrength*specularReflectionPattern(bRec.wi, bRec.wo, pattern_data));
+            return pattern_data.color*(1.f - specularStrength) * (INV_PI * Frame::cosTheta(perturbed_wo)) + specular;
         }
 
         Float pdf(const BSDFSamplingRecord &bRec, EMeasure measure) const {
