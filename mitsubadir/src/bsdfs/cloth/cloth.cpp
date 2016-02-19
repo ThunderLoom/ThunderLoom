@@ -304,7 +304,7 @@ class Cloth : public BSDF {
                 H.y = tmp;
             }
 
-            float staple_psi = 0.45; // pi/7 
+            float staple_psi = M_PI_2;
 
             float D;
             {
@@ -342,7 +342,7 @@ class Cloth : public BSDF {
             Intersection perturbed(bRec.its);
             perturbed.shFrame = pattern_data.frame;
 
-            float specularStrength = 0.f;
+            float specularStrength = 0.2f;
 
             Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
             //Return black if the perturbed direction lies below the surface
