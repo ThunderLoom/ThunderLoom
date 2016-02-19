@@ -147,9 +147,9 @@ class Cloth : public BSDF {
 
             uint32_t current_x = pattern_x;
             uint32_t current_y = pattern_y;
-            uint32_t *incremented_coord = warp_above ? &current_x : &current_y;
-            uint32_t max_size = warp_above ? m_pattern_width: m_pattern_height;
-            uint32_t initial_coord = warp_above ? pattern_x: pattern_y;
+            uint32_t *incremented_coord = warp_above ? &current_y : &current_x;
+            uint32_t max_size = warp_above ? m_pattern_height: m_pattern_width;
+            uint32_t initial_coord = warp_above ? pattern_y: pattern_x;
             *steps_right = 0;
             *steps_left  = 0;
             do{
@@ -211,13 +211,13 @@ class Cloth : public BSDF {
             //Get the u v coordinates withing the thread segment
             float segment_u, segment_v;
             {
-                float w = (steps_left_warp + steps_right_warp + 1.f);
+                float w = (steps_left_weft + steps_right_weft + 1.f);
                 float x = ((u*(float)(m_pattern_width) - (float)pattern_x)
-                        + steps_left_warp)/w;
+                        + steps_left_weft)/w;
 
-                float h = (steps_left_weft + steps_right_weft + 1.f);
+                float h = (steps_left_warp + steps_right_warp + 1.f);
                 float y = ((v*(float)(m_pattern_height) - (float)pattern_y)
-                        + steps_left_weft)/h;
+                        + steps_left_warp)/h;
 
                 //Rescale x and y to [-1,1]
                 x = x*2.f - 1.f;
@@ -225,7 +225,7 @@ class Cloth : public BSDF {
 
                 //Switch X and Y for weft, so that we always have the thread
                 // cylinder going along the x axis
-                if(!current_point.warp_above){
+                if(current_point.warp_above){
                     float tmp = x;
                     x = y;
                     y = tmp;
@@ -246,7 +246,7 @@ class Cloth : public BSDF {
                 cosf(segment_v)*cosf(segment_u)};
 
             //Switch the x & y again to get back to uv space
-            if(!current_point.warp_above){
+            if(current_point.warp_above){
                 float tmp = normal[0];
                 normal[0] = normal[1];
                 normal[1] = tmp;
