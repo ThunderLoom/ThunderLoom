@@ -187,7 +187,7 @@ void wif_free_weavedata(WeaveData *data)
 
 PaletteEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h)
 {
-    uint8_t x,y;
+    uint32_t x,y;
     PaletteEntry *pattern;
     *w = data->warp.num_threads;
     *h = data->weft.num_threads;
