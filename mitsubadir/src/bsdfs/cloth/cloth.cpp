@@ -192,8 +192,8 @@ class Cloth : public BSDF {
             if (v < 0.f) {
                 v = v - floor(v);
             }
-            uint32_t pattern_x = (uint32_t)(u*(float)(m_pattern_width));
-            uint32_t pattern_y = (uint32_t)(v*(float)(m_pattern_height));
+            uint32_t pattern_x = (uint32_t)(v*(float)(m_pattern_width));
+            uint32_t pattern_y = (uint32_t)(u*(float)(m_pattern_height));
 
             AssertEx(pattern_x < m_pattern_width, "pattern_x larger than pwidth");
             AssertEx(pattern_y < m_pattern_height, "pattern_y larger than pheight");
@@ -213,13 +213,13 @@ class Cloth : public BSDF {
             }
 
             //Yarn-segment-local coordinates.
-            float w = (steps_left_weft + steps_right_weft + 1.f);
-            float x = ((u*(float)(m_pattern_width) - (float)pattern_x)
-                    + steps_left_weft)/w;
+            float l = (steps_left_weft + steps_right_weft + 1.f);
+            float y = ((u*(float)(m_pattern_width) - (float)pattern_x)
+                    + steps_left_weft)/l;
 
-            float h = (steps_left_warp + steps_right_warp + 1.f);
-            float y = ((v*(float)(m_pattern_height) - (float)pattern_y)
-                    + steps_left_warp)/h;
+            float w = (steps_left_warp + steps_right_warp + 1.f);
+            float x = ((v*(float)(m_pattern_height) - (float)pattern_y)
+                    + steps_left_warp)/w;
 
             //Rescale x and y to [-1,1]
             x = x*2.f - 1.f;
@@ -238,16 +238,14 @@ class Cloth : public BSDF {
             /*segment_u = asinf(x*sinf(m_umax));
               segment_v = asinf(y);*/
             //TODO(Vidar): Use a parameter for choosing model?
-            float segment_u = x*m_umax;
-            float segment_v = y*M_PI_2;
+            float segment_u = y*m_umax;
+            float segment_v = x*M_PI_2;
 
             //Calculate the normal in thread-local coordinates
             float normal[3] = {sinf(segment_u), sinf(segment_v)*cosf(segment_u),
                 cosf(segment_v)*cosf(segment_u)};
 
             //Switch the x & y for warp again to have the coordinates be coherent.
-            //warp-yarn-segments long-side point along the y axis
-            //weft-yarn-segments long-side point along the x axis
             if(current_point.warp_above){
                 float tmp = normal[0];
                 normal[0] = normal[1];
@@ -296,12 +294,13 @@ class Cloth : public BSDF {
             //u = segment_u
             float u = data.u;
             //float v = data.v;
-            //float x = data.x;
-            float y = data.y;
+            float x = data.x;
+            //float y = data.y;
             
             // Half-vector
             Vector H = normalize(wi + wo);
-            if(!data.warp_above){ //TODO(Peter): Check this! in getPatternData we swap when warp is above.
+            if(!data.warp_above){ //TODO(Peter): Check this!
+                //Warps are aligned to the shading space. But wefts need their normal xy components swapped.
                 float tmp = H.x;
                 H.x = H.y;
                 H.y = tmp;
@@ -319,14 +318,14 @@ class Cloth : public BSDF {
 
             float specular_v = atan2(-H.y*sin(u) - H.z*cos(u), H.x) + acos(D); //Plus eller minus i sista termen.
             if (fabsf(specular_v) < M_PI_2) {
-                //we have specular ereflection
+                //we have specular reflection
                 
-                //get specular_y, using irawans transformation.
+                //get specular_x, using irawans transformation.
 
-                float specular_y = specular_v/M_PI_2;
+                float specular_x = specular_v/M_PI_2;
 
-                float deltaY = 0.4; // [0,0.1]
-                if (fabsf(specular_y - y) < deltaY) {
+                float deltaX = 0.4; // [0,0.1]
+                if (fabsf(specular_x - x) < deltaX) {
                     reflection = 1.f;
                 }
             }
