@@ -102,8 +102,8 @@ class Cloth : public BSDF {
                 const char *filename = wiffilename.c_str();
                 WeaveData *data = wif_read(filename);
 
-                m_pattern_entry = wif_get_pattern(data,&m_pattern_height,
-                         &m_pattern_width);
+                m_pattern_entry = wif_get_pattern(data,&m_pattern_width,
+                         &m_pattern_height);
                 wif_free_weavedata(data);
 
             }
@@ -373,7 +373,7 @@ class Cloth : public BSDF {
             Intersection perturbed(bRec.its);
             perturbed.shFrame = pattern_data.frame;
 
-            float specularStrength = 0.2f;
+            float specularStrength = 0.f;
 
             Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
             //Return black if the perturbed direction lies below the surface
