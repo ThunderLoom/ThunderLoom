@@ -138,7 +138,7 @@ class Cloth : public BSDF {
         struct PatternData
         {
             Spectrum color;
-            Frame frame;
+            Frame frame; //The perturbed frame 
             float u, v; //Segment uv coordinates (in angles)
             float x, y; //position within segment. 
             bool warp_above; 
@@ -183,6 +183,7 @@ class Cloth : public BSDF {
         }
 
         PatternData getPatternData(const Intersection &its) const {
+            //Set repeating uv coordinates.
             float u = fmod(its.uv.x*m_uscale,1.f);
             float v = fmod(its.uv.y*m_vscale,1.f);
             //TODO(Vidar): Check why this crashes sometimes
@@ -212,20 +213,20 @@ class Cloth : public BSDF {
                         pattern_y, &steps_left_weft, &steps_right_weft);
             }
 
-            //Get the x y coordinates withing the thread segment
-            float w = (steps_left_weft + steps_right_weft + 1.f);
-            float x = ((v*(float)(m_pattern_width) - (float)pattern_x)
-                    + steps_left_weft)/w;
+            //Yarn-segment-local coordinates.
+            float l = (steps_left_weft + steps_right_weft + 1.f);
+            float y = ((v*(float)(m_pattern_width) - (float)pattern_x)
+                    + steps_left_weft)/l;
 
-            float h = (steps_left_warp + steps_right_warp + 1.f);
-            float y = ((u*(float)(m_pattern_height) - (float)pattern_y)
-                    + steps_left_warp)/h;
+            float w = (steps_left_warp + steps_right_warp + 1.f);
+            float x = ((u*(float)(m_pattern_height) - (float)pattern_y)
+                    + steps_left_warp)/w;
 
             //Rescale x and y to [-1,1]
             x = x*2.f - 1.f;
             y = y*2.f - 1.f;
 
-            //Switch X and Y for weft, so that we always have the thread
+            //Switch X and Y for warp, so that we always have the yarn
             // cylinder going along the x axis
             if(current_point.warp_above){
                 float tmp = x;
@@ -233,21 +234,19 @@ class Cloth : public BSDF {
                 y = tmp;
             }
 
-            //TODO(Vidar): Use a parameter for choosing model?
-            //Calculate the u and v coordinates along the curved cylinder
+            //Calculate the yarn-segment-local u v coordinates along the curved cylinder
             //NOTE: This is different from how Irawan does it
-            /* Our */
-            //float segment_u = asinf(x*sinf(m_umax));
-            //float segment_v = asinf(y);
-            /* Irawan */
-            float segment_u = x*m_umax;
-            float segment_v = y*M_PI_2;
+            /*segment_u = asinf(x*sinf(m_umax));
+              segment_v = asinf(y);*/
+            //TODO(Vidar): Use a parameter for choosing model?
+            float segment_u = y*m_umax;
+            float segment_v = x*M_PI_2;
 
             //Calculate the normal in thread-local coordinates
             float normal[3] = {sinf(segment_u), sinf(segment_v)*cosf(segment_u),
                 cosf(segment_v)*cosf(segment_u)};
 
-            //Switch the x & y again to get back to uv space
+            //Switch the x & y for warp again to have the coordinates be coherent.
             if(current_point.warp_above){
                 float tmp = normal[0];
                 normal[0] = normal[1];
@@ -255,13 +254,14 @@ class Cloth : public BSDF {
             }
 
             //Get the world space coordinate vectors going along the texture u&v
-            //axes
-            Float dDispDu = normal[0];
-            Float dDispDv = normal[1];
-            Vector dpdu = its.dpdv + its.shFrame.n * (
-                    -dDispDu - dot(its.shFrame.n, its.dpdu));
-            Vector dpdv = its.dpdu + its.shFrame.n * (
+            //TODO(Peter) Is it world space though!??!
+            //NOTE(Vidar) You're right, it's probably shading space... :S
+            Float dDispDv = normal[0];
+            Float dDispDu = normal[1];
+            Vector dpdv = its.dpdv + its.shFrame.n * (
                     -dDispDv - dot(its.shFrame.n, its.dpdv));
+            Vector dpdu = its.dpdu + its.shFrame.n * (
+                    -dDispDu - dot(its.shFrame.n, its.dpdu));
 
             //set frame
             Frame result;
@@ -296,8 +296,8 @@ class Cloth : public BSDF {
             //u = segment_u
             float u = data.u;
             //float v = data.v;
-            //float x = data.x;
-            float y = data.y;
+            float x = data.x;
+            //float y = data.y;
             
             // Half-vector, for some reason it seems to already be in the
             // correct coordinate frame... 
@@ -324,20 +324,42 @@ class Cloth : public BSDF {
             if (fabsf(specular_v) < M_PI_2) {
                 //we have specular reflection
                 
-                //get specular_y, using irawans transformation.
-                float specular_y = specular_v/M_PI_2;
+                //get specular_x, using irawans transformation.
+                float specular_x = specular_v/M_PI_2;
 
                 // our transformation
-                //float specular_y = sinf(specular_v);
+                //float specular_x = sinf(specular_v);
 
-                float deltaY = 0.4; // [0,0.1]
-                if (fabsf(specular_y - y) < deltaY) {
+                float deltaX = 0.4; // [0,0.1]
+                if (fabsf(specular_x - x) < deltaX) {
                     reflection = 1.f;
                 }
             }
 
             return reflection;
         }
+	
+        //TODO(Peter): EXPLAIN! taken from irawan.cpp
+        // von Mises Distribution
+        Float vonMises(Float cos_x, Float b) const {
+            // assumes a = 0, b > 0 is a concentration parameter.
+
+            Float I0, absB = std::abs(b);
+            if (std::abs(b) <= 3.75f) {
+                Float t = absB / 3.75f;
+                t = t * t;
+                I0 = 1.0f + t*(3.5156229f + t*(3.0899424f + t*(1.2067492f
+                                + t*(0.2659732f + t*(0.0360768f + t*0.0045813f)))));
+            } else {
+                Float t = 3.75f / absB;
+                I0 = math::fastexp(absB) / std::sqrt(absB) * (0.39894228f + t*(0.01328592f
+                            + t*(0.00225319f + t*(-0.00157565f + t*(0.00916281f + t*(-0.02057706f
+                                            + t*(0.02635537f + t*(-0.01647633f + t*0.00392377f))))))));
+            }
+
+            return math::fastexp(b * cos_x) / (2 * M_PI * I0);
+        }
+
 
         Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
             if (!(bRec.typeMask & EDiffuseReflection) || measure != ESolidAngle
