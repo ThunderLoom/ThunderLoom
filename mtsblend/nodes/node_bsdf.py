@@ -85,6 +85,7 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
     vtiling = FloatProperty(name  = 'V tiling', default = 1.0)
 
     custom_inputs = [
+        {'type': 'MtsSocketColor_diffuseReflectance', 'name': 'Diffuse Reflectance'},
     ]
 
     custom_outputs = [
@@ -98,12 +99,14 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
             'umax'   : self.umax,
             'utiling': self.utiling,
             'vtiling': self.vtiling,
+            'reflectance': self.inputs['Diffuse Reflectance'].get_color_dict(export_ctx),
         }
 
         return params
 
     def set_from_dict(self, ntree, params):
-        pass
+        if 'reflectance' in params:
+            self.inputs['Diffuse Reflectance'].set_color_socket(ntree, params['reflectance'])
 
 @MitsubaNodeTypes.register
 class MtsNodeBsdf_diffuse(mitsuba_bsdf_node, Node):

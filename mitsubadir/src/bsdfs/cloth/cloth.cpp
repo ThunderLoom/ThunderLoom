@@ -83,16 +83,14 @@ MTS_NAMESPACE_BEGIN
  */
 class Cloth : public BSDF {
     public:
-        PaletteEntry * m_pattern_entry;
-        uint32_t m_pattern_height;
-        uint32_t m_pattern_width;
-        float m_umax;
-        float m_uscale;
-        float m_vscale;
         Cloth(const Properties &props)
             : BSDF(props) {
+                // Reflectance is used to modify the color of the cloth
                 /* For better compatibility with other models, support both
                    'reflectance' and 'diffuseReflectance' as parameter names */
+                m_reflectance = new ConstantSpectrumTexture(props.getSpectrum(
+                    props.hasProperty("reflectance") ? "reflectance"
+                        : "diffuseReflectance", Spectrum(.5f)));
                 m_umax = props.getFloat("umax", 0.7f);
                 m_uscale = props.getFloat("utiling", 1.0f);
                 m_vscale = props.getFloat("vtiling", 1.0f);
@@ -113,6 +111,7 @@ class Cloth : public BSDF {
         Cloth(Stream *stream, InstanceManager *manager)
             : BSDF(stream, manager) {
                 //TODO(Vidar):Read parameters from stream
+                m_reflectance = static_cast<Texture *>(manager->getInstance(stream));
 
                 configure();
             }
@@ -122,6 +121,8 @@ class Cloth : public BSDF {
 
         void configure() {
             /* Verify the input parameter and fix them if necessary */
+            m_reflectance = ensureEnergyConservation(m_reflectance, "reflectance", 1.0f);
+
             m_components.clear();
             m_components.push_back(EDiffuseReflection | EFrontSide
                     | ESpatiallyVarying);
@@ -132,7 +133,7 @@ class Cloth : public BSDF {
 
         Spectrum getDiffuseReflectance(const Intersection &its) const {
             PatternData pattern_data = getPatternData(its);
-            return pattern_data.color;
+            return pattern_data.color * m_reflectance->eval(its);
         }
 
         struct PatternData
@@ -379,8 +380,11 @@ class Cloth : public BSDF {
             if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbed_wo) <= 0)
                 return Spectrum(0.0f);
             
-            Spectrum specular(specularStrength*specularReflectionPattern(bRec.wi, bRec.wo, pattern_data));
-            return pattern_data.color*(1.f - specularStrength) * (INV_PI * Frame::cosTheta(perturbed_wo)) + specular;
+            Spectrum specular(specularStrength*specularReflectionPattern(
+                        bRec.wi, bRec.wo, pattern_data));
+            return m_reflectance->eval(bRec.its) *
+                pattern_data.color*(1.f - specularStrength) *
+                (INV_PI * Frame::cosTheta(perturbed_wo)) + specular;
         }
 
         Float pdf(const BSDFSamplingRecord &bRec, EMeasure measure) const {
@@ -400,8 +404,8 @@ class Cloth : public BSDF {
         }
 
         Spectrum sample(BSDFSamplingRecord &bRec, const Point2 &sample) const {
-            if (!(bRec.typeMask & EDiffuseReflection) || Frame::cosTheta(bRec.wi) <= 0)
-                return Spectrum(0.0f);
+            if (!(bRec.typeMask & EDiffuseReflection)
+                    || Frame::cosTheta(bRec.wi) <= 0) return Spectrum(0.0f);
             const Intersection& its = bRec.its;
             PatternData pattern_data = getPatternData(its);
             Intersection perturbed(its);
@@ -413,10 +417,11 @@ class Cloth : public BSDF {
                 bRec.sampledType = EDiffuseReflection;
                 bRec.wo = its.toLocal(perturbed.toWorld(perturbed_wo));
                 bRec.eta = 1.f;
-                if (Frame::cosTheta(perturbed_wo) * Frame::cosTheta(bRec.wo) <= 0)
+                if (Frame::cosTheta(perturbed_wo)
+                        * Frame::cosTheta(bRec.wo) <= 0)
                     return Spectrum(0.0f);
             }
-            return pattern_data.color;
+            return m_reflectance->eval(bRec.its) * pattern_data.color;
         }
 
         Spectrum sample(BSDFSamplingRecord &bRec, Float &pdf, const Point2 &sample) const {
@@ -441,7 +446,7 @@ class Cloth : public BSDF {
                 if (Frame::cosTheta(perturbed_wo) * Frame::cosTheta(bRec.wo) <= 0)
                     return Spectrum(0.0f);
             }
-            return pattern_data.color;
+            return m_reflectance->eval(bRec.its) * pattern_data.color;
         }
 
         void addChild(const std::string &name, ConfigurableObject *child) {
@@ -451,6 +456,8 @@ class Cloth : public BSDF {
         void serialize(Stream *stream, InstanceManager *manager) const {
             BSDF::serialize(stream, manager);
             //TODO(Vidar): Serialize our parameters
+
+            manager->serialize(stream, m_reflectance.get());
         }
 
         Float getRoughness(const Intersection &its, int component) const {
@@ -462,6 +469,7 @@ class Cloth : public BSDF {
             std::ostringstream oss;
             oss << "Cloth[" << endl
                 << "  id = \"" << getID() << "\"," << endl
+                << "  reflectance = " << indent(m_reflectance->toString()) << endl
                 << "]";
             return oss.str();
         }
@@ -471,6 +479,12 @@ class Cloth : public BSDF {
         MTS_DECLARE_CLASS()
     private:
             ref<Texture> m_reflectance;
+            PaletteEntry * m_pattern_entry;
+            uint32_t m_pattern_height;
+            uint32_t m_pattern_width;
+            float m_umax;
+            float m_uscale;
+            float m_vscale;
 };
 
 // ================ Hardware shader implementation ================
