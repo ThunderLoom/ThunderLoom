@@ -1,3 +1,4 @@
+// vim makeprg=scons
 /*
    This file is part of Mitsuba, a physically based rendering system.
 
@@ -191,8 +192,8 @@ class Cloth : public BSDF {
             if (v < 0.f) {
                 v = v - floor(v);
             }
-            uint32_t pattern_x = (uint32_t)(u*(float)(m_pattern_width));
-            uint32_t pattern_y = (uint32_t)(v*(float)(m_pattern_height));
+            uint32_t pattern_x = (uint32_t)(v*(float)(m_pattern_width));
+            uint32_t pattern_y = (uint32_t)(u*(float)(m_pattern_height));
 
             AssertEx(pattern_x < m_pattern_width, "pattern_x larger than pwidth");
             AssertEx(pattern_y < m_pattern_height, "pattern_y larger than pheight");
@@ -211,13 +212,13 @@ class Cloth : public BSDF {
                         pattern_y, &steps_left_weft, &steps_right_weft);
             }
 
-            //Get the u v coordinates withing the thread segment
+            //Get the x y coordinates withing the thread segment
             float w = (steps_left_weft + steps_right_weft + 1.f);
-            float x = ((u*(float)(m_pattern_width) - (float)pattern_x)
+            float x = ((v*(float)(m_pattern_width) - (float)pattern_x)
                     + steps_left_weft)/w;
 
             float h = (steps_left_warp + steps_right_warp + 1.f);
-            float y = ((v*(float)(m_pattern_height) - (float)pattern_y)
+            float y = ((u*(float)(m_pattern_height) - (float)pattern_y)
                     + steps_left_warp)/h;
 
             //Rescale x and y to [-1,1]
@@ -232,11 +233,13 @@ class Cloth : public BSDF {
                 y = tmp;
             }
 
+            //TODO(Vidar): Use a parameter for choosing model?
             //Calculate the u and v coordinates along the curved cylinder
             //NOTE: This is different from how Irawan does it
-            /*segment_u = asinf(x*sinf(m_umax));
-              segment_v = asinf(y);*/
-            //TODO(Vidar): Use a parameter for choosing model?
+            /* Our */
+            //float segment_u = asinf(x*sinf(m_umax));
+            //float segment_v = asinf(y);
+            /* Irawan */
             float segment_u = x*m_umax;
             float segment_v = y*M_PI_2;
 
@@ -253,12 +256,12 @@ class Cloth : public BSDF {
 
             //Get the world space coordinate vectors going along the texture u&v
             //axes
-            Float dDispDu = -normal[0];
-            Float dDispDv = -normal[1];
-            Vector dpdu = its.dpdu + its.shFrame.n * (
-                    dDispDu - dot(its.shFrame.n, its.dpdu));
-            Vector dpdv = its.dpdv + its.shFrame.n * (
-                    dDispDv - dot(its.shFrame.n, its.dpdv));
+            Float dDispDu = normal[0];
+            Float dDispDv = normal[1];
+            Vector dpdu = its.dpdv + its.shFrame.n * (
+                    -dDispDu - dot(its.shFrame.n, its.dpdu));
+            Vector dpdv = its.dpdu + its.shFrame.n * (
+                    -dDispDv - dot(its.shFrame.n, its.dpdv));
 
             //set frame
             Frame result;
@@ -277,7 +280,7 @@ class Cloth : public BSDF {
             ret_data.frame = result;
             ret_data.color.fromSRGB(current_point.color[0], current_point.color[1],
                     current_point.color[2]);
-            //ret_data.color.fromSRGB(1.f, 1.f, 1.f);
+
             ret_data.u = segment_u;
             ret_data.v = segment_v;
             ret_data.x = x; 
@@ -296,9 +299,11 @@ class Cloth : public BSDF {
             //float x = data.x;
             float y = data.y;
             
-            // Half-vector
+            // Half-vector, for some reason it seems to already be in the
+            // correct coordinate frame... 
             Vector H = normalize(wi + wo);
-            if(!data.warp_above){
+            H.y *= -1.f; //TODO(Vidar): This is rather strange...
+            if(data.warp_above){
                 float tmp = H.x;
                 H.x = H.y;
                 H.y = tmp;
@@ -315,12 +320,15 @@ class Cloth : public BSDF {
             float reflection = 0.f;
 
             float specular_v = atan2(-H.y*sin(u) - H.z*cos(u), H.x) + acos(D); //Plus eller minus i sista termen.
+            //TODO(Vidar): Clamp specular_v, do we need it?
             if (fabsf(specular_v) < M_PI_2) {
-                //we have specular ereflection
+                //we have specular reflection
                 
                 //get specular_y, using irawans transformation.
-
                 float specular_y = specular_v/M_PI_2;
+
+                // our transformation
+                //float specular_y = sinf(specular_v);
 
                 float deltaY = 0.4; // [0,0.1]
                 if (fabsf(specular_y - y) < deltaY) {
