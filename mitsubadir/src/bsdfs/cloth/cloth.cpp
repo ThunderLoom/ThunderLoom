@@ -26,6 +26,12 @@
 #include "wif/wif.c"
 #include "wif/ini.c" //TODO Snygga till! (använda scons?!)
 
+#include <fenv.h>
+#define ACTIVE_FPE FE_DIVBYZERO| FE_INVALID| FE_OVERFLOW //| FE_UNDERFLOW
+#define ENABLE_FPE  feraiseexcept (ACTIVE_FPE)
+#define DISABLE_FPE feclearexcept(ACTIVE_FPE)
+
+
 //TODO(Vidar): Enable floating point exceptions
 
 MTS_NAMESPACE_BEGIN
@@ -91,9 +97,23 @@ class Cloth : public BSDF {
                 m_reflectance = new ConstantSpectrumTexture(props.getSpectrum(
                     props.hasProperty("reflectance") ? "reflectance"
                         : "diffuseReflectance", Spectrum(.5f)));
-                m_umax = props.getFloat("umax", 0.7f);
                 m_uscale = props.getFloat("utiling", 1.0f);
                 m_vscale = props.getFloat("vtiling", 1.0f);
+
+                //yarn properties
+                m_umax = props.getFloat("umax", 0.7f);
+                m_psi = props.getFloat("psi", M_PI_2);
+
+                
+                //fiber properties
+                m_alpha = props.getFloat("alpha", 0.05f); //uniform scattering
+                m_beta = props.getFloat("beta", 2.0f); //forward scattering
+
+                //we do not know what typical values for these should be....
+                m_sigma_s = props.getFloat("sigma_s", 2.0f); //volume scattering coefficient
+                m_sigma_t = props.getFloat("sigma_t", 2.0f); //volume attenuation coefficient
+
+                m_specular_strength = props.getFloat("specular_strength", 0.5f);
 
                 // LOAD WIF FILE
                 std::string wiffilename =
@@ -140,6 +160,7 @@ class Cloth : public BSDF {
         {
             Spectrum color;
             Frame frame; //The perturbed frame 
+            Vector yarn_normal; 
             float u, v; //Segment uv coordinates (in angles)
             float x, y; //position within segment. 
             bool warp_above; 
@@ -230,9 +251,13 @@ class Cloth : public BSDF {
             //Switch X and Y for warp, so that we always have the yarn
             // cylinder going along the x axis
             if(current_point.warp_above){
-                float tmp = x;
+                float tmp1 = x;
+                float tmp2 = w;
                 x = y;
-                y = tmp;
+                y = tmp1;
+                w = l;
+                l = tmp2;
+                
             }
 
             //Calculate the yarn-segment-local u v coordinates along the curved cylinder
@@ -244,8 +269,8 @@ class Cloth : public BSDF {
             float segment_v = x*M_PI_2;
 
             //Calculate the normal in thread-local coordinates
-            float normal[3] = {sinf(segment_u), sinf(segment_v)*cosf(segment_u),
-                cosf(segment_v)*cosf(segment_u)};
+            Vector normal(sinf(segment_u), sinf(segment_v)*cosf(segment_u),
+                cosf(segment_v)*cosf(segment_u));
 
             //Switch the x & y for warp again to have the coordinates be coherent.
             if(current_point.warp_above){
@@ -287,6 +312,7 @@ class Cloth : public BSDF {
             ret_data.x = x; 
             ret_data.y = y; 
             ret_data.warp_above = current_point.warp_above; 
+            ret_data.yarn_normal = normal; 
 
             //return the results
             return ret_data;
@@ -299,41 +325,76 @@ class Cloth : public BSDF {
             //float v = data.v;
             float x = data.x;
             //float y = data.y;
+            Vector yarn_normal = data.yarn_normal;
             
             // Half-vector, for some reason it seems to already be in the
             // correct coordinate frame... 
             Vector H = normalize(wi + wo);
             H.y *= -1.f; //TODO(Vidar): This is rather strange...
             if(data.warp_above){
-                float tmp = H.x;
-                H.x = H.y;
-                H.y = tmp;
+                float tmp1 = H.x;
+                float tmp2 = wi.x;
+                float tmp3 = wo.x;
+                H.x = H.y; H.y = tmp1;
+                wi.x = wi.y; wi.y = tmp2;
+                wo.x = wo.y; wo.y = tmp3;
             }
-
-            float staple_psi = M_PI_2;
 
             float D;
             {
                 float a = H.y*sin(u) + H.z*cos(u);
-                D = (H.y*cos(u)-H.z*sin(u))/(sqrt(H.x*H.x + a*a)) / tan(staple_psi);
+                D = (H.y*cos(u)-H.z*sin(u))/(sqrt(H.x*H.x + a*a)) / tan(m_psi);
             }
 
             float reflection = 0.f;
 
             float specular_v = atan2(-H.y*sin(u) - H.z*cos(u), H.x) + acos(D); //Plus eller minus i sista termen.
             //TODO(Vidar): Clamp specular_v, do we need it?
+            // Make normal for highlights, uses u and specular_v
+            Vector highlight_normal(sinf(u), sinf(specular_v)*cosf(u),
+                cosf(specular_v)*cosf(u));
+            {
+                float tmp1 = highlight_normal.x;
+                highlight_normal.x = highlight_normal.y;
+                highlight_normal.y = tmp1;
+            }
+            if(data.warp_above) {
+                highlight_normal.y *= -1.f; //TODO(Vidar): This to is rather strange...
+            }
+
             if (fabsf(specular_v) < M_PI_2) {
                 //we have specular reflection
                 
                 //get specular_x, using irawans transformation.
                 float specular_x = specular_v/M_PI_2;
-
                 // our transformation
                 //float specular_x = sinf(specular_v);
 
                 float deltaX = 0.4; // [0,0.1]
-                if (fabsf(specular_x - x) < deltaX) {
-                    reflection = 1.f;
+                if (fabsf(specular_x - x) < deltaX) { //this takes the role of xi in the irawan paper.
+                    
+ENABLE_FPE;
+                    // --- Set Gv
+                    float a = 1.f; //radius of yarn
+                    float R = 1.f/(sin(m_umax)); //radius of curvature
+                    float Gv = a*(R + a*cosf(specular_v))/((wi + wo).length() /* dot(highlight_normal,H) */* fabsf(sinf(m_psi)));
+
+                    // --- Set fc
+                    float cos_x = -dot(wi, wo);
+                    float fc = m_alpha + vonMises(cos_x, m_beta);
+                    
+                    // --- Set A
+                    float widotn = dot(wi, highlight_normal);
+                    float wodotn = dot(wo, highlight_normal);
+                    //float A = m_sigma_s/m_sigma_t * (widotn*wodotn)/(widotn + wodotn);
+                    widotn = (widotn < 0.f) ? 0.f : widotn;   
+                    wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
+                    float A = 1.f * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
+                    
+                    //reflection = 1.f;
+                    float w = 2.f;
+                    reflection = 2*w*m_umax*fc*Gv*A/deltaX;
+DISABLE_FPE;
                 }
             }
 
@@ -373,17 +434,15 @@ class Cloth : public BSDF {
             Intersection perturbed(bRec.its);
             perturbed.shFrame = pattern_data.frame;
 
-            float specularStrength = 0.f;
-
             Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
             //Return black if the perturbed direction lies below the surface
             if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbed_wo) <= 0)
                 return Spectrum(0.0f);
             
-            Spectrum specular(specularStrength*specularReflectionPattern(
+            Spectrum specular(m_specular_strength*specularReflectionPattern(
                         bRec.wi, bRec.wo, pattern_data));
             return m_reflectance->eval(bRec.its) *
-                pattern_data.color*(1.f - specularStrength) *
+                pattern_data.color*(1.f - m_specular_strength) *
                 (INV_PI * Frame::cosTheta(perturbed_wo)) + specular;
         }
 
@@ -482,9 +541,15 @@ class Cloth : public BSDF {
             PaletteEntry * m_pattern_entry;
             uint32_t m_pattern_height;
             uint32_t m_pattern_width;
-            float m_umax;
             float m_uscale;
             float m_vscale;
+            float m_umax;
+            float m_psi;
+            float m_alpha;
+            float m_beta;
+            float m_sigma_s;
+            float m_sigma_t;
+            float m_specular_strength;
 };
 
 // ================ Hardware shader implementation ================

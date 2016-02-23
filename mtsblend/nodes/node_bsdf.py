@@ -75,11 +75,13 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
 
     def draw_buttons(self, context, layout):
         layout.prop(self, 'wiffile')
+        layout.prop(self, 'specular_strength')
         layout.prop(self, 'umax')
         layout.prop(self, 'utiling')
         layout.prop(self, 'vtiling')
 
     wiffile = StringProperty(name = 'WIF file', subtype = 'FILE_PATH')
+    specular_strength    = FloatProperty(name  = 'Specular Strength',    default = 0.5)
     umax    = FloatProperty(name  = 'U max',    default = 0.7)
     utiling = FloatProperty(name  = 'U tiling', default = 1.0)
     vtiling = FloatProperty(name  = 'V tiling', default = 1.0)
@@ -96,6 +98,7 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
         params = {
             'type': 'cloth',
             'wiffile': abspath(self.wiffile),
+            'specular_strength'   : self.specular_strength,
             'umax'   : self.umax,
             'utiling': self.utiling,
             'vtiling': self.vtiling,
