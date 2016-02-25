@@ -98,11 +98,12 @@ class Cloth : public BSDF {
                 //yarn properties
                 m_umax = props.getFloat("umax", 0.7f);
                 m_psi = props.getFloat("psi", M_PI_2);
-
                 
                 //fiber properties
                 m_alpha = props.getFloat("alpha", 0.05f); //uniform scattering
                 m_beta = props.getFloat("beta", 2.0f); //forward scattering
+                m_deltaX = props.getFloat("deltaX", 0.5f); //deltaX for highlights (to be changed)
+
 
                 //we do not know what typical values for these should be....
                 m_sigma_s = props.getFloat("sigma_s", 2.0f); //volume scattering coefficient
@@ -362,8 +363,7 @@ class Cloth : public BSDF {
                 // our transformation
                 //float specular_x = sinf(specular_v);
 
-                float deltaX = 0.4; // [0,0.1]
-                if (fabsf(specular_x - x) < deltaX) { //this takes the role of xi in the irawan paper.
+                if (fabsf(specular_x - x) < m_deltaX) { //this takes the role of xi in the irawan paper.
                     
                     // --- Set Gv
                     float a = 1.f; //radius of yarn
@@ -385,7 +385,7 @@ class Cloth : public BSDF {
                     
                     //reflection = 1.f;
                     float w = 2.f;
-                    reflection = 2*w*m_umax*fc*Gv*A/deltaX;
+                    reflection = 2*w*m_umax*fc*Gv*A/m_deltaX;
                 }
             }
 
@@ -434,7 +434,7 @@ class Cloth : public BSDF {
                         bRec.wi, bRec.wo, pattern_data));
             return m_reflectance->eval(bRec.its) *
                 pattern_data.color*(1.f - m_specular_strength) *
-                (INV_PI * Frame::cosTheta(perturbed_wo)) + specular;
+                (INV_PI * Frame::cosTheta(perturbed_wo)) + m_specular_strength*specular;
         }
 
         Float pdf(const BSDFSamplingRecord &bRec, EMeasure measure) const {
@@ -540,6 +540,7 @@ class Cloth : public BSDF {
             float m_beta;
             float m_sigma_s;
             float m_sigma_t;
+            float m_deltaX;
             float m_specular_strength;
 };
 

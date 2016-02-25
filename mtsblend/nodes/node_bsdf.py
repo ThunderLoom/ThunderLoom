@@ -76,15 +76,17 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
     def draw_buttons(self, context, layout):
         layout.prop(self, 'wiffile')
         layout.prop(self, 'specular_strength')
+        layout.prop(self, 'deltaX')
         layout.prop(self, 'umax')
         layout.prop(self, 'utiling')
         layout.prop(self, 'vtiling')
 
     wiffile = StringProperty(name = 'WIF file', subtype = 'FILE_PATH')
-    specular_strength    = FloatProperty(name  = 'Specular Strength',    default = 0.5)
-    umax    = FloatProperty(name  = 'U max',    default = 0.7)
-    utiling = FloatProperty(name  = 'U tiling', default = 1.0)
-    vtiling = FloatProperty(name  = 'V tiling', default = 1.0)
+    specular_strength = FloatProperty(name = 'Specular Strength', default = 0.5)
+    deltaX  = FloatProperty(name = 'Highlight deltaX',    default = 0.3)
+    umax    = FloatProperty(name = 'U max', default = 0.7)
+    utiling = FloatProperty(name = 'U tiling', default = 1.0)
+    vtiling = FloatProperty(name = 'V tiling', default = 1.0)
 
     custom_inputs = [
         {'type': 'MtsSocketColor_diffuseReflectance', 'name': 'Diffuse Reflectance'},
@@ -99,6 +101,7 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
             'type': 'cloth',
             'wiffile': abspath(self.wiffile),
             'specular_strength'   : self.specular_strength,
+            'deltaX'   : self.deltaX,
             'umax'   : self.umax,
             'utiling': self.utiling,
             'vtiling': self.vtiling,
