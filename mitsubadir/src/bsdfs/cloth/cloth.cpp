@@ -26,11 +26,6 @@
 #include "wif/wif.c"
 #include "wif/ini.c" //TODO Snygga till! (använda scons?!)
 
-#include <fenv.h>
-#define ACTIVE_FPE FE_DIVBYZERO| FE_INVALID| FE_OVERFLOW //| FE_UNDERFLOW
-#define ENABLE_FPE  feraiseexcept (ACTIVE_FPE)
-#define DISABLE_FPE feclearexcept(ACTIVE_FPE)
-
 
 //TODO(Vidar): Enable floating point exceptions
 
@@ -160,7 +155,6 @@ class Cloth : public BSDF {
         {
             Spectrum color;
             Frame frame; //The perturbed frame 
-            Vector yarn_normal; 
             float u, v; //Segment uv coordinates (in angles)
             float x, y; //position within segment. 
             bool warp_above; 
@@ -312,7 +306,6 @@ class Cloth : public BSDF {
             ret_data.x = x; 
             ret_data.y = y; 
             ret_data.warp_above = current_point.warp_above; 
-            ret_data.yarn_normal = normal; 
 
             //return the results
             return ret_data;
@@ -325,7 +318,6 @@ class Cloth : public BSDF {
             //float v = data.v;
             float x = data.x;
             //float y = data.y;
-            Vector yarn_normal = data.yarn_normal;
             
             // Half-vector, for some reason it seems to already be in the
             // correct coordinate frame... 
@@ -373,7 +365,6 @@ class Cloth : public BSDF {
                 float deltaX = 0.4; // [0,0.1]
                 if (fabsf(specular_x - x) < deltaX) { //this takes the role of xi in the irawan paper.
                     
-ENABLE_FPE;
                     // --- Set Gv
                     float a = 1.f; //radius of yarn
                     float R = 1.f/(sin(m_umax)); //radius of curvature
@@ -389,12 +380,12 @@ ENABLE_FPE;
                     //float A = m_sigma_s/m_sigma_t * (widotn*wodotn)/(widotn + wodotn);
                     widotn = (widotn < 0.f) ? 0.f : widotn;   
                     wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
+                    //TODO(Vidar): This is where we get the NAN
                     float A = 1.f * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
                     
                     //reflection = 1.f;
                     float w = 2.f;
                     reflection = 2*w*m_umax*fc*Gv*A/deltaX;
-DISABLE_FPE;
                 }
             }
 
