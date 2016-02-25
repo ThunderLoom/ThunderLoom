@@ -17,6 +17,8 @@
    along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define DO_DEBUG
+
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
@@ -210,6 +212,8 @@ class Cloth : public BSDF {
             if (v < 0.f) {
                 v = v - floor(v);
             }
+
+            //TODO(Vidar):This looks wrong!
             uint32_t pattern_x = (uint32_t)(v*(float)(m_pattern_width));
             uint32_t pattern_y = (uint32_t)(u*(float)(m_pattern_height));
 
@@ -244,15 +248,14 @@ class Cloth : public BSDF {
             y = y*2.f - 1.f;
 
             //Switch X and Y for warp, so that we always have the yarn
-            // cylinder going along the x axis
-            if(current_point.warp_above){
+            // cylinder going along the y axis
+            if(!current_point.warp_above){
                 float tmp1 = x;
                 float tmp2 = w;
-                x = y;
+                x = -y;
                 y = tmp1;
                 w = l;
                 l = tmp2;
-                
             }
 
             //Calculate the yarn-segment-local u v coordinates along the curved cylinder
@@ -264,25 +267,26 @@ class Cloth : public BSDF {
             float segment_v = x*M_PI_2;
 
             //Calculate the normal in thread-local coordinates
-            Vector normal(sinf(segment_u), sinf(segment_v)*cosf(segment_u),
-                cosf(segment_v)*cosf(segment_u));
+            Vector normal(sinf(segment_v), sinf(segment_u)*cosf(segment_v),
+                cosf(segment_u)*cosf(segment_v));
 
-            //Switch the x & y for warp again to have the coordinates be coherent.
-            if(current_point.warp_above){
-                float tmp = normal[0];
-                normal[0] = normal[1];
-                normal[1] = tmp;
+            //Transform the normal back to shading space
+            if(!current_point.warp_above){
+                float tmp = normal.x;
+                normal.x = normal.y;
+                normal.y = -tmp;
             }
 
             //Get the world space coordinate vectors going along the texture u&v
             //TODO(Peter) Is it world space though!??!
             //NOTE(Vidar) You're right, it's probably shading space... :S
-            Float dDispDv = normal[0];
-            Float dDispDu = normal[1];
+            Float dDispDv = normal.x;
+            Float dDispDu = normal.y;
             Vector dpdv = its.dpdv + its.shFrame.n * (
-                    -dDispDv - dot(its.shFrame.n, its.dpdv));
+                    dDispDv - dot(its.shFrame.n, its.dpdv));
             Vector dpdu = its.dpdu + its.shFrame.n * (
-                    -dDispDu - dot(its.shFrame.n, its.dpdu));
+                    dDispDu - dot(its.shFrame.n, its.dpdu));
+            // dpdv & dpdu are in world space
 
             //set frame
             Frame result;
@@ -296,7 +300,6 @@ class Cloth : public BSDF {
             if (dot(result.n, its.geoFrame.n) < 0)
                 result.n *= -1;
 
-
             PatternData ret_data = {};
             ret_data.frame = result;
             ret_data.color.fromSRGB(current_point.color[0], current_point.color[1],
@@ -308,11 +311,36 @@ class Cloth : public BSDF {
             ret_data.y = y; 
             ret_data.warp_above = current_point.warp_above; 
 
+#ifdef DO_DEBUG
+            FILE *fp = fopen("/tmp/coordinate_out.txt","wt");
+            if(fp){
+                Frame frame = its.shFrame;
+                Point p = its.p;
+                Vector e1(1.f,0.f,0.f); e1 = frame.toWorld(e1);
+                Vector e2(0.f,1.f,0.f); e2 = frame.toWorld(e2);
+                Vector e3(0.f,0.f,1.f); e3 = frame.toWorld(e3);
+                //wi = frame.toWorld(wi);
+                //wo = frame.toWorld(wo);
+                //H  = frame.toWorld(H);
+                normal  = frame.toWorld(normal);
+                fprintf(fp,"%d\n", ret_data.warp_above);
+                fprintf(fp,"%f %f %f \n", p.x, p.y, p.z);
+                fprintf(fp,"%f %f %f \n", e1.x, e1.y, e1.z);
+                fprintf(fp,"%f %f %f \n", e2.x, e2.y, e2.z);
+                fprintf(fp,"%f %f %f \n", e3.x, e3.y, e3.z);
+                fprintf(fp,"%f %f %f \n", normal.x, normal.y, normal.z);
+                //fprintf(fp,"%f %f %f \n", wi.x, wi.y, wi.z);
+                //fprintf(fp,"%f %f %f \n", wo.x, wo.y, wo.z);
+                //fprintf(fp,"%f %f %f \n",  H.x,  H.y,  H.z);
+                fclose(fp);
+            }
+#endif
+
             //return the results
             return ret_data;
         }
 
-        float specularReflectionPattern(Vector wi, Vector wo, PatternData data) const {
+        float specularReflectionPattern(Vector wi, Vector wo, PatternData data, Intersection its) const {
             //Fiber staple twist
             //u = segment_u
             float u = data.u;
@@ -322,16 +350,16 @@ class Cloth : public BSDF {
             
             // Half-vector, for some reason it seems to already be in the
             // correct coordinate frame... 
-            Vector H = normalize(wi + wo);
-            H.y *= -1.f; //TODO(Vidar): This is rather strange...
             if(data.warp_above){
-                float tmp1 = H.x;
+                //float tmp1 = H.x;
                 float tmp2 = wi.x;
                 float tmp3 = wo.x;
-                H.x = H.y; H.y = tmp1;
-                wi.x = wi.y; wi.y = tmp2;
-                wo.x = wo.y; wo.y = tmp3;
+                //H.x = H.y; H.y = tmp1;
+                wi.x = -wi.y; wi.y = tmp2;
+                wo.x = -wo.y; wo.y = tmp3;
             }
+
+            Vector H = normalize(wi + wo);
 
             float D;
             {
@@ -431,7 +459,7 @@ class Cloth : public BSDF {
                 return Spectrum(0.0f);
             
             Spectrum specular(m_specular_strength*specularReflectionPattern(
-                        bRec.wi, bRec.wo, pattern_data));
+                        bRec.wi, bRec.wo, pattern_data,bRec.its));
             return m_reflectance->eval(bRec.its) *
                 pattern_data.color*(1.f - m_specular_strength) *
                 (INV_PI * Frame::cosTheta(perturbed_wo)) + m_specular_strength*specular;
