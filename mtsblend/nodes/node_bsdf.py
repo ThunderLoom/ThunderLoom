@@ -77,6 +77,8 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
         layout.prop(self, 'wiffile')
         layout.prop(self, 'specular_strength')
         layout.prop(self, 'deltaX')
+        layout.prop(self, 'alpha')
+        layout.prop(self, 'beta')
         layout.prop(self, 'umax')
         layout.prop(self, 'utiling')
         layout.prop(self, 'vtiling')
@@ -85,6 +87,8 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
     specular_strength = FloatProperty(name = 'Specular Strength', default = 0.5)
     deltaX  = FloatProperty(name = 'Highlight deltaX',    default = 0.3)
     umax    = FloatProperty(name = 'U max', default = 0.7)
+    alpha   = FloatProperty(name = 'Alpha', default = 0.05)
+    beta    = FloatProperty(name = 'Beta', default = 2.0)
     utiling = FloatProperty(name = 'U tiling', default = 1.0)
     vtiling = FloatProperty(name = 'V tiling', default = 1.0)
 
@@ -103,6 +107,8 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
             'specular_strength'   : self.specular_strength,
             'deltaX'   : self.deltaX,
             'umax'   : self.umax,
+            'alpha'   : self.alpha,
+            'beta'   : self.beta,
             'utiling': self.utiling,
             'vtiling': self.vtiling,
             'reflectance': self.inputs['Diffuse Reflectance'].get_color_dict(export_ctx),
