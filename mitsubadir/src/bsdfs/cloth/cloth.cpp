@@ -17,7 +17,7 @@
    along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define DO_DEBUG
+//#define DO_DEBUG
 
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
@@ -409,7 +409,10 @@ class Cloth : public BSDF {
                     widotn = (widotn < 0.f) ? 0.f : widotn;   
                     wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
                     //TODO(Vidar): This is where we get the NAN
-                    float A = 1.f * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
+                    float A = 0.f; //sigmas are "unimportant"
+                    if(widotn + wodotn > 0.f){
+                        A = 1.f * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
+                    }
                     
                     //reflection = 1.f;
                     float w = 2.f;
@@ -499,7 +502,11 @@ class Cloth : public BSDF {
                         * Frame::cosTheta(bRec.wo) <= 0)
                     return Spectrum(0.0f);
             }
-            return m_reflectance->eval(bRec.its) * pattern_data.color;
+            Spectrum specular(m_specular_strength*specularReflectionPattern(
+                        bRec.wi, bRec.wo, pattern_data,bRec.its));
+            return m_reflectance->eval(bRec.its) *
+                pattern_data.color*(1.f - m_specular_strength)
+                + m_specular_strength*specular;
         }
 
         Spectrum sample(BSDFSamplingRecord &bRec, Float &pdf, const Point2 &sample) const {
@@ -524,7 +531,11 @@ class Cloth : public BSDF {
                 if (Frame::cosTheta(perturbed_wo) * Frame::cosTheta(bRec.wo) <= 0)
                     return Spectrum(0.0f);
             }
-            return m_reflectance->eval(bRec.its) * pattern_data.color;
+            Spectrum specular(m_specular_strength*specularReflectionPattern(
+                        bRec.wi, bRec.wo, pattern_data,bRec.its));
+            return m_reflectance->eval(bRec.its) *
+                pattern_data.color*(1.f - m_specular_strength)
+                + m_specular_strength*specular;
         }
 
         void addChild(const std::string &name, ConfigurableObject *child) {
