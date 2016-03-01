@@ -29,6 +29,12 @@
 #include "wif/ini.c" //TODO Snygga till! (använda scons?!)
 
 
+/*static uint64_t rdtsc(){
+    unsigned int lo,hi;
+    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+    return ((uint64_t)hi << 32) | lo;
+}*/
+
 //TODO(Vidar): Enable floating point exceptions
 
 MTS_NAMESPACE_BEGIN
@@ -202,6 +208,7 @@ class Cloth : public BSDF {
         }
 
         PatternData getPatternData(const Intersection &its) const {
+
             //Set repeating uv coordinates.
             float u = fmod(its.uv.x*m_uscale,1.f);
             float v = fmod(its.uv.y*m_vscale,1.f);
@@ -358,13 +365,14 @@ class Cloth : public BSDF {
                 wi.x = -wi.y; wi.y = tmp2;
                 wo.x = -wo.y; wo.y = tmp3;
             }
+            
 
             Vector H = normalize(wi + wo);
 
             float D;
             {
-                float a = H.y*sin(u) + H.z*cos(u);
-                D = (H.y*cos(u)-H.z*sin(u))/(sqrt(H.x*H.x + a*a)) / tan(m_psi);
+                float a = H.y*sinf(u) + H.z*cosf(u);
+                D = (H.y*cosf(u)-H.z*sinf(u))/(sqrtf(H.x*H.x + a*a)) / tanf(m_psi);
             }
 
             float reflection = 0.f;
@@ -396,7 +404,7 @@ class Cloth : public BSDF {
                     // --- Set Gv
                     float a = 1.f; //radius of yarn
                     float R = 1.f/(sin(m_umax)); //radius of curvature
-                    float Gv = a*(R + a*cosf(specular_v))/((wi + wo).length() /* dot(highlight_normal,H) */* fabsf(sinf(m_psi)));
+                    float Gv = a*(R + a*cosf(specular_v))/((wi + wo).length() * dot(highlight_normal,H) * fabsf(sinf(m_psi)));
 
                     // --- Set fc
                     float cos_x = -dot(wi, wo);
