@@ -17,7 +17,7 @@
    along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define DO_DEBUG
+//#define DO_DEBUG
 
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
@@ -203,19 +203,20 @@ class Cloth : public BSDF {
 
         PatternData getPatternData(const Intersection &its) const {
             //Set repeating uv coordinates.
-            float u = fmod(its.uv.x*m_uscale,1.f);
-            float v = fmod(its.uv.y*m_vscale,1.f);
+            float u_repeat = fmod(its.uv.x*m_uscale,1.f);
+            float v_repeat = fmod(1.f-its.uv.y*m_vscale,1.f);
             //TODO(Vidar): Check why this crashes sometimes
-            if (u < 0.f) {
-                u = u - floor(u);
+            if (u_repeat < 0.f) {
+                u_repeat = u_repeat - floor(u_repeat);
             }
-            if (v < 0.f) {
-                v = v - floor(v);
+            if (v_repeat < 0.f) {
+                v_repeat = v_repeat - floor(v_repeat);
             }
 
             //TODO(Vidar):This looks wrong!
-            uint32_t pattern_x = (uint32_t)(v*(float)(m_pattern_width));
-            uint32_t pattern_y = (uint32_t)(u*(float)(m_pattern_height));
+            //TODO(Peter): Yes it does. I am swapping so that, pattern_x = u_repeat; pattern_y = v_repeat
+            uint32_t pattern_x = (uint32_t)(u_repeat*(float)(m_pattern_width));
+            uint32_t pattern_y = (uint32_t)(v_repeat*(float)(m_pattern_height));
 
             AssertEx(pattern_x < m_pattern_width, "pattern_x larger than pwidth");
             AssertEx(pattern_y < m_pattern_height, "pattern_y larger than pheight");
@@ -235,13 +236,13 @@ class Cloth : public BSDF {
             }
 
             //Yarn-segment-local coordinates.
-            float l = (steps_left_weft + steps_right_weft + 1.f);
-            float y = ((v*(float)(m_pattern_width) - (float)pattern_x)
-                    + steps_left_weft)/l;
+            float l = (steps_left_warp + steps_right_warp + 1.f);
+            float y = ((v_repeat*(float)(m_pattern_height) - (float)pattern_y)
+                    + steps_left_warp)/l;
 
-            float w = (steps_left_warp + steps_right_warp + 1.f);
-            float x = ((u*(float)(m_pattern_height) - (float)pattern_y)
-                    + steps_left_warp)/w;
+            float w = (steps_left_weft + steps_right_weft + 1.f);
+            float x = ((u_repeat*(float)(m_pattern_width) - (float)pattern_x)
+                    + steps_left_weft)/w;
 
             //Rescale x and y to [-1,1]
             x = x*2.f - 1.f;
@@ -311,30 +312,6 @@ class Cloth : public BSDF {
             ret_data.y = y; 
             ret_data.warp_above = current_point.warp_above; 
 
-#ifdef DO_DEBUG
-            FILE *fp = fopen("/tmp/coordinate_out.txt","wt");
-            if(fp){
-                Frame frame = its.shFrame;
-                Point p = its.p;
-                Vector e1(1.f,0.f,0.f); e1 = frame.toWorld(e1);
-                Vector e2(0.f,1.f,0.f); e2 = frame.toWorld(e2);
-                Vector e3(0.f,0.f,1.f); e3 = frame.toWorld(e3);
-                //wi = frame.toWorld(wi);
-                //wo = frame.toWorld(wo);
-                //H  = frame.toWorld(H);
-                normal  = frame.toWorld(normal);
-                fprintf(fp,"%d\n", ret_data.warp_above);
-                fprintf(fp,"%f %f %f \n", p.x, p.y, p.z);
-                fprintf(fp,"%f %f %f \n", e1.x, e1.y, e1.z);
-                fprintf(fp,"%f %f %f \n", e2.x, e2.y, e2.z);
-                fprintf(fp,"%f %f %f \n", e3.x, e3.y, e3.z);
-                fprintf(fp,"%f %f %f \n", normal.x, normal.y, normal.z);
-                //fprintf(fp,"%f %f %f \n", wi.x, wi.y, wi.z);
-                //fprintf(fp,"%f %f %f \n", wo.x, wo.y, wo.z);
-                //fprintf(fp,"%f %f %f \n",  H.x,  H.y,  H.z);
-                fclose(fp);
-            }
-#endif
 
             //return the results
             return ret_data;
@@ -350,7 +327,7 @@ class Cloth : public BSDF {
             
             // Half-vector, for some reason it seems to already be in the
             // correct coordinate frame... 
-            if(data.warp_above){
+            if(!data.warp_above){
                 //float tmp1 = H.x;
                 float tmp2 = wi.x;
                 float tmp3 = wo.x;
@@ -372,16 +349,8 @@ class Cloth : public BSDF {
             float specular_v = atan2(-H.y*sin(u) - H.z*cos(u), H.x) + acos(D); //Plus eller minus i sista termen.
             //TODO(Vidar): Clamp specular_v, do we need it?
             // Make normal for highlights, uses u and specular_v
-            Vector highlight_normal(sinf(u), sinf(specular_v)*cosf(u),
-                cosf(specular_v)*cosf(u));
-            {
-                float tmp1 = highlight_normal.x;
-                highlight_normal.x = highlight_normal.y;
-                highlight_normal.y = tmp1;
-            }
-            if(data.warp_above) {
-                highlight_normal.y *= -1.f; //TODO(Vidar): This to is rather strange...
-            }
+            Vector highlight_normal(sinf(specular_v), sinf(u)*cosf(specular_v),
+                cosf(u)*cosf(specular_v));
 
             if (fabsf(specular_v) < M_PI_2) {
                 //we have specular reflection
@@ -396,7 +365,7 @@ class Cloth : public BSDF {
                     // --- Set Gv
                     float a = 1.f; //radius of yarn
                     float R = 1.f/(sin(m_umax)); //radius of curvature
-                    float Gv = a*(R + a*cosf(specular_v))/((wi + wo).length() /* dot(highlight_normal,H) */* fabsf(sinf(m_psi)));
+                    float Gv = a*(R + a*cosf(specular_v))/((wi + wo).length() * dot(highlight_normal,H) * fabsf(sinf(m_psi)));
 
                     // --- Set fc
                     float cos_x = -dot(wi, wo);
@@ -416,6 +385,35 @@ class Cloth : public BSDF {
                     reflection = 2*w*m_umax*fc*Gv*A/m_deltaX;
                 }
             }
+
+#ifdef DO_DEBUG
+            FILE *fp = fopen("/tmp/coordinate_out.txt","wt");
+            if(fp){
+                Frame frame = its.shFrame;
+                Point p = its.p;
+                Vector e1(1.f,0.f,0.f); e1 = frame.toWorld(e1);
+                Vector e2(0.f,1.f,0.f); e2 = frame.toWorld(e2);
+                Vector e3(0.f,0.f,1.f); e3 = frame.toWorld(e3);
+                wi = frame.toWorld(wi);
+                wo = frame.toWorld(wo);
+                H  = frame.toWorld(H);
+                highlight_normal  = frame.toWorld(highlight_normal);
+                //normal  = frame.toWorld(normal);
+                //fprintf(fp,"%d\n", ret_data.warp_above);
+                fprintf(fp,"%f %f %f \n", p.x, p.y, p.z);
+                fprintf(fp,"%f %f %f \n", e1.x, e1.y, e1.z);
+                fprintf(fp,"%f %f %f \n", e2.x, e2.y, e2.z);
+                fprintf(fp,"%f %f %f \n", e3.x, e3.y, e3.z);
+                //fprintf(fp,"%f %f %f \n", normal.x, normal.y, normal.z);
+                fprintf(fp,"%f %f %f \n", wi.x, wi.y, wi.z);
+                fprintf(fp,"%f %f %f \n", wo.x, wo.y, wo.z);
+                fprintf(fp,"%f %f %f \n",  H.x,  H.y,  H.z);
+                fprintf(fp,"%f %f %f \n",  highlight_normal.x,  highlight_normal.y,  highlight_normal.z);
+                fclose(fp);
+            }
+#endif
+
+
 
             return reflection;
         }
