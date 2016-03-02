@@ -18,6 +18,7 @@
  */
 
 //#define DO_DEBUG
+#define USE_WIFFILE
 
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
@@ -119,16 +120,33 @@ class Cloth : public BSDF {
 
                 m_specular_strength = props.getFloat("specular_strength", 0.5f);
 
-                // LOAD WIF FILE
-                std::string wiffilename =
-                    Thread::getThread()->getFileResolver()->
+#ifdef USE_WIFFILE
+                    // LOAD WIF FILE
+                    std::string wiffilename =
+                        Thread::getThread()->getFileResolver()->
                     resolve(props.getString("wiffile")).string();
-                const char *filename = wiffilename.c_str();
-                WeaveData *data = wif_read(filename);
+                    const char *filename = wiffilename.c_str();
+                    WeaveData *data = wif_read(filename);
 
-                m_pattern_entry = wif_get_pattern(data,&m_pattern_width,
-                         &m_pattern_height);
-                wif_free_weavedata(data);
+                    m_pattern_entry = wif_get_pattern(data,&m_pattern_width,
+                             &m_pattern_height);
+                    wif_free_weavedata(data);
+#else
+                    // Static pattern
+                    uint8_t warp_above[] = {
+                        1, 0, 0, 0,
+                        0, 1, 0, 0,
+                        0, 0, 1, 0,
+                        0, 0, 0, 1,
+                    };
+                    float warp_color[] = { 1.f, 0.7f, 0.7f};
+                    float weft_color[] = { 0.7f, 0.7f, 1.f};
+                    m_pattern_width = 4;
+                    m_pattern_height = 4;
+                    m_pattern_entry = wif_build_pattern_from_data(warp_above,
+                            warp_color, weft_color, m_pattern_width,
+                            m_pattern_height);
+#endif
 
             }
 
@@ -478,7 +496,8 @@ class Cloth : public BSDF {
                         bRec.wi, bRec.wo, pattern_data,bRec.its));
             return m_reflectance->eval(bRec.its) *
                 pattern_data.color*(1.f - m_specular_strength) *
-                (INV_PI * Frame::cosTheta(perturbed_wo)) + m_specular_strength*specular*Frame::cosTheta(bRec.wo);
+                (INV_PI * Frame::cosTheta(perturbed_wo)) +
+                m_specular_strength*specular*Frame::cosTheta(bRec.wo);
         }
 
         Float pdf(const BSDFSamplingRecord &bRec, EMeasure measure) const {
