@@ -360,7 +360,7 @@ class Cloth : public BSDF {
             Vector highlight_normal(sinf(specular_v), sinf(u)*cosf(specular_v),
                 cosf(u)*cosf(specular_v));
 
-            if (fabsf(specular_v) < M_PI_2) {
+            if (fabsf(specular_v) < M_PI_2 && fabsf(D) < 1.f) {
                 //we have specular reflection
                 
                 //get specular_x, using irawans transformation.
@@ -387,7 +387,7 @@ class Cloth : public BSDF {
                     wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
                     //TODO(Vidar): This is where we get the NAN
                     float A = 0.f; //sigmas are "unimportant"
-                    if(widotn + wodotn > 0.f){
+                    if(widotn > 0.f && wodotn > 0.f){
                         A = 1.f * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
                     }
                     

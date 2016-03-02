@@ -79,6 +79,7 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
         layout.prop(self, 'deltaX')
         layout.prop(self, 'alpha')
         layout.prop(self, 'beta')
+        layout.prop(self, 'psi')
         layout.prop(self, 'umax')
         layout.prop(self, 'utiling')
         layout.prop(self, 'vtiling')
@@ -89,6 +90,7 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
     umax    = FloatProperty(name = 'U max', default = 0.7)
     alpha   = FloatProperty(name = 'Alpha', default = 0.05)
     beta    = FloatProperty(name = 'Beta', default = 2.0)
+    psi     = FloatProperty(name = 'Psi', default = 0.5)
     utiling = FloatProperty(name = 'U tiling', default = 1.0)
     vtiling = FloatProperty(name = 'V tiling', default = 1.0)
 
@@ -109,6 +111,7 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
             'umax'   : self.umax,
             'alpha'   : self.alpha,
             'beta'   : self.beta,
+            'psi'   : self.psi,
             'utiling': self.utiling,
             'vtiling': self.vtiling,
             'reflectance': self.inputs['Diffuse Reflectance'].get_color_dict(export_ctx),
