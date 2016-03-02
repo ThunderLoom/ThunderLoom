@@ -18,7 +18,7 @@
  */
 
 //#define DO_DEBUG
-#define USE_WIFFILE
+//#define USE_WIFFILE
 
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
@@ -134,15 +134,14 @@ class Cloth : public BSDF {
 #else
                     // Static pattern
                     uint8_t warp_above[] = {
-                        1, 0, 0, 0,
-                        0, 1, 0, 0,
-                        0, 0, 1, 0,
-                        0, 0, 0, 1,
+                        1, 1, 0,
+                        1, 0, 1,
+                        0, 1, 1,
                     };
                     float warp_color[] = { 1.f, 0.7f, 0.7f};
                     float weft_color[] = { 0.7f, 0.7f, 1.f};
-                    m_pattern_width = 4;
-                    m_pattern_height = 4;
+                    m_pattern_width = 3;
+                    m_pattern_height = 3;
                     m_pattern_entry = wif_build_pattern_from_data(warp_above,
                             warp_color, weft_color, m_pattern_width,
                             m_pattern_height);
