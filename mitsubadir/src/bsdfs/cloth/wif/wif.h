@@ -28,5 +28,7 @@ WeaveData *wif_read(const char *filename);
 void wif_free_weavedata(WeaveData *data);
 // Allocate and return the pattern from a WIF file
 PaletteEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h);
+PaletteEntry *wif_build_pattern_from_data(uint8_t *warp_above,
+        float *warp_color, float *weft_color, uint32_t w, uint32_t h);
 void wif_free_pattern(PaletteEntry *pattern);
 
