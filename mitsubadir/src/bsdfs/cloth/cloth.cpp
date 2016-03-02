@@ -138,8 +138,8 @@ class Cloth : public BSDF {
                         1, 0, 1,
                         0, 1, 1,
                     };
-                    float warp_color[] = { 1.f, 0.7f, 0.7f};
-                    float weft_color[] = { 0.7f, 0.7f, 1.f};
+                    float warp_color[] = { 0.7f, 0.7f, 0.7f};
+                    float weft_color[] = { 0.7f, 0.7f, 0.7f};
                     m_pattern_width = 3;
                     m_pattern_height = 3;
                     m_pattern_entry = wif_build_pattern_from_data(warp_above,
