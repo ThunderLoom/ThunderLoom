@@ -357,8 +357,9 @@ class Cloth : public BSDF {
             float specular_v = atan2(-H.y*sin(u) - H.z*cos(u), H.x) + acos(D); //Plus eller minus i sista termen.
             //TODO(Vidar): Clamp specular_v, do we need it?
             // Make normal for highlights, uses u and specular_v
-            Vector highlight_normal(sinf(specular_v), sinf(u)*cosf(specular_v),
-                cosf(u)*cosf(specular_v));
+            Vector highlight_normal = normalize(Vector(sinf(specular_v), sinf(u)*cosf(specular_v),
+                cosf(u)*cosf(specular_v)));
+            
 
             if (fabsf(specular_v) < M_PI_2 && fabsf(D) < 1.f) {
                 //we have specular reflection
@@ -388,12 +389,15 @@ class Cloth : public BSDF {
                     //TODO(Vidar): This is where we get the NAN
                     float A = 0.f; //sigmas are "unimportant"
                     if(widotn > 0.f && wodotn > 0.f){
-                        A = 1.f * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
+                        A = 1.f / (4.0 * M_PI) * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
                     }
                     
                     //reflection = 1.f;
                     float w = 2.f;
+                    //reflection = 2*w*m_umax*fc*Gv*A/m_deltaX;
                     reflection = 2*w*m_umax*fc*Gv*A/m_deltaX;
+                    //reflection = Gv*A*fc;
+                    //printf("alpha:  %g, beta: %g \n ", m_alpha, m_beta);
                 }
             }
 
@@ -424,9 +428,12 @@ class Cloth : public BSDF {
             }
 #endif
 
+            if(data.warp_above){
+                return reflection;
+            } else {
+                return 0.f;
+            }
 
-
-            return reflection;
         }
 	
         //TODO(Peter): EXPLAIN! taken from irawan.cpp
@@ -471,7 +478,7 @@ class Cloth : public BSDF {
                         bRec.wi, bRec.wo, pattern_data,bRec.its));
             return m_reflectance->eval(bRec.its) *
                 pattern_data.color*(1.f - m_specular_strength) *
-                (INV_PI * Frame::cosTheta(perturbed_wo)) + m_specular_strength*specular;
+                (INV_PI * Frame::cosTheta(perturbed_wo)) + m_specular_strength*specular*Frame::cosTheta(bRec.wo);
         }
 
         Float pdf(const BSDFSamplingRecord &bRec, EMeasure measure) const {
