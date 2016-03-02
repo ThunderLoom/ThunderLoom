@@ -148,7 +148,35 @@ class Cloth : public BSDF {
                             m_pattern_height);
 #endif
 
+            {
+                //Calculate normalization factor for the specular reflection
+                //Irawan:
+                /* Estimate the average reflectance under diffuse
+                   illumination and use it to normalize the specular
+                   component */
+                ref<Random> random = new Random();
+                size_t nSamples = 10000;
+                Intersection its;
+                BSDFSamplingRecord bRec(its, NULL, ERadiance);
+                float result = 0.0f;
+                for (size_t i=0; i<nSamples; ++i) {
+                    bRec.wi = warp::squareToCosineHemisphere(Point2(random->nextFloat(), random->nextFloat()));
+                    bRec.wo = warp::squareToCosineHemisphere(Point2(random->nextFloat(), random->nextFloat()));
+                    its.uv = Point2(random->nextFloat(), random->nextFloat());
+
+                    PatternData pattern_data = getPatternData(its);
+                    result += specularReflectionPattern(
+                                bRec.wi, bRec.wo, pattern_data,its);
+                }
+
+                if (result == 0.0001f){
+                    m_specular_normalization = 0.f;
+                }else{
+                    m_specular_normalization = nSamples / (result * M_PI);
+                }
             }
+
+        }
 
         Cloth(Stream *stream, InstanceManager *manager)
             : BSDF(stream, manager) {
@@ -446,11 +474,7 @@ class Cloth : public BSDF {
             }
 #endif
 
-            if(data.warp_above){
-                return reflection;
-            } else {
-                return 0.f;
-            }
+            return reflection;
 
         }
 	
@@ -492,8 +516,9 @@ class Cloth : public BSDF {
             if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbed_wo) <= 0)
                 return Spectrum(0.0f);
             
-            Spectrum specular(m_specular_strength*specularReflectionPattern(
-                        bRec.wi, bRec.wo, pattern_data,bRec.its));
+            Spectrum specular(m_specular_strength*m_specular_normalization*
+                    specularReflectionPattern(bRec.wi, bRec.wo,
+                        pattern_data,bRec.its));
             return m_reflectance->eval(bRec.its) *
                 pattern_data.color*(1.f - m_specular_strength) *
                 (INV_PI * Frame::cosTheta(perturbed_wo)) +
@@ -613,6 +638,7 @@ class Cloth : public BSDF {
             float m_sigma_t;
             float m_deltaX;
             float m_specular_strength;
+            float m_specular_normalization;
 };
 
 // ================ Hardware shader implementation ================
