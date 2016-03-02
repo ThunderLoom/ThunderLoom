@@ -124,6 +124,47 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
             self.inputs['Diffuse Reflectance'].set_color_socket(ntree, params['reflectance'])
 
 @MitsubaNodeTypes.register
+class MtsNodeBsdf_irawan(mitsuba_bsdf_node, Node):
+    '''Irawan material node'''
+    bl_idname = 'MtsNodeBsdf_irawan'
+    bl_label = 'Irawan'
+    plugin_types = {'irawan'}
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, 'filename')
+        layout.prop(self, 'repeatU')
+        layout.prop(self, 'repeatV')
+
+    filename = StringProperty(name = 'Filename', subtype = 'FILE_PATH')
+    repeatU = FloatProperty(name = 'U tiling', default = 1.0)
+    repeatV = FloatProperty(name = 'V tiling', default = 1.0)
+
+    custom_inputs = [
+        {'type': 'MtsSocketColor_diffuseReflectance', 'name': 'kd'},
+        {'type': 'MtsSocketColor_diffuseReflectance', 'name': 'ks'},
+    ]
+
+    custom_outputs = [
+        {'type': 'MtsSocketBsdf', 'name': 'Bsdf'},
+    ]
+
+    def get_bsdf_dict(self, export_ctx):
+        params = {
+            'type': 'irawan',
+            'filename': abspath(self.filename),
+            'repeatU' : self.repeatU,
+            'repeatV' : self.repeatV,
+            'kd': self.inputs['kd'].get_color_dict(export_ctx),
+            'ks': self.inputs['ks'].get_color_dict(export_ctx),
+        }
+
+        return params
+
+    def set_from_dict(self, ntree, params):
+        self.inputs['kd'].set_color_socket(ntree, params['kd'])
+        self.inputs['ks'].set_color_socket(ntree, params['ks'])
+
+@MitsubaNodeTypes.register
 class MtsNodeBsdf_diffuse(mitsuba_bsdf_node, Node):
     '''Diffuse material node'''
     bl_idname = 'MtsNodeBsdf_diffuse'

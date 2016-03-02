@@ -90,6 +90,7 @@ mitsuba_plugin_tree = [
     }),
     # Surface scattering models
     ('bsdf', {
+        'irawan',
         'cloth',
         'diffuse',
         'roughdiffuse',
