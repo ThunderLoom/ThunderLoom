@@ -18,7 +18,7 @@
  */
 
 //#define DO_DEBUG
-//#define USE_WIFFILE
+#define USE_WIFFILE
 
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
@@ -111,7 +111,7 @@ class Cloth : public BSDF {
                 //fiber properties
                 m_alpha = props.getFloat("alpha", 0.05f); //uniform scattering
                 m_beta = props.getFloat("beta", 2.0f); //forward scattering
-                m_deltaX = props.getFloat("deltaX", 0.5f); //deltaX for highlights (to be changed)
+                m_delta_x = props.getFloat("deltaX", 0.5f); //deltaX for highlights (to be changed)
 
 
                 //we do not know what typical values for these should be....
@@ -134,9 +134,9 @@ class Cloth : public BSDF {
 #else
                     // Static pattern
                     uint8_t warp_above[] = {
-                        1, 1, 0,
-                        1, 0, 1,
                         0, 1, 1,
+                        1, 0, 1,
+                        1, 1, 0,
                     };
                     float warp_color[] = { 0.7f, 0.7f, 0.7f};
                     float weft_color[] = { 0.7f, 0.7f, 0.7f};
@@ -256,7 +256,7 @@ class Cloth : public BSDF {
 
             //Set repeating uv coordinates.
             float u_repeat = fmod(its.uv.x*m_uscale,1.f);
-            float v_repeat = fmod(1.f-its.uv.y*m_vscale,1.f);
+            float v_repeat = fmod(its.uv.y*m_vscale,1.f);
             //TODO(Vidar): Check why this crashes sometimes
             if (u_repeat < 0.f) {
                 u_repeat = u_repeat - floor(u_repeat);
@@ -333,12 +333,12 @@ class Cloth : public BSDF {
             //Get the world space coordinate vectors going along the texture u&v
             //TODO(Peter) Is it world space though!??!
             //NOTE(Vidar) You're right, it's probably shading space... :S
-            Float dDispDv = normal.x;
-            Float dDispDu = normal.y;
+            Float dDispDu = normal.x;
+            Float dDispDv = normal.y;
             Vector dpdv = its.dpdv + its.shFrame.n * (
-                    dDispDv - dot(its.shFrame.n, its.dpdv));
+                    -dDispDv - dot(its.shFrame.n, its.dpdv));
             Vector dpdu = its.dpdu + its.shFrame.n * (
-                    dDispDu - dot(its.shFrame.n, its.dpdu));
+                    -dDispDu - dot(its.shFrame.n, its.dpdu));
             // dpdv & dpdu are in world space
 
             //set frame
@@ -399,14 +399,14 @@ class Cloth : public BSDF {
 
             float reflection = 0.f;
 
-            float specular_v = atan2(-H.y*sin(u) - H.z*cos(u), H.x) + acos(D); //Plus eller minus i sista termen.
+            float specular_v = atan2(-H.y*sinf(u) - H.z*cosf(u), H.x) + acosf(D); //Plus eller minus i sista termen.
             //TODO(Vidar): Clamp specular_v, do we need it?
             // Make normal for highlights, uses u and specular_v
             Vector highlight_normal = normalize(Vector(sinf(specular_v), sinf(u)*cosf(specular_v),
                 cosf(u)*cosf(specular_v)));
             
 
-            if (fabsf(specular_v) < M_PI_2 && fabsf(D) < 1.f) {
+            if (fabsf(specular_v) < M_PI_2 /*&& fabsf(D) < 1.f*/) {
                 //we have specular reflection
                 
                 //get specular_x, using irawans transformation.
@@ -414,7 +414,13 @@ class Cloth : public BSDF {
                 // our transformation
                 //float specular_x = sinf(specular_v);
 
-                if (fabsf(specular_x - x) < m_deltaX) { //this takes the role of xi in the irawan paper.
+                //Clamp specular_x
+                specular_x = specular_x < 1.f - m_delta_x ? specular_x :
+                    1.f - m_delta_x;
+                specular_x = specular_x > -1.f + m_delta_x ? specular_x :
+                    -1.f + m_delta_x;
+
+                if (fabsf(specular_x - x) < m_delta_x) { //this takes the role of xi in the irawan paper.
                     
                     // --- Set Gv
                     float a = 1.f; //radius of yarn
@@ -439,8 +445,8 @@ class Cloth : public BSDF {
                     
                     //reflection = 1.f;
                     float w = 2.f;
-                    //reflection = 2*w*m_umax*fc*Gv*A/m_deltaX;
-                    reflection = 2*w*m_umax*fc*Gv*A/m_deltaX;
+                    reflection = 2.f*w*m_umax*fc*Gv*A/m_delta_x;
+                    //reflection = 1.f;
                     //reflection = Gv*A*fc;
                     //printf("alpha:  %g, beta: %g \n ", m_alpha, m_beta);
                 }
@@ -473,6 +479,7 @@ class Cloth : public BSDF {
             }
 #endif
 
+            //return 1.f;
             return reflection;
 
         }
@@ -511,14 +518,17 @@ class Cloth : public BSDF {
             perturbed.shFrame = pattern_data.frame;
 
             Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
-            //Return black if the perturbed direction lies below the surface
-            if (Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbed_wo) <= 0)
-                return Spectrum(0.0f);
+            float diffuse_mask = 1.f;
+            //Diffuse will be black if the perturbed direction
+            //lies below the surface
+            if(Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbed_wo) <= 0){
+                diffuse_mask = 0.f;
+            }
             
             Spectrum specular(m_specular_strength*m_specular_normalization*
                     specularReflectionPattern(bRec.wi, bRec.wo,
                         pattern_data,bRec.its));
-            return m_reflectance->eval(bRec.its) *
+            return m_reflectance->eval(bRec.its) * diffuse_mask * 
                 pattern_data.color*(1.f - m_specular_strength) *
                 (INV_PI * Frame::cosTheta(perturbed_wo)) +
                 m_specular_strength*specular*Frame::cosTheta(bRec.wo);
@@ -544,25 +554,29 @@ class Cloth : public BSDF {
             if (!(bRec.typeMask & EDiffuseReflection)
                     || Frame::cosTheta(bRec.wi) <= 0) return Spectrum(0.0f);
             const Intersection& its = bRec.its;
-            PatternData pattern_data = getPatternData(its);
             Intersection perturbed(its);
+            PatternData pattern_data = getPatternData(its);
             perturbed.shFrame = pattern_data.frame;
             bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
-            Vector perturbed_wo = warp::squareToCosineHemisphere(sample);
-            if (!pattern_data.color.isZero()) {
-                bRec.sampledComponent = 0;
-                bRec.sampledType = EDiffuseReflection;
-                bRec.wo = its.toLocal(perturbed.toWorld(perturbed_wo));
-                bRec.eta = 1.f;
-                if (Frame::cosTheta(perturbed_wo)
-                        * Frame::cosTheta(bRec.wo) <= 0)
-                    return Spectrum(0.0f);
+
+            bRec.wo = warp::squareToCosineHemisphere(sample);
+            Vector perturbed_wo = perturbed.toLocal(its.toWorld(bRec.wo));
+
+            bRec.sampledComponent = 0;
+            bRec.sampledType = EDiffuseReflection;
+            bRec.eta = 1.f;
+            float diffuse_mask = 0.f;
+            if (Frame::cosTheta(perturbed_wo)
+                    * Frame::cosTheta(bRec.wo) > 0){
+                //We sample based on bRec.wo, take account of this
+                diffuse_mask = Frame::cosTheta(perturbed_wo)/
+                    Frame::cosTheta(bRec.wo);
             }
             Spectrum specular(m_specular_strength*specularReflectionPattern(
                         bRec.wi, bRec.wo, pattern_data,bRec.its));
-            return m_reflectance->eval(bRec.its) *
+            return m_reflectance->eval(bRec.its) * diffuse_mask *
                 pattern_data.color*(1.f - m_specular_strength)
-                + m_specular_strength*specular;
+                + m_specular_strength*specular*m_specular_normalization;// *
         }
 
         Spectrum sample(BSDFSamplingRecord &bRec, Float &pdf, const Point2 &sample) const {
@@ -575,23 +589,25 @@ class Cloth : public BSDF {
             perturbed.shFrame = pattern_data.frame;
             bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
 
-            Vector perturbed_wo = warp::squareToCosineHemisphere(sample);
-            pdf = warp::squareToCosineHemispherePdf(perturbed_wo);
+            bRec.wo = warp::squareToCosineHemisphere(sample);
+            Vector perturbed_wo = perturbed.toLocal(its.toWorld(bRec.wo));
+            pdf = warp::squareToCosineHemispherePdf(bRec.wo);
 
-            if (!pattern_data.color.isZero()) {
-                bRec.sampledComponent = 0;
-                bRec.sampledType = EDiffuseReflection;
-                bRec.wo = its.toLocal(perturbed.toWorld(
-                    perturbed_wo));
-                bRec.eta = 1.f;
-                if (Frame::cosTheta(perturbed_wo) * Frame::cosTheta(bRec.wo) <= 0)
-                    return Spectrum(0.0f);
+            bRec.sampledComponent = 0;
+            bRec.sampledType = EDiffuseReflection;
+            bRec.eta = 1.f;
+            float diffuse_mask = 0.f;
+            if (Frame::cosTheta(perturbed_wo)
+                    * Frame::cosTheta(bRec.wo) > 0){
+                //We sample based on bRec.wo, take account of this
+                diffuse_mask = Frame::cosTheta(perturbed_wo)/
+                    Frame::cosTheta(bRec.wo);
             }
             Spectrum specular(m_specular_strength*specularReflectionPattern(
                         bRec.wi, bRec.wo, pattern_data,bRec.its));
-            return m_reflectance->eval(bRec.its) *
+            return m_reflectance->eval(bRec.its) * diffuse_mask *
                 pattern_data.color*(1.f - m_specular_strength)
-                + m_specular_strength*specular;
+                + m_specular_strength*specular*m_specular_normalization;// * 
         }
 
         void addChild(const std::string &name, ConfigurableObject *child) {
@@ -635,7 +651,7 @@ class Cloth : public BSDF {
             float m_beta;
             float m_sigma_s;
             float m_sigma_t;
-            float m_deltaX;
+            float m_delta_x;
             float m_specular_strength;
             float m_specular_normalization;
 };
