@@ -18,7 +18,7 @@
  */
 
 //#define DO_DEBUG
-#define USE_WIFFILE
+//#define USE_WIFFILE
 
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
@@ -370,86 +370,18 @@ class Cloth : public BSDF {
         }
 
         float specularReflectionPattern(Vector wi, Vector wo, PatternData data, Intersection its) const {
-            //Fiber staple twist
-            //u = segment_u
-            float u = data.u;
-            //float v = data.v;
-            float x = data.x;
-            //float y = data.y;
-            
-            // Half-vector, for some reason it seems to already be in the
-            // correct coordinate frame... 
-            if(!data.warp_above){
-                //float tmp1 = H.x;
-                float tmp2 = wi.x;
-                float tmp3 = wo.x;
-                //H.x = H.y; H.y = tmp1;
-                wi.x = -wi.y; wi.y = tmp2;
-                wo.x = -wo.y; wo.y = tmp3;
-            }
-            
-
-            Vector H = normalize(wi + wo);
-
-            float D;
-            {
-                float a = H.y*sinf(u) + H.z*cosf(u);
-                D = (H.y*cosf(u)-H.z*sinf(u))/(sqrtf(H.x*H.x + a*a)) / tanf(m_psi);
-            }
 
             float reflection = 0.f;
-
-            float specular_v = atan2(-H.y*sinf(u) - H.z*cosf(u), H.x) + acosf(D); //Plus eller minus i sista termen.
-            //TODO(Vidar): Clamp specular_v, do we need it?
-            // Make normal for highlights, uses u and specular_v
-            Vector highlight_normal = normalize(Vector(sinf(specular_v), sinf(u)*cosf(specular_v),
-                cosf(u)*cosf(specular_v)));
             
-
-            if (fabsf(specular_v) < M_PI_2 /*&& fabsf(D) < 1.f*/) {
-                //we have specular reflection
-                
-                //get specular_x, using irawans transformation.
-                float specular_x = specular_v/M_PI_2;
-                // our transformation
-                //float specular_x = sinf(specular_v);
-
-                //Clamp specular_x
-                specular_x = specular_x < 1.f - m_delta_x ? specular_x :
-                    1.f - m_delta_x;
-                specular_x = specular_x > -1.f + m_delta_x ? specular_x :
-                    -1.f + m_delta_x;
-
-                if (fabsf(specular_x - x) < m_delta_x) { //this takes the role of xi in the irawan paper.
-                    
-                    // --- Set Gv
-                    float a = 1.f; //radius of yarn
-                    float R = 1.f/(sin(m_umax)); //radius of curvature
-                    float Gv = a*(R + a*cosf(specular_v))/((wi + wo).length() * dot(highlight_normal,H) * fabsf(sinf(m_psi)));
-
-                    // --- Set fc
-                    float cos_x = -dot(wi, wo);
-                    float fc = m_alpha + vonMises(cos_x, m_beta);
-                    
-                    // --- Set A
-                    float widotn = dot(wi, highlight_normal);
-                    float wodotn = dot(wo, highlight_normal);
-                    //float A = m_sigma_s/m_sigma_t * (widotn*wodotn)/(widotn + wodotn);
-                    widotn = (widotn < 0.f) ? 0.f : widotn;   
-                    wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
-                    //TODO(Vidar): This is where we get the NAN
-                    float A = 0.f; //sigmas are "unimportant"
-                    if(widotn > 0.f && wodotn > 0.f){
-                        A = 1.f / (4.0 * M_PI) * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
-                    }
-                    
-                    //reflection = 1.f;
-                    float w = 2.f;
-                    reflection = 2.f*w*m_umax*fc*Gv*A/m_delta_x;
-                    //reflection = 1.f;
-                    //reflection = Gv*A*fc;
-                    //printf("alpha:  %g, beta: %g \n ", m_alpha, m_beta);
-                }
+            // Depending on the given psi parameter the yarn is considered
+            // staple or filament. They are treated differently in order
+            // to work better numerically. 
+            if (m_psi == 0.0) {
+                //Filament yarn
+                //reflection = evalFilamentSpecular(); 
+            } else {
+                //Staple yarn
+                reflection = evalStapleSpecular(wi, wo, data, its); 
             }
 
 #ifdef DO_DEBUG
@@ -479,9 +411,73 @@ class Cloth : public BSDF {
             }
 #endif
 
-            //return 1.f;
             return reflection;
+        }
 
+        float evalStapleSpecular(Vector wi, Vector wo, PatternData data, Intersection its) const {
+            // Half-vector, for some reason it seems to already be in the
+            // correct coordinate frame... 
+            if(!data.warp_above){
+                //float tmp1 = H.x;
+                float tmp2 = wi.x;
+                float tmp3 = wo.x;
+                //H.x = H.y; H.y = tmp1;
+                wi.x = -wi.y; wi.y = tmp2;
+                wo.x = -wo.y; wo.y = tmp3;
+            }
+            Vector H = normalize(wi + wo);
+
+            float u = data.u;
+            float x = data.x;
+            float D;
+            {
+                float a = H.y*sinf(u) + H.z*cosf(u);
+                D = (H.y*cosf(u)-H.z*sinf(u))/(sqrtf(H.x*H.x + a*a)) / tanf(m_psi);
+            }
+            float reflection = 0.f;
+            
+            float specular_v = atan2(-H.y*sinf(u) - H.z*cosf(u), H.x) + acosf(D); //Plus eller minus i sista termen.
+            //TODO(Vidar): Clamp specular_v, do we need it?
+            // Make normal for highlights, uses u and specular_v
+            Vector highlight_normal = normalize(Vector(sinf(specular_v), sinf(u)*cosf(specular_v),
+                cosf(u)*cosf(specular_v)));
+
+            if (fabsf(specular_v) < M_PI_2 /*&& fabsf(D) < 1.f*/) {
+                //we have specular reflection
+                //get specular_x, using irawans transformation.
+                float specular_x = specular_v/M_PI_2;
+                // our transformation
+                //float specular_x = sinf(specular_v);
+                //Clamp specular_x
+                specular_x = specular_x < 1.f - m_delta_x ? specular_x :
+                    1.f - m_delta_x;
+                specular_x = specular_x > -1.f + m_delta_x ? specular_x :
+                    -1.f + m_delta_x;
+                if (fabsf(specular_x - x) < m_delta_x) { //this takes the role of xi in the irawan paper.
+                    // --- Set Gv
+                    float a = 1.f; //radius of yarn
+                    float R = 1.f/(sin(m_umax)); //radius of curvature
+                    float Gv = a*(R + a*cosf(specular_v))/((wi + wo).length() * dot(highlight_normal,H) * fabsf(sinf(m_psi)));
+                    // --- Set fc
+                    float cos_x = -dot(wi, wo);
+                    float fc = m_alpha + vonMises(cos_x, m_beta);
+                    // --- Set A
+                    float widotn = dot(wi, highlight_normal);
+                    float wodotn = dot(wo, highlight_normal);
+                    //float A = m_sigma_s/m_sigma_t * (widotn*wodotn)/(widotn + wodotn);
+                    widotn = (widotn < 0.f) ? 0.f : widotn;   
+                    wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
+                    //TODO(Vidar): This is where we get the NAN
+                    float A = 0.f; //sigmas are "unimportant"
+                    if(widotn > 0.f && wodotn > 0.f){
+                        A = 1.f / (4.0 * M_PI) * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
+                    }
+                    float w = 2.f;
+                    reflection = 2.f*w*m_umax*fc*Gv*A/m_delta_x;
+                }
+            }
+
+            return reflection;
         }
 	
         //TODO(Peter): EXPLAIN! taken from irawan.cpp
