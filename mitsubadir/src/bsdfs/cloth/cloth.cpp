@@ -1,24 +1,24 @@
-// vim makeprg=scons
-/*
-   This file is part of Mitsuba, a physically based rendering system.
+    // vim makeprg=scons
+    /*
+       This file is part of Mitsuba, a physically based rendering system.
 
-   Copyright (c) 2007-2014 by Wenzel Jakob and others.
+       Copyright (c) 2007-2014 by Wenzel Jakob and others.
 
-   Mitsuba is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License Version 3
-   as published by the Free Software Foundation.
+       Mitsuba is free software; you can redistribute it and/or modify
+       it under the terms of the GNU General Public License Version 3
+       as published by the Free Software Foundation.
 
-   Mitsuba is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-   GNU General Public License for more details.
+       Mitsuba is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+       GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+       You should have received a copy of the GNU General Public License
+       along with this program. If not, see <http://www.gnu.org/licenses/>.
+     */
 
-//#define DO_DEBUG
-//#define USE_WIFFILE
+    //#define DO_DEBUG
+    //#define USE_WIFFILE
 
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
@@ -30,118 +30,118 @@
 #include "wif/ini.c" //TODO Snygga till! (använda scons?!)
 
 
-/*static uint64_t rdtsc(){
-    unsigned int lo,hi;
-    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-    return ((uint64_t)hi << 32) | lo;
-}*/
+    /*static uint64_t rdtsc(){
+        unsigned int lo,hi;
+        __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+        return ((uint64_t)hi << 32) | lo;
+    }*/
 
-//TODO(Vidar): Enable floating point exceptions
+    //TODO(Vidar): Enable floating point exceptions
 
-MTS_NAMESPACE_BEGIN
+    MTS_NAMESPACE_BEGIN
 
-//TODO(Vidar): Write documentation
+    //TODO(Vidar): Write documentation
 
-/*!\plugin{diffuse_copy}{Smooth diffuse material}
- * \order{1}
- * \icon{bsdf_diffuse}
- * \parameters{
- *     \parameter{reflectance}{\Spectrum\Or\Texture}{
- *       Specifies the diffuse albedo of the
- *       material \default{0.5}
- *     }
- * }
- *
- * \renderings{
- *     \rendering{Homogeneous reflectance, see \lstref{diffuse-uniform}}
- *         {bsdf_diffuse_plain}
- *     \rendering{Textured reflectance, see \lstref{diffuse-textured}}
- *         {bsdf_diffuse_textured}
- * }
- *
- * The smooth diffuse material (also referred to as ``Lambertian'')
- * represents an ideally diffuse material with a user-specified amount of
- * reflectance. Any received illumination is scattered so that the surface
- * looks the same independently of the direction of observation.
- *
- * Apart from a  homogeneous reflectance value, the plugin can also accept
- * a nested or referenced texture map to be used as the source of reflectance
- * information, which is then mapped onto the shape based on its UV
- * parameterization. When no parameters are specified, the model uses the default
- * of 50% reflectance.
- *
- * Note that this material is one-sided---that is, observed from the
- * back side, it will be completely black. If this is undesirable,
- * consider using the \pluginref{twosided} BRDF adapter plugin.
- * \vspace{4mm}
- *
- * \begin{xml}[caption={A diffuse material, whose reflectance is specified
- *     as an sRGB color}, label=lst:diffuse-uniform]
- * <bsdf type="diffuse">
- *     <srgb name="reflectance" value="#6d7185"/>
- * </bsdf>
- * \end{xml}
- *
- * \begin{xml}[caption=A diffuse material with a texture map,
- *     label=lst:diffuse-textured]
- * <bsdf type="diffuse">
- *     <texture type="bitmap" name="reflectance">
- *         <string name="filename" value="wood.jpg"/>
- *     </texture>
- * </bsdf>
- * \end{xml}
- */
-class Cloth : public BSDF {
-    public:
-        Cloth(const Properties &props)
-            : BSDF(props) {
-                // Reflectance is used to modify the color of the cloth
-                /* For better compatibility with other models, support both
-                   'reflectance' and 'diffuseReflectance' as parameter names */
-                m_reflectance = new ConstantSpectrumTexture(props.getSpectrum(
-                    props.hasProperty("reflectance") ? "reflectance"
-                        : "diffuseReflectance", Spectrum(.5f)));
-                m_uscale = props.getFloat("utiling", 1.0f);
-                m_vscale = props.getFloat("vtiling", 1.0f);
+    /*!\plugin{diffuse_copy}{Smooth diffuse material}
+     * \order{1}
+     * \icon{bsdf_diffuse}
+     * \parameters{
+     *     \parameter{reflectance}{\Spectrum\Or\Texture}{
+     *       Specifies the diffuse albedo of the
+     *       material \default{0.5}
+     *     }
+     * }
+     *
+     * \renderings{
+     *     \rendering{Homogeneous reflectance, see \lstref{diffuse-uniform}}
+     *         {bsdf_diffuse_plain}
+     *     \rendering{Textured reflectance, see \lstref{diffuse-textured}}
+     *         {bsdf_diffuse_textured}
+     * }
+     *
+     * The smooth diffuse material (also referred to as ``Lambertian'')
+     * represents an ideally diffuse material with a user-specified amount of
+     * reflectance. Any received illumination is scattered so that the surface
+     * looks the same independently of the direction of observation.
+     *
+     * Apart from a  homogeneous reflectance value, the plugin can also accept
+     * a nested or referenced texture map to be used as the source of reflectance
+     * information, which is then mapped onto the shape based on its UV
+     * parameterization. When no parameters are specified, the model uses the default
+     * of 50% reflectance.
+     *
+     * Note that this material is one-sided---that is, observed from the
+     * back side, it will be completely black. If this is undesirable,
+     * consider using the \pluginref{twosided} BRDF adapter plugin.
+     * \vspace{4mm}
+     *
+     * \begin{xml}[caption={A diffuse material, whose reflectance is specified
+     *     as an sRGB color}, label=lst:diffuse-uniform]
+     * <bsdf type="diffuse">
+     *     <srgb name="reflectance" value="#6d7185"/>
+     * </bsdf>
+     * \end{xml}
+     *
+     * \begin{xml}[caption=A diffuse material with a texture map,
+     *     label=lst:diffuse-textured]
+     * <bsdf type="diffuse">
+     *     <texture type="bitmap" name="reflectance">
+     *         <string name="filename" value="wood.jpg"/>
+     *     </texture>
+     * </bsdf>
+     * \end{xml}
+     */
+    class Cloth : public BSDF {
+        public:
+            Cloth(const Properties &props)
+                : BSDF(props) {
+                    // Reflectance is used to modify the color of the cloth
+                    /* For better compatibility with other models, support both
+                       'reflectance' and 'diffuseReflectance' as parameter names */
+                    m_reflectance = new ConstantSpectrumTexture(props.getSpectrum(
+                        props.hasProperty("reflectance") ? "reflectance"
+                            : "diffuseReflectance", Spectrum(.5f)));
+                    m_uscale = props.getFloat("utiling", 1.0f);
+                    m_vscale = props.getFloat("vtiling", 1.0f);
 
-                //yarn properties
-                m_umax = props.getFloat("umax", 0.7f);
-                m_psi = props.getFloat("psi", M_PI_2);
-                
-                //fiber properties
-                m_alpha = props.getFloat("alpha", 0.05f); //uniform scattering
-                m_beta = props.getFloat("beta", 2.0f); //forward scattering
-                m_delta_x = props.getFloat("deltaX", 0.5f); //deltaX for highlights (to be changed)
+                    //yarn properties
+                    m_umax = props.getFloat("umax", 0.7f);
+                    m_psi = props.getFloat("psi", M_PI_2);
+                    
+                    //fiber properties
+                    m_alpha = props.getFloat("alpha", 0.05f); //uniform scattering
+                    m_beta = props.getFloat("beta", 2.0f); //forward scattering
+                    m_delta_x = props.getFloat("deltaX", 0.5f); //deltaX for highlights (to be changed)
 
 
-                //we do not know what typical values for these should be....
-                m_sigma_s = props.getFloat("sigma_s", 2.0f); //volume scattering coefficient
-                m_sigma_t = props.getFloat("sigma_t", 2.0f); //volume attenuation coefficient
+                    //we do not know what typical values for these should be....
+                    m_sigma_s = props.getFloat("sigma_s", 2.0f); //volume scattering coefficient
+                    m_sigma_t = props.getFloat("sigma_t", 2.0f); //volume attenuation coefficient
 
-                m_specular_strength = props.getFloat("specular_strength", 0.5f);
+                    m_specular_strength = props.getFloat("specular_strength", 0.5f);
 
 #ifdef USE_WIFFILE
-                    // LOAD WIF FILE
-                    std::string wiffilename =
-                        Thread::getThread()->getFileResolver()->
-                    resolve(props.getString("wiffile")).string();
-                    const char *filename = wiffilename.c_str();
-                    WeaveData *data = wif_read(filename);
+                        // LOAD WIF FILE
+                        std::string wiffilename =
+                            Thread::getThread()->getFileResolver()->
+                        resolve(props.getString("wiffile")).string();
+                        const char *filename = wiffilename.c_str();
+                        WeaveData *data = wif_read(filename);
 
-                    m_pattern_entry = wif_get_pattern(data,&m_pattern_width,
-                             &m_pattern_height);
-                    wif_free_weavedata(data);
+                        m_pattern_entry = wif_get_pattern(data,&m_pattern_width,
+                                 &m_pattern_height);
+                        wif_free_weavedata(data);
 #else
                     // Static pattern
+                    // current: polyester pattern
                     uint8_t warp_above[] = {
-                        0, 1, 1,
-                        1, 0, 1,
-                        1, 1, 0,
+                        1, 0,
+                        0, 1,
                     };
                     float warp_color[] = { 0.7f, 0.7f, 0.7f};
                     float weft_color[] = { 0.7f, 0.7f, 0.7f};
-                    m_pattern_width = 3;
-                    m_pattern_height = 3;
+                    m_pattern_width = 2;
+                    m_pattern_height = 2;
                     m_pattern_entry = wif_build_pattern_from_data(warp_above,
                             warp_color, weft_color, m_pattern_width,
                             m_pattern_height);
@@ -265,8 +265,6 @@ class Cloth : public BSDF {
                 v_repeat = v_repeat - floor(v_repeat);
             }
 
-            //TODO(Vidar):This looks wrong!
-            //TODO(Peter): Yes it does. I am swapping so that, pattern_x = u_repeat; pattern_y = v_repeat
             uint32_t pattern_x = (uint32_t)(u_repeat*(float)(m_pattern_width));
             uint32_t pattern_y = (uint32_t)(v_repeat*(float)(m_pattern_height));
 
@@ -322,6 +320,10 @@ class Cloth : public BSDF {
             //Calculate the normal in thread-local coordinates
             Vector normal(sinf(segment_v), sinf(segment_u)*cosf(segment_v),
                 cosf(segment_u)*cosf(segment_v));
+            
+            //Calculate the tangent vector in thread-local coordinates
+            Vector tangent(0.f, cosf(segment_u)*cosf(segment_v),
+                cosf(segment_u)*cosf(segment_v));
 
             //Transform the normal back to shading space
             if(!current_point.warp_above){
@@ -370,7 +372,6 @@ class Cloth : public BSDF {
         }
 
         float specularReflectionPattern(Vector wi, Vector wo, PatternData data, Intersection its) const {
-
             float reflection = 0.f;
             
             // Depending on the given psi parameter the yarn is considered
@@ -378,12 +379,158 @@ class Cloth : public BSDF {
             // to work better numerically. 
             if (m_psi == 0.0) {
                 //Filament yarn
-                //reflection = evalFilamentSpecular(); 
+                reflection = evalFilamentSpecular(wi, wo, data, its); 
             } else {
                 //Staple yarn
                 reflection = evalStapleSpecular(wi, wo, data, its); 
             }
+            return reflection;
+        }
 
+        float evalFilamentSpecular(Vector wi, Vector wo, PatternData data, Intersection its) const {
+            // Half-vector, for some reason it seems to already be in the
+            // correct coordinate frame... 
+            if(!data.warp_above){
+                //float tmp1 = H.x;
+                float tmp2 = wi.x;
+                float tmp3 = wo.x;
+                //H.x = H.y; H.y = tmp1;
+                wi.x = -wi.y; wi.y = tmp2;
+                wo.x = -wo.y; wo.y = tmp3;
+            }
+            Vector H = normalize(wi + wo);
+
+            float u = data.u;
+            float v = data.v;
+            float y = data.y;
+
+            //TODO(Peter): explain from where these expressions come.
+            //compute v from x using (11). Already done. We have it from data.
+            //compute u(wi,v,wr) -- u as function of v. using (4)...
+            float specular_u = atan2f(-H.z, H.y) + M_PI_2; //plus or minus in last t.
+            //TODO(Peter): check that it indeed is just v that should be used 
+            //to calculate Gu (6) in Irawans paper.
+            //calculate yarn tangent.
+
+            float reflection = 0.f;
+            if (fabsf(specular_u) < m_umax) {
+                // Make normal for highlights, uses v and specular_u
+                Vector highlight_normal = normalize(Vector(sinf(v),
+                            sinf(specular_u)*cosf(v),
+                            cosf(specular_u)*cosf(v)));
+
+                // Make tangent for highlights, uses v and specular_u
+                Vector highlight_tangent = normalize(Vector(0.f, 
+                            cosf(specular_u), -sinf(specular_u)));
+
+                //get specular_y, using irawans transformation.
+                float specular_y = specular_u/M_PI_2;
+                // our transformation TODO(Peter): Verify!
+                //float specular_y = sinf(specular_u)/sinf(m_umax);
+
+                //Clamp specular_y TODO(Peter): change name of m_delta_x to m_delta_h
+                specular_y = specular_y < 1.f - m_delta_x ? specular_y :
+                    1.f - m_delta_x;
+                specular_y = specular_y > -1.f + m_delta_x ? specular_y :
+                    -1.f + m_delta_x;
+
+                if (fabsf(specular_y - y) < m_delta_x) { //this takes the role of xi in the irawan paper.
+                    // --- Set Gu, using (6)
+                    float a = 1.f; //radius of yarn
+                    float R = 1.f/(sin(m_umax)); //radius of curvature
+                    float Gu = a*(R + a*cosf(v)) / 
+                        ((wi + wo).length() * fabsf(cross(highlight_tangent,H).x));
+
+                    // --- Set fc
+                    float cos_x = -dot(wi, wo);
+                    float fc = m_alpha + vonMises(cos_x, m_beta);
+
+                    // --- Set A
+                    float widotn = dot(wi, highlight_normal);
+                    float wodotn = dot(wo, highlight_normal);
+                    //float A = m_sigma_s/m_sigma_t * (widotn*wodotn)/(widotn + wodotn);
+                    widotn = (widotn < 0.f) ? 0.f : widotn;   
+                    wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
+                    float A = 0.f;
+                    if(widotn > 0.f && wodotn > 0.f){
+                        A = 1.f / (4.0 * M_PI) * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
+                        //TODO(Peter): Explain from where the 1/4*PI factor comes from
+                    }
+                    float l = 2.f;
+                    //TODO(Peter): Implement As, -- smoothes the dissapeares of the
+                    // higlight near the ends. Described in (9)
+                    reflection = 2.f*l*m_umax*fc*Gu*A/m_delta_x;
+                }
+            }
+
+            return reflection;
+        }
+        
+        float evalStapleSpecular(Vector wi, Vector wo, PatternData data, Intersection its) const {
+            // Half-vector, for some reason it seems to already be in the
+            // correct coordinate frame... 
+            if(!data.warp_above){
+                //float tmp1 = H.x;
+                float tmp2 = wi.x;
+                float tmp3 = wo.x;
+                //H.x = H.y; H.y = tmp1;
+                wi.x = -wi.y; wi.y = tmp2;
+                wo.x = -wo.y; wo.y = tmp3;
+            }
+            Vector H = normalize(wi + wo);
+
+            float u = data.u;
+            float x = data.x;
+            float D;
+            {
+                float a = H.y*sinf(u) + H.z*cosf(u);
+                D = (H.y*cosf(u)-H.z*sinf(u))/(sqrtf(H.x*H.x + a*a)) / tanf(m_psi);
+            }
+            float reflection = 0.f;
+            
+            float specular_v = atan2f(-H.y*sinf(u) - H.z*cosf(u), H.x) + acosf(D); //Plus eller minus i sista termen.
+            //TODO(Vidar): Clamp specular_v, do we need it?
+            // Make normal for highlights, uses u and specular_v
+            Vector highlight_normal = normalize(Vector(sinf(specular_v), sinf(u)*cosf(specular_v),
+                cosf(u)*cosf(specular_v)));
+
+            if (fabsf(specular_v) < M_PI_2 /*&& fabsf(D) < 1.f*/) {
+                //we have specular reflection
+                //get specular_x, using irawans transformation.
+                float specular_x = specular_v/M_PI_2;
+                // our transformation
+                //float specular_x = sinf(specular_v);
+
+                //Clamp specular_x
+                specular_x = specular_x < 1.f - m_delta_x ? specular_x :
+                    1.f - m_delta_x;
+                specular_x = specular_x > -1.f + m_delta_x ? specular_x :
+                    -1.f + m_delta_x;
+
+                if (fabsf(specular_x - x) < m_delta_x) { //this takes the role of xi in the irawan paper.
+                    // --- Set Gv
+                    float a = 1.f; //radius of yarn
+                    float R = 1.f/(sin(m_umax)); //radius of curvature
+                    float Gv = a*(R + a*cosf(specular_v))/((wi + wo).length() * dot(highlight_normal,H) * fabsf(sinf(m_psi)));
+                    // --- Set fc
+                    float cos_x = -dot(wi, wo);
+                    float fc = m_alpha + vonMises(cos_x, m_beta);
+                    // --- Set A
+                    float widotn = dot(wi, highlight_normal);
+                    float wodotn = dot(wo, highlight_normal);
+                    //float A = m_sigma_s/m_sigma_t * (widotn*wodotn)/(widotn + wodotn);
+                    widotn = (widotn < 0.f) ? 0.f : widotn;   
+                    wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
+                    //TODO(Vidar): This is where we get the NAN
+                    float A = 0.f; //sigmas are "unimportant"
+                    if(widotn > 0.f && wodotn > 0.f){
+                        A = 1.f / (4.0 * M_PI) * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
+                        //TODO(Peter): Explain from where the 1/4*PI factor comes from
+                    }
+                    float w = 2.f;
+                    reflection = 2.f*w*m_umax*fc*Gv*A/m_delta_x;
+                }
+            }
 #ifdef DO_DEBUG
             FILE *fp = fopen("/tmp/coordinate_out.txt","wt");
             if(fp){
@@ -410,73 +557,6 @@ class Cloth : public BSDF {
                 fclose(fp);
             }
 #endif
-
-            return reflection;
-        }
-
-        float evalStapleSpecular(Vector wi, Vector wo, PatternData data, Intersection its) const {
-            // Half-vector, for some reason it seems to already be in the
-            // correct coordinate frame... 
-            if(!data.warp_above){
-                //float tmp1 = H.x;
-                float tmp2 = wi.x;
-                float tmp3 = wo.x;
-                //H.x = H.y; H.y = tmp1;
-                wi.x = -wi.y; wi.y = tmp2;
-                wo.x = -wo.y; wo.y = tmp3;
-            }
-            Vector H = normalize(wi + wo);
-
-            float u = data.u;
-            float x = data.x;
-            float D;
-            {
-                float a = H.y*sinf(u) + H.z*cosf(u);
-                D = (H.y*cosf(u)-H.z*sinf(u))/(sqrtf(H.x*H.x + a*a)) / tanf(m_psi);
-            }
-            float reflection = 0.f;
-            
-            float specular_v = atan2(-H.y*sinf(u) - H.z*cosf(u), H.x) + acosf(D); //Plus eller minus i sista termen.
-            //TODO(Vidar): Clamp specular_v, do we need it?
-            // Make normal for highlights, uses u and specular_v
-            Vector highlight_normal = normalize(Vector(sinf(specular_v), sinf(u)*cosf(specular_v),
-                cosf(u)*cosf(specular_v)));
-
-            if (fabsf(specular_v) < M_PI_2 /*&& fabsf(D) < 1.f*/) {
-                //we have specular reflection
-                //get specular_x, using irawans transformation.
-                float specular_x = specular_v/M_PI_2;
-                // our transformation
-                //float specular_x = sinf(specular_v);
-                //Clamp specular_x
-                specular_x = specular_x < 1.f - m_delta_x ? specular_x :
-                    1.f - m_delta_x;
-                specular_x = specular_x > -1.f + m_delta_x ? specular_x :
-                    -1.f + m_delta_x;
-                if (fabsf(specular_x - x) < m_delta_x) { //this takes the role of xi in the irawan paper.
-                    // --- Set Gv
-                    float a = 1.f; //radius of yarn
-                    float R = 1.f/(sin(m_umax)); //radius of curvature
-                    float Gv = a*(R + a*cosf(specular_v))/((wi + wo).length() * dot(highlight_normal,H) * fabsf(sinf(m_psi)));
-                    // --- Set fc
-                    float cos_x = -dot(wi, wo);
-                    float fc = m_alpha + vonMises(cos_x, m_beta);
-                    // --- Set A
-                    float widotn = dot(wi, highlight_normal);
-                    float wodotn = dot(wo, highlight_normal);
-                    //float A = m_sigma_s/m_sigma_t * (widotn*wodotn)/(widotn + wodotn);
-                    widotn = (widotn < 0.f) ? 0.f : widotn;   
-                    wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
-                    //TODO(Vidar): This is where we get the NAN
-                    float A = 0.f; //sigmas are "unimportant"
-                    if(widotn > 0.f && wodotn > 0.f){
-                        A = 1.f / (4.0 * M_PI) * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
-                    }
-                    float w = 2.f;
-                    reflection = 2.f*w*m_umax*fc*Gv*A/m_delta_x;
-                }
-            }
-
             return reflection;
         }
 	
