@@ -377,6 +377,7 @@
             // Depending on the given psi parameter the yarn is considered
             // staple or filament. They are treated differently in order
             // to work better numerically. 
+            //TODO(Vidar): We should probably not check equality to 0.0f
             if (m_psi == 0.0) {
                 //Filament yarn
                 reflection = evalFilamentSpecular(wi, wo, data, its); 
@@ -394,13 +395,11 @@
                 //float tmp1 = H.x;
                 float tmp2 = wi.x;
                 float tmp3 = wo.x;
-                //H.x = H.y; H.y = tmp1;
                 wi.x = -wi.y; wi.y = tmp2;
                 wo.x = -wo.y; wo.y = tmp3;
             }
             Vector H = normalize(wi + wo);
 
-            float u = data.u;
             float v = data.v;
             float y = data.y;
 
@@ -424,7 +423,7 @@
                             cosf(specular_u), -sinf(specular_u)));
 
                 //get specular_y, using irawans transformation.
-                float specular_y = specular_u/M_PI_2;
+                float specular_y = specular_u/m_umax;
                 // our transformation TODO(Peter): Verify!
                 //float specular_y = sinf(specular_u)/sinf(m_umax);
 
