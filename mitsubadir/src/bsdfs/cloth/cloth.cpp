@@ -162,6 +162,8 @@
                     bRec.wi = warp::squareToCosineHemisphere(Point2(random->nextFloat(), random->nextFloat()));
                     bRec.wo = warp::squareToCosineHemisphere(Point2(random->nextFloat(), random->nextFloat()));
                     its.uv = Point2(random->nextFloat(), random->nextFloat());
+                    its.dpdv = Vector(1.f, 0.f, 0.f);
+                    its.dpdu = Vector(0.f, 1.f, 0.f);
 
                     PatternData pattern_data = getPatternData(its);
                     result += specularReflectionPattern(
