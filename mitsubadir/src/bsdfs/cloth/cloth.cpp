@@ -113,6 +113,8 @@
                     m_beta = props.getFloat("beta", 2.0f); //forward scattering
                     m_delta_x = props.getFloat("deltaX", 0.5f); //deltaX for highlights (to be changed)
 
+                    //random
+                    m_intensity_fineness = props.getFloat("intensity_fineness", 0.0f);
 
                     //we do not know what typical values for these should be....
                     m_sigma_s = props.getFloat("sigma_s", 2.0f); //volume scattering coefficient
@@ -213,6 +215,7 @@
             Frame frame; //The perturbed frame 
             float u, v; //Segment uv coordinates (in angles)
             float x, y; //position within segment. 
+            float index_x, index_y; //index for elements. 
             bool warp_above; 
         };
 
@@ -259,6 +262,13 @@
             //Set repeating uv coordinates.
             float u_repeat = fmod(its.uv.x*m_uscale,1.f);
             float v_repeat = fmod(its.uv.y*m_vscale,1.f);
+
+            //pattern index
+            //TODO(Peter): these are new. perhaps they can be used later 
+            // to avoid duplicate calculations.
+            uint32_t pattern_index_x = (uint32_t)its.uv.x*m_uscale*(m_pattern_width);
+            uint32_t pattern_index_y = (uint32_t)its.uv.y*m_vscale*(m_pattern_height);
+
             //TODO(Vidar): Check why this crashes sometimes
             if (u_repeat < 0.f) {
                 u_repeat = u_repeat - floor(u_repeat);
@@ -367,10 +377,29 @@
             ret_data.x = x; 
             ret_data.y = y; 
             ret_data.warp_above = current_point.warp_above; 
-
+            ret_data.index_x = pattern_index_x;
+            ret_data.index_y = pattern_index_y; 
 
             //return the results
             return ret_data;
+        }
+
+
+        float intensityVariation(PatternData pattern_data) const {
+            // have index to make a grid of finess*fineness squares 
+            // of which to have the same brightness variations.
+            
+            //our implementation will make variations over a specified grid 
+            // element in the patterntreats every squre in the pattern,
+            // not over the yarnsegment as it seems to be suggested in the paper.
+            uint32_t r1 = (uint32_t) ((pattern_data.x + pattern_data.index_x)
+                    * m_intensity_fineness);
+            uint32_t r2 = (uint32_t) ((pattern_data.y + pattern_data.index_y) 
+                    * m_intensity_fineness);
+ 
+            srand(r1+r2); //bad way to do it?
+            float xi = rand();
+			return fmin(-math::fastlog(xi), (float) 10.0f);
         }
 
         float specularReflectionPattern(Vector wi, Vector wo, PatternData data, Intersection its) const {
@@ -601,9 +630,16 @@
             if(Frame::cosTheta(bRec.wo) * Frame::cosTheta(perturbed_wo) <= 0){
                 diffuse_mask = 0.f;
             }
+
+            //Get intensity variation
+            float intensity_variation = 1.0f;
+            if (m_intensity_fineness > 0.0f) {
+                intensity_variation = intensityVariation(pattern_data);
+            }
             
-            Spectrum specular(m_specular_strength*m_specular_normalization*
-                    specularReflectionPattern(bRec.wi, bRec.wo,
+            Spectrum specular(m_specular_strength*intensity_variation
+                    * m_specular_normalization
+                    * specularReflectionPattern(bRec.wi, bRec.wo,
                         pattern_data,bRec.its));
             return m_reflectance->eval(bRec.its) * diffuse_mask * 
                 pattern_data.color*(1.f - m_specular_strength) *
@@ -730,6 +766,7 @@
             float m_sigma_t;
             float m_delta_x;
             float m_specular_strength;
+            float m_intensity_fineness;
             float m_specular_normalization;
 };
 
