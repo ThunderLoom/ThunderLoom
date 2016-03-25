@@ -29,6 +29,13 @@
 #include "wif/wif.c"
 #include "wif/ini.c" //TODO Snygga till! (använda scons?!)
 
+//#include <mitsuba/render/noise.h>
+//#include <mitsuba/hw/gpuprogram.h>
+//#include <mitsuba/core/random.h>
+#include <mitsuba/core/qmc.h>
+
+
+
 
     /*static uint64_t rdtsc(){
         unsigned int lo,hi;
@@ -137,13 +144,14 @@
                     // Static pattern
                     // current: polyester pattern
                     uint8_t warp_above[] = {
-                        1, 0,
-                        0, 1,
+                        0, 1, 1,
+                        1, 0, 1,
+                        1, 1, 0,
                     };
                     float warp_color[] = { 0.7f, 0.7f, 0.7f};
                     float weft_color[] = { 0.7f, 0.7f, 0.7f};
-                    m_pattern_width = 2;
-                    m_pattern_height = 2;
+                    m_pattern_width = 3;
+                    m_pattern_height = 3;
                     m_pattern_entry = wif_build_pattern_from_data(warp_above,
                             warp_color, weft_color, m_pattern_width,
                             m_pattern_height);
@@ -214,8 +222,9 @@
             Spectrum color;
             Frame frame; //The perturbed frame 
             float u, v; //Segment uv coordinates (in angles)
+            float length, width; //Segment length and width
             float x, y; //position within segment. 
-            float index_x, index_y; //index for elements. 
+            float total_x, total_y; //index for elements. 
             bool warp_above; 
         };
 
@@ -266,8 +275,9 @@
             //pattern index
             //TODO(Peter): these are new. perhaps they can be used later 
             // to avoid duplicate calculations.
-            uint32_t pattern_index_x = (uint32_t)its.uv.x*m_uscale*(m_pattern_width);
-            uint32_t pattern_index_y = (uint32_t)its.uv.y*m_vscale*(m_pattern_height);
+            //TODO(Peter): come up with a better name for these...
+            uint32_t total_x = its.uv.x*m_uscale*m_pattern_width;
+            uint32_t total_y = its.uv.y*m_vscale*m_pattern_height;
 
             //TODO(Vidar): Check why this crashes sometimes
             if (u_repeat < 0.f) {
@@ -374,11 +384,13 @@
 
             ret_data.u = segment_u;
             ret_data.v = segment_v;
+            ret_data.length = l;
+            ret_data.width = w;
             ret_data.x = x; 
             ret_data.y = y; 
             ret_data.warp_above = current_point.warp_above; 
-            ret_data.index_x = pattern_index_x;
-            ret_data.index_y = pattern_index_y; 
+            ret_data.total_x = total_x;
+            ret_data.total_y = total_y; 
 
             //return the results
             return ret_data;
@@ -389,17 +401,24 @@
             // have index to make a grid of finess*fineness squares 
             // of which to have the same brightness variations.
             
-            //our implementation will make variations over a specified grid 
-            // element in the patterntreats every squre in the pattern,
-            // not over the yarnsegment as it seems to be suggested in the paper.
-            uint32_t r1 = (uint32_t) ((pattern_data.x + pattern_data.index_x)
+            //TODO(Peter): Clean this up a bit...
+            //segment start x,y
+            float startx = pattern_data.total_x - pattern_data.x*pattern_data.width;
+            float starty = pattern_data.total_y - pattern_data.y*pattern_data.length;
+            float centerx = startx + pattern_data.width/2.0;
+            float centery = starty + pattern_data.length/2.0;
+            
+            uint32_t r1 = (uint32_t) ((centerx + pattern_data.total_x) 
                     * m_intensity_fineness);
-            uint32_t r2 = (uint32_t) ((pattern_data.y + pattern_data.index_y) 
+            uint32_t r2 = (uint32_t) ((centery + pattern_data.total_y) 
                     * m_intensity_fineness);
  
-            srand(r1+r2); //bad way to do it?
-            float xi = rand();
-			return fmin(-math::fastlog(xi), (float) 10.0f);
+            //srand(r1+r2); //bad way to do it?
+            //float xi = rand();
+		    //return fmin(-math::fastlog(xi), (float) 10.0f);
+			
+            float xi = sampleTEAFloat(r1, r2, 8);
+			return std::min(-math::fastlog(xi), (Float) 10.0f);
         }
 
         float specularReflectionPattern(Vector wi, Vector wo, PatternData data, Intersection its) const {
