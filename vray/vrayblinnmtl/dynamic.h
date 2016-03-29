@@ -7,11 +7,11 @@
 #include "vraycore.h"
 #include "vrayrenderer.h"
 #include "dbgprint.h"
-#include "weave.h"
+#include "woven_cloth.h"
 
 typedef VUtils::Color (*EVALFUNC)(const VUtils::VRayContext &rc, const VUtils::Vector &direction,
                                   VUtils::Color &lightColor,VUtils:: Color &origLightColor, 
-                                  float probLight, int flags, WeaveParameters *weave_parameters,
+                                  float probLight, int flags, wcWeaveParameters *weave_parameters,
                                   VUtils::Matrix inm);
 
 
@@ -66,5 +66,5 @@ static void unload_dlls()
 
 VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const VUtils::Vector &direction,
                            VUtils::Color &lightColor, VUtils::Color &origLightColor,
-                           float probLight, int flags, WeaveParameters *weave_parameters,
+                           float probLight, int flags, wcWeaveParameters *weave_parameters,
                            VUtils::Matrix nm);

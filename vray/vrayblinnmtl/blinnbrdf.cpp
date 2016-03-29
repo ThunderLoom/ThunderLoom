@@ -12,7 +12,7 @@ using namespace VUtils;
 
 void MyBaseBSDF::init(const VRayContext &rc, const Color &reflectionColor, real reflectionGlossiness,
                       int subdivs, const Color &transp, int dblSided, const Color &diffuse,
-                      WeaveParameters *weave_parameters) {
+                      wcWeaveParameters *weave_parameters) {
     
 
 	reflect_filter=reflectionColor;

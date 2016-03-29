@@ -267,7 +267,7 @@
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(ADSK_3DSMAX_SDK_2015)\include;C:\Program Files\Chaos Group\V-Ray\3dsmax 2015 for x64\include;.\wif;..\Dynamic;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ADSK_3DSMAX_SDK_2015)\include;C:\Program Files\Chaos Group\V-Ray\3dsmax 2015 for x64\include;..\..\src\wif;..\Dynamic;.;..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;DYNAMIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
@@ -394,6 +394,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\wif\ini.cpp" />
+    <ClCompile Include="..\..\src\wif\wif.cpp" />
+    <ClCompile Include="..\..\src\woven_cloth.cpp" />
     <ClCompile Include="..\Dynamic\Dynamic.cpp" />
     <ClCompile Include="blinnbrdf.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
@@ -427,8 +430,6 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
     </ClCompile>
-    <ClCompile Include="wif\ini.cpp" />
-    <ClCompile Include="wif\wif.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="plugin.def">
@@ -443,8 +444,6 @@
     <ClInclude Include="dynamic.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="vrayblinnmtl.h" />
-    <ClInclude Include="weave.h" />
-    <ClInclude Include="wif\wif.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="vrayblinnmtl.rc" />

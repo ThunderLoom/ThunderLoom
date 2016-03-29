@@ -30,13 +30,16 @@
     <ClCompile Include="vrayblinnmtl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wif\wif.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="wif\ini.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\Dynamic\Dynamic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\woven_cloth.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\wif\ini.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\wif\wif.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -51,12 +54,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="wif\wif.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="weave.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

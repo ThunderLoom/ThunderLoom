@@ -21,7 +21,7 @@
 #include "blinnbrdf.h"
 #include "pb2template_generator.h"
 
-#include "weave.h"
+#include "woven_cloth.h"
 
 // IMPORTANT:
 // The ClassID must be changed whenever a new project
@@ -76,7 +76,7 @@ class SkeletonMaterial : public Mtl, public VR::VRenderMtl {
 public:
 	// various variables
 	Interval ivalid;
-    WeaveParameters m_weave_parameters;
+    wcWeaveParameters m_weave_parameters;
 
 	// Cached parameters
 	float glossiness;

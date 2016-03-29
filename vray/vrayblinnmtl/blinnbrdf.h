@@ -1,7 +1,7 @@
 #ifndef __BLINN_BRDF_SAMPLER__
 #define __BLINN_BRDF_SAMPLER__
 
-#include "weave.h"
+#include "woven_cloth.h"
 
 namespace VUtils {
 
@@ -20,7 +20,7 @@ protected:
 
 	Matrix nm, inm; // A matrix with the normal as the z-axis; can be used for anisotropy
 
-    WeaveParameters *m_weave_parameters;
+    wcWeaveParameters *m_weave_parameters;
 
 	virtual void computeNormalMatrix(const VRayContext &rc, const Vector &normal, Matrix &nm);
 public:
@@ -32,7 +32,7 @@ public:
 	// Initialization
 	void init(const VRayContext &rc, const Color &reflectionColor, real reflectionGlossiness,
         int subdivs, const Color &transp, int dblSided, const Color &diffuse,
-        WeaveParameters *weave_parameters);
+        wcWeaveParameters *weave_parameters);
 
 	// From BRDFSampler
 	Color getDiffuseColor(Color &lightColor);
