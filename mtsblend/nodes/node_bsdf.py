@@ -83,6 +83,7 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
         layout.prop(self, 'umax')
         layout.prop(self, 'utiling')
         layout.prop(self, 'vtiling')
+        layout.prop(self, 'intensity_fineness')
 
     wiffile = StringProperty(name = 'WIF file', subtype = 'FILE_PATH')
     specular_strength = FloatProperty(name = 'Specular Strength', default = 0.5)
@@ -93,6 +94,7 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
     psi     = FloatProperty(name = 'Psi', default = 0.5)
     utiling = FloatProperty(name = 'U tiling', default = 1.0)
     vtiling = FloatProperty(name = 'V tiling', default = 1.0)
+    intensity_fineness = FloatProperty(name = 'Intensity var fineness', default = 0.0)
 
     custom_inputs = [
         {'type': 'MtsSocketColor_diffuseReflectance', 'name': 'Diffuse Reflectance'},
@@ -114,6 +116,7 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
             'psi'   : self.psi,
             'utiling': self.utiling,
             'vtiling': self.vtiling,
+            'intensity_fineness': self.intensity_fineness,
             'reflectance': self.inputs['Diffuse Reflectance'].get_color_dict(export_ctx),
         }
 
