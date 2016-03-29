@@ -1,0 +1,227 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 3,1,0,0
+ PRODUCTVERSION 3,1,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "TECH: harry.denholm"
+            VALUE "CompanyName", "Kinetix, a division of Autodesk, Inc."
+            VALUE "FileDescription", "Skeleton Plugin"
+            VALUE "FileVersion", "3.1.0.0"
+            VALUE "InternalName", "Skeleton"
+            VALUE "LegalCopyright", "Copyright © 1998 Autodesk Inc."
+            VALUE "LegalTrademarks", "The following are registered trademarks of Autodesk, Inc.: 3D Studio MAX.  The following are trademarks of Autodesk, Inc.: Kinetix, Kinetix(logo), BIPED, Physique, Character Studio, MAX DWG, DWG Unplugged, Heidi, FLI, FLC, DXF."
+            VALUE "OriginalFilename", "Skeleton.dlu"
+            VALUE "ProductName", "3D Studio MAX"
+            VALUE "ProductVersion", "3.1.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United Kingdom) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
+#pragma code_page(1252)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_BLENDMTL DIALOGEX 0, 0, 279, 214
+STYLE DS_SETFONT | WS_CHILD | WS_VISIBLE
+FONT 8, "MS Sans Serif", 0, 0, 0x0
+BEGIN
+    RTEXT           "Base material:",IDC_STATIC,4,48,46,8
+    CONTROL         "",bn_baseMtl,"CustButton",WS_TABSTOP,52,48,162,10
+    CONTROL         "",cs_blend1,"ColorSwatch",WS_TABSTOP,90,78,10,10
+    RTEXT           "1:",st_coat1,2,78,8,8
+    CONTROL         "",bn_coatMtl1,"CustButton",WS_TABSTOP,12,78,76,10
+    CONTROL         "",ed_texmap_blend_mult1,"CustEdit",WS_TABSTOP,182,78,23,10
+    CONTROL         "",sp_texmap_blend_mult1,"SpinnerControl",WS_TABSTOP,207,78,7,10
+    CONTROL         "",bn_texmap_blend1,"CustButton",WS_TABSTOP,102,78,78,10
+    LTEXT           "Coat materials:",IDC_STATIC,12,67,50,10
+    LTEXT           "Blend amount:",IDC_STATIC,90,67,48,10
+    CONTROL         "",cs_blend2,"ColorSwatch",WS_TABSTOP,90,90,10,10
+    RTEXT           "2:",st_coat2,2,90,8,8
+    CONTROL         "",bn_coatMtl2,"CustButton",WS_TABSTOP,12,90,76,10
+    CONTROL         "",ed_texmap_blend_mult2,"CustEdit",WS_TABSTOP,182,90,23,10
+    CONTROL         "",sp_texmap_blend_mult2,"SpinnerControl",WS_TABSTOP,207,90,7,10
+    CONTROL         "",bn_texmap_blend2,"CustButton",WS_TABSTOP,102,90,78,10
+    CONTROL         "",cs_blend3,"ColorSwatch",WS_TABSTOP,90,102,10,10
+    RTEXT           "3:",st_coat3,2,102,8,8
+    CONTROL         "",bn_coatMtl3,"CustButton",WS_TABSTOP,12,102,76,10
+    CONTROL         "",ed_texmap_blend_mult3,"CustEdit",WS_TABSTOP,182,102,23,10
+    CONTROL         "",sp_texmap_blend_mult3,"SpinnerControl",WS_TABSTOP,207,102,7,10
+    CONTROL         "",bn_texmap_blend3,"CustButton",WS_TABSTOP,102,102,78,10
+    CONTROL         "",cs_blend4,"ColorSwatch",WS_TABSTOP,90,114,10,10
+    RTEXT           "4:",st_coat4,2,114,8,8
+    CONTROL         "",bn_coatMtl4,"CustButton",WS_TABSTOP,12,114,76,10
+    CONTROL         "",ed_texmap_blend_mult4,"CustEdit",WS_TABSTOP,182,114,23,10
+    CONTROL         "",sp_texmap_blend_mult4,"SpinnerControl",WS_TABSTOP,207,114,7,10
+    CONTROL         "",bn_texmap_blend4,"CustButton",WS_TABSTOP,102,114,78,10
+    CONTROL         "",cs_blend5,"ColorSwatch",WS_TABSTOP,90,126,10,10
+    RTEXT           "5:",st_coat5,2,126,8,8
+    CONTROL         "",bn_coatMtl5,"CustButton",WS_TABSTOP,12,126,76,10
+    CONTROL         "",ed_texmap_blend_mult5,"CustEdit",WS_TABSTOP,182,126,23,10
+    CONTROL         "",sp_texmap_blend_mult5,"SpinnerControl",WS_TABSTOP,207,126,7,10
+    CONTROL         "",bn_texmap_blend5,"CustButton",WS_TABSTOP,102,126,78,10
+    CONTROL         "",cs_blend6,"ColorSwatch",WS_TABSTOP,90,138,10,10
+    RTEXT           "6:",st_coat6,2,138,8,8
+    CONTROL         "",bn_coatMtl6,"CustButton",WS_TABSTOP,12,138,76,10
+    CONTROL         "",ed_texmap_blend_mult6,"CustEdit",WS_TABSTOP,182,138,23,10
+    CONTROL         "",sp_texmap_blend_mult6,"SpinnerControl",WS_TABSTOP,207,138,7,10
+    CONTROL         "",bn_texmap_blend6,"CustButton",WS_TABSTOP,102,138,78,10
+    CONTROL         "",cs_blend7,"ColorSwatch",WS_TABSTOP,90,150,10,10
+    RTEXT           "7:",st_coat7,2,150,8,8
+    CONTROL         "",bn_coatMtl7,"CustButton",WS_TABSTOP,12,150,76,10
+    CONTROL         "",ed_texmap_blend_mult7,"CustEdit",WS_TABSTOP,182,150,23,10
+    CONTROL         "",sp_texmap_blend_mult7,"SpinnerControl",WS_TABSTOP,207,150,7,10
+    CONTROL         "",bn_texmap_blend7,"CustButton",WS_TABSTOP,102,150,78,10
+    CONTROL         "",cs_blend8,"ColorSwatch",WS_TABSTOP,90,162,10,10
+    RTEXT           "8:",st_coat8,2,162,8,8
+    CONTROL         "",bn_coatMtl8,"CustButton",WS_TABSTOP,12,162,76,10
+    CONTROL         "",ed_texmap_blend_mult8,"CustEdit",WS_TABSTOP,182,162,23,10
+    CONTROL         "",sp_texmap_blend_mult8,"SpinnerControl",WS_TABSTOP,207,162,7,10
+    CONTROL         "",bn_texmap_blend8,"CustButton",WS_TABSTOP,102,162,78,10
+    CONTROL         "",cs_blend9,"ColorSwatch",WS_TABSTOP,90,174,10,10
+    RTEXT           "9:",st_coat9,2,174,8,8
+    CONTROL         "",bn_coatMtl9,"CustButton",WS_TABSTOP,12,174,76,10
+    CONTROL         "",ed_texmap_blend_mult9,"CustEdit",WS_TABSTOP,182,174,23,10
+    CONTROL         "",sp_texmap_blend_mult9,"SpinnerControl",WS_TABSTOP,207,174,7,10
+    CONTROL         "",bn_texmap_blend9,"CustButton",WS_TABSTOP,102,174,78,10
+    CONTROL         "Additive (shellac) mode",cb_additive,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,200,86,10
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_BLENDMTL, DIALOG
+    BEGIN
+        LEFTMARGIN, 4
+        RIGHTMARGIN, 275
+        TOPMARGIN, 4
+        BOTTOMMARGIN, 210
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_CLASSNAME           "VRayBlendMtl"
+    IDS_PARAMETERS          "Parameters"
+    IDS_SIMPLE              "Simple Parameter"
+    IDS_LIBDESC             "VRayBlendMtl material"
+    ids_baseMtl             "baseMtl"
+    ids_coatMtl             "coatMtl"
+    ids_blend               "blend"
+    ids_texmap_blend        "texmap_blend"
+    ids_texmap_blend_mult   "texmap_blend_mult"
+END
+
+STRINGTABLE
+BEGIN
+    ids_texmap_blend_on     "texmap_blend_on"
+    ids_additive            "additiveMode"
+END
+
+#endif    // English (United Kingdom) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

@@ -1,0 +1,6 @@
+default:build run
+build:
+	cl main.c ini.c wif.c /nologo /o wif_reader.exe
+
+run:
+	wif_reader.exe

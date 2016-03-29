@@ -1,0 +1,3 @@
+LIBRARY   vrayblinnmtl_dynamic.dll
+EXPORTS
+   dynamic_eval		@1
