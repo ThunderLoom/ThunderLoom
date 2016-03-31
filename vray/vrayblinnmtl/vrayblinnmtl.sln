@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vrayblinnmtl", "vrayblinnmtl.vcxproj", "{5A17DACE-8572-4AC1-B679-DFC296EA8557}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wovencloth", "vrayblinnmtl.vcxproj", "{5A17DACE-8572-4AC1-B679-DFC296EA8557}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vrayblinnmtl_dynamic", "..\Dynamic\Dynamic.vcxproj", "{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}"
 EndProject
@@ -13,6 +13,9 @@ Global
 		max 2015 release|Mixed Platforms = max 2015 release|Mixed Platforms
 		max 2015 release|Win32 = max 2015 release|Win32
 		max 2015 release|x64 = max 2015 release|x64
+		max 2016 release|Mixed Platforms = max 2016 release|Mixed Platforms
+		max 2016 release|Win32 = max 2016 release|Win32
+		max 2016 release|x64 = max 2016 release|x64
 		Max Release Official|Mixed Platforms = Max Release Official|Mixed Platforms
 		Max Release Official|Win32 = Max Release Official|Win32
 		Max Release Official|x64 = Max Release Official|x64
@@ -33,6 +36,12 @@ Global
 		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.max 2015 release|Win32.Build.0 = max 2015 release|Win32
 		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.max 2015 release|x64.ActiveCfg = max 2015 release|x64
 		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.max 2015 release|x64.Build.0 = max 2015 release|x64
+		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.max 2016 release|Mixed Platforms.ActiveCfg = max 2016 release|Win32
+		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.max 2016 release|Mixed Platforms.Build.0 = max 2016 release|Win32
+		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.max 2016 release|Win32.ActiveCfg = max 2016 release|Win32
+		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.max 2016 release|Win32.Build.0 = max 2016 release|Win32
+		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.max 2016 release|x64.ActiveCfg = max 2016 release|x64
+		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.max 2016 release|x64.Build.0 = max 2016 release|x64
 		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.Max Release Official|Mixed Platforms.ActiveCfg = Max Release Official|Win32
 		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.Max Release Official|Mixed Platforms.Build.0 = Max Release Official|Win32
 		{5A17DACE-8572-4AC1-B679-DFC296EA8557}.Max Release Official|Win32.ActiveCfg = Max Release Official|Win32
@@ -57,6 +66,12 @@ Global
 		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.max 2015 release|Win32.Build.0 = Release|Win32
 		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.max 2015 release|x64.ActiveCfg = max 2015 release|x64
 		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.max 2015 release|x64.Build.0 = max 2015 release|x64
+		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.max 2016 release|Mixed Platforms.ActiveCfg = max 2016 release|Win32
+		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.max 2016 release|Mixed Platforms.Build.0 = max 2016 release|Win32
+		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.max 2016 release|Win32.ActiveCfg = max 2016 release|Win32
+		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.max 2016 release|Win32.Build.0 = max 2016 release|Win32
+		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.max 2016 release|x64.ActiveCfg = max 2016 release|x64
+		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.max 2016 release|x64.Build.0 = max 2016 release|x64
 		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.Max Release Official|Mixed Platforms.ActiveCfg = Release|Win32
 		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.Max Release Official|Mixed Platforms.Build.0 = Release|Win32
 		{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}.Max Release Official|Win32.ActiveCfg = Release|Win32
