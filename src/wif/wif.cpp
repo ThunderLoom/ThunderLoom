@@ -172,6 +172,7 @@ WeaveData *wif_read(const char *filename)
     return data;
 }
 
+#ifdef WIN32
 WeaveData *wif_read_wchar(const wchar_t *filename)
 {
     WeaveData *data;
@@ -190,6 +191,7 @@ WeaveData *wif_read_wchar(const wchar_t *filename)
     }
     return data;
 }
+#endif
 
 void wif_free_weavedata(WeaveData *data)
 {

@@ -1,4 +1,6 @@
 #include "woven_cloth.h"
+#include "wif/wif.cpp"
+#include "wif/ini.cpp"
 
 // For M_PI etc.
 #define _USE_MATH_DEFINES
@@ -55,6 +57,154 @@ static wcVector wcVector_add(wcVector a, wcVector b)
 }
 
 // -- //
+
+//Returns a random float in the range [0,1]
+//TODO(Vidar): Better rng
+float get_random_float()
+{
+    return (float)rand()/(float)(RAND_MAX);
+}
+
+//From Mitsuba
+static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds = 4)
+{
+	uint32_t sum = 0;
+
+	for (int i=0; i<rounds; ++i) {
+		sum += 0x9e3779b9;
+		v0 += ((v1 << 4) + 0xA341316C) ^ (v1 + sum) ^ ((v1 >> 5) + 0xC8013EA4);
+		v1 += ((v0 << 4) + 0xAD90777D) ^ (v0 + sum) ^ ((v0 >> 5) + 0x7E95761E);
+	}
+
+	return ((uint64_t) v1 << 32) + v0;
+}
+
+//From Mitsuba
+static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds = 4)
+{
+    /* Trick from MTGP: generate an uniformly distributed
+    single precision number in [1,2) and subtract 1. */
+    union {
+        uint32_t u;
+        float f;
+    } x;
+    x.u = ((sampleTEA(v0, v1, rounds) & 0xFFFFFFFF) >> 9) | 0x3f800000UL;
+    return x.f - 1.0f;
+}
+
+void sample_cosine_hemisphere(float *p_x, float *p_y, float *p_z)
+{
+    //sample uniform disk concentric
+    // From mitsuba warp.cpp
+    float sample_x = get_random_float();
+    float sample_y = get_random_float();
+	float r1 = 2.0f*sample_x - 1.0f;
+	float r2 = 2.0f*sample_y - 1.0f;
+
+	/* Modified concencric map code with less branching (by Dave Cline), see
+	   http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html */
+	float phi, r;
+	if (r1 == 0 && r2 == 0) {
+		r = phi = 0;
+	} else if (r1*r1 > r2*r2) {
+		r = r1;
+		phi = (M_PI/4.0f) * (r2/r1);
+	} else {
+		r = r2;
+		phi = (M_PI_2) - (r1/r2) * (M_PI/4.0f);
+	}
+
+    *p_x = r * cosf(phi);
+    *p_x = r * sinf(phi);
+    *p_z = sqrtf(1.0f - (*p_x)*(*p_x) - (*p_y)*(*p_y));
+}
+
+static void finalize_weave_parmeters(wcWeaveParameters *params)
+{
+    //Calculate normalization factor for the specular reflection
+    //Irawan:
+    /* Estimate the average reflectance under diffuse
+       illumination and use it to normalize the specular
+       component */
+
+    //TODO(Vidar): Better rng... Or quasi-monte carlo?
+    srand(3452); // We always want the same seed
+    size_t nSamples = 10000;
+    float result = 0.0f;
+    for (size_t i=0; i<nSamples; ++i) {
+
+        wcIntersectionData intersection_data;
+        intersection_data.uv_x = get_random_float();
+        intersection_data.uv_y = get_random_float();
+
+        sample_cosine_hemisphere(&intersection_data.wi_x,
+            &intersection_data.wi_y, &intersection_data.wi_z);
+
+        sample_cosine_hemisphere(&intersection_data.wo_x,
+            &intersection_data.wo_y, &intersection_data.wo_z);
+
+        wcPatternData pattern_data = wcGetPatternData(
+            intersection_data, params);
+        result += wcEvalSpecular(intersection_data,
+                pattern_data,params);
+    }
+
+    if (result <= 0.0001f){
+        params->specular_normalization = 0.f;
+    }else{
+        params->specular_normalization = nSamples / (result * M_PI);
+    }
+}
+
+void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
+{
+    WeaveData *data = wif_read(filename);
+    params->pattern_entry = wif_get_pattern(data,
+        &params->pattern_width, &params->pattern_height);
+    wif_free_weavedata(data);
+    finalize_weave_parmeters(params);
+}
+
+void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *pattern,
+    float *warp_color, float *weft_color, uint32_t pattern_width,
+    uint32_t pattern_height)
+{
+    params->pattern_width  = pattern_width;
+    params->pattern_height = pattern_height;
+    params->pattern_entry  = wif_build_pattern_from_data(pattern,
+            warp_color, weft_color, pattern_width, pattern_height);
+    finalize_weave_parmeters(params);
+}
+
+static float intensityVariation(wcPatternData pattern_data,
+    const wcWeaveParameters *params)
+{
+    if(params->intensity_fineness < 0.001f){
+        return 1.f;
+    }
+    // have index to make a grid of finess*fineness squares 
+    // of which to have the same brightness variations.
+    
+    //TODO(Peter): Clean this up a bit...
+    //segment start x,y
+    float startx = pattern_data.total_x - pattern_data.x*pattern_data.width;
+    float starty = pattern_data.total_y - pattern_data.y*pattern_data.length;
+    float centerx = startx + pattern_data.width/2.0;
+    float centery = starty + pattern_data.length/2.0;
+    
+    uint32_t r1 = (uint32_t) ((centerx + pattern_data.total_x) 
+            * params->intensity_fineness);
+    uint32_t r2 = (uint32_t) ((centery + pattern_data.total_y) 
+            * params->intensity_fineness);
+
+    //srand(r1+r2); //bad way to do it?
+    //float xi = rand();
+    //return fmin(-math::fastlog(xi), (float) 10.0f);
+    
+    float xi = sampleTEASingle(r1, r2, 8);
+    float log_xi = -logf(xi);
+    return log_xi < 10.f ? log_xi : 10.f;
+}
 
 static void calculateLengthOfSegment(bool warp_above, uint32_t pattern_x,
                 uint32_t pattern_y, uint32_t *steps_left,
@@ -115,13 +265,21 @@ static float vonMises(float cos_x, float b) {
 }
 
 wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
-        wcWeaveParameters *params) {
+        const wcWeaveParameters *params) {
     float uv_x = intersection_data.uv_x;
     float uv_y = intersection_data.uv_y;
 
     //Set repeating uv coordinates.
     float u_repeat = fmod(uv_x*params->uscale,1.f);
     float v_repeat = fmod(uv_y*params->vscale,1.f);
+
+    //pattern index
+    //TODO(Peter): these are new. perhaps they can be used later 
+    // to avoid duplicate calculations.
+    //TODO(Peter): come up with a better name for these...
+    uint32_t total_x = uv_x*params->uscale*params->pattern_width;
+    uint32_t total_y = uv_y*params->vscale*params->pattern_height;
+
     //TODO(Vidar): Check why this crashes sometimes
     if (u_repeat < 0.f) {
         u_repeat = u_repeat - floor(u_repeat);
@@ -177,7 +335,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
 
     //Calculate the yarn-segment-local u v coordinates along the curved cylinder
     //NOTE: This is different from how Irawan does it
-    /*segment_u = asinf(x*sinf(m_umax));
+    /*segment_u = asinf(x*sinf(params->umax));
         segment_v = asinf(y);*/
     //TODO(Vidar): Use a parameter for choosing model?
     float segment_u = y*params->umax;
@@ -202,19 +360,23 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
 
     ret_data.u = segment_u;
     ret_data.v = segment_v;
+    ret_data.length = l; 
+    ret_data.width  = w; 
     ret_data.x = x; 
     ret_data.y = y; 
     ret_data.warp_above = current_point.warp_above; 
     ret_data.normal_x = normal_x;
     ret_data.normal_y = normal_y;
     ret_data.normal_z = normal_z;
+    ret_data.total_x = total_x; 
+    ret_data.total_y = total_y; 
 
     //return the results
     return ret_data;
 }
 
 float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
-    wcPatternData data, wcWeaveParameters *params)
+    wcPatternData data, const wcWeaveParameters *params)
 {
 
     wcVector wi = wcvector(intersection_data.wi_x, intersection_data.wi_y,
@@ -297,7 +459,7 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
 
 
 float wcEvalStapleSpecular(wcIntersectionData intersection_data,
-    wcPatternData data, wcWeaveParameters *params)
+    wcPatternData data, const wcWeaveParameters *params)
 {
     wcVector wi = wcvector(intersection_data.wi_x, intersection_data.wi_y,
         intersection_data.wi_z);
@@ -369,3 +531,18 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     return reflection;
 }
 
+float wcEvalSpecular(wcIntersectionData intersection_data,
+        wcPatternData data, const wcWeaveParameters *params){
+    // Depending on the given psi parameter the yarn is considered
+    // staple or filament. They are treated differently in order
+    // to work better numerically. 
+    float reflection = 0.f;
+    if (params->psi <= 0.001f) {
+        //Filament yarn
+        reflection = wcEvalFilamentSpecular(intersection_data, data, params); 
+    } else {
+        //Staple yarn
+        reflection = wcEvalStapleSpecular(intersection_data, data, params); 
+    }
+    return reflection * intensityVariation(data, params);
+}
