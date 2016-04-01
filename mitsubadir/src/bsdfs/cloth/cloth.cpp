@@ -85,7 +85,6 @@
                     wcWeavePatternFromData(&m_weave_params, warp_above,
                         warp_color, weft_color, 3, 3);
 #endif
-
         }
 
         Cloth(Stream *stream, InstanceManager *manager)
@@ -111,6 +110,28 @@
             BSDF::configure();
         }
 
+        Frame getPerturbedFrame(wcPatternData data, Intersection its) const
+        {
+			//Get the world space coordinate vectors going along the texture u&v
+            //TODO(Peter) Is it world space though!??!
+            //NOTE(Vidar) You're right, it's probably shading space... :S
+            Float dDispDu = data.normal_x;
+            Float dDispDv = data.normal_y;
+            Vector dpdv = its.dpdv + its.shFrame.n * (
+                    -dDispDv - dot(its.shFrame.n, its.dpdv));
+            Vector dpdu = its.dpdu + its.shFrame.n * (
+                    -dDispDu - dot(its.shFrame.n, its.dpdu));
+            // dpdv & dpdu are in world space
+
+            //set frame
+            Frame result;
+            result.n = normalize(cross(dpdu, dpdv));
+            result.s = normalize(dpdu - result.n
+                    * dot(result.n, dpdu));
+            result.t = cross(result.n, result.s);
+            return result;
+        }
+
         Spectrum getDiffuseReflectance(const Intersection &its) const {
             wcIntersectionData intersection_data;
             intersection_data.uv_x = its.uv.x;
@@ -122,41 +143,6 @@
                 pattern_data.color_b);
             return col * m_reflectance->eval(its);
         }
-
-        /*struct PatternData
-        {
-            Spectrum color;
-            Frame frame; //The perturbed frame 
-            float u, v; //Segment uv coordinates (in angles)
-            float length, width; //Segment length and width
-            float x, y; //position within segment. 
-            float total_x, total_y; //index for elements. 
-            bool warp_above; 
-        };
-
-        float intensityVariation(PatternData pattern_data) const {
-            // have index to make a grid of finess*fineness squares 
-            // of which to have the same brightness variations.
-            
-            //TODO(Peter): Clean this up a bit...
-            //segment start x,y
-            float startx = pattern_data.total_x - pattern_data.x*pattern_data.width;
-            float starty = pattern_data.total_y - pattern_data.y*pattern_data.length;
-            float centerx = startx + pattern_data.width/2.0;
-            float centery = starty + pattern_data.length/2.0;
-            
-            uint32_t r1 = (uint32_t) ((centerx + pattern_data.total_x) 
-                    * m_intensity_fineness);
-            uint32_t r2 = (uint32_t) ((centery + pattern_data.total_y) 
-                    * m_intensity_fineness);
- 
-            //srand(r1+r2); //bad way to do it?
-            //float xi = rand();
-		    //return fmin(-math::fastlog(xi), (float) 10.0f);
-			
-            float xi = sampleTEAFloat(r1, r2, 8);
-			return std::min(-math::fastlog(xi), (Float) 10.0f);
-        }*/
 
         Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
             if (!(bRec.typeMask & EDiffuseReflection) || measure != ESolidAngle
@@ -179,7 +165,7 @@
             wcPatternData pattern_data = wcGetPatternData(intersection_data,
                     &m_weave_params);
             Intersection perturbed(bRec.its);
-            //perturbed.shFrame = pattern_data.frame;
+            perturbed.shFrame = getPerturbedFrame(pattern_data, bRec.its);
 
             Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
             float diffuse_mask = 1.f;
@@ -189,16 +175,7 @@
                 diffuse_mask = 0.f;
             }
 
-            //Get intensity variation
-            float intensity_variation = 1.0f;
-            /*
-            if (m_intensity_fineness > 0.0f) {
-                intensity_variation = intensityVariation(pattern_data);
-            }
-            */
-            
-            Spectrum specular(m_specular_strength*intensity_variation
-                * m_specular_normalization
+            Spectrum specular(m_specular_strength
                 * wcEvalSpecular(intersection_data,
                     pattern_data,&m_weave_params));
             Spectrum col;
@@ -232,7 +209,7 @@
             wcPatternData pattern_data = wcGetPatternData(intersection_data,
                     &m_weave_params);
             Intersection perturbed(its);
-            //perturbed.shFrame = pattern_data.frame;
+            perturbed.shFrame = getPerturbedFrame(pattern_data, its);
 
             return warp::squareToCosineHemispherePdf(perturbed.toLocal(
                         its.toWorld(bRec.wo)));
@@ -258,7 +235,8 @@
             wcPatternData pattern_data = wcGetPatternData(intersection_data,
                     &m_weave_params);
             Intersection perturbed(its);
-            //perturbed.shFrame = pattern_data.frame;
+            perturbed.shFrame = getPerturbedFrame(pattern_data, its);
+
             bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
 
             bRec.wo = warp::squareToCosineHemisphere(sample);
@@ -282,7 +260,7 @@
                 pattern_data.color_b);
             return m_reflectance->eval(bRec.its) * diffuse_mask *
                 col*(1.f - m_specular_strength)
-                + m_specular_strength*specular*m_specular_normalization;// *
+                + m_specular_strength*specular;// *
         }
 
         Spectrum sample(BSDFSamplingRecord &bRec, Float &pdf, const Point2 &sample) const {
@@ -305,7 +283,7 @@
             wcPatternData pattern_data = wcGetPatternData(intersection_data,
                     &m_weave_params);
             Intersection perturbed(its);
-            //perturbed.shFrame = pattern_data.frame;
+            perturbed.shFrame = getPerturbedFrame(pattern_data, its);
             bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
 
             bRec.wo = warp::squareToCosineHemisphere(sample);
@@ -330,7 +308,7 @@
                 pattern_data.color_b);
             return m_reflectance->eval(bRec.its) * diffuse_mask *
                 col*(1.f - m_specular_strength)
-                + m_specular_strength*specular*m_specular_normalization;// * 
+                + m_specular_strength*specular;// * 
         }
 
         void addChild(const std::string &name, ConfigurableObject *child) {
@@ -364,8 +342,6 @@
     private:
             ref<Texture> m_reflectance;
             float m_specular_strength;
-            float m_intensity_fineness;
-            float m_specular_normalization;
             wcWeaveParameters m_weave_params;
 };
 

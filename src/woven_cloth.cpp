@@ -131,6 +131,7 @@ static void finalize_weave_parmeters(wcWeaveParameters *params)
     srand(3452); // We always want the same seed
     size_t nSamples = 10000;
     float result = 0.0f;
+    params->specular_normalization = 1.f;
     for (size_t i=0; i<nSamples; ++i) {
 
         wcIntersectionData intersection_data;
@@ -544,5 +545,6 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
         //Staple yarn
         reflection = wcEvalStapleSpecular(intersection_data, data, params); 
     }
-    return reflection * intensityVariation(data, params);
+    return reflection * params->specular_normalization
+        * intensityVariation(data, params) ;
 }
