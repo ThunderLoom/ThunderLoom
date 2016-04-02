@@ -4,6 +4,7 @@
 
 typedef struct
 {
+// These are the parameters to the model
     float uscale;
     float vscale;
     float umax;
@@ -13,8 +14,9 @@ typedef struct
     float delta_x;
     float specular_strength; //TODO(Vidar): Does this really belong here?
     float intensity_fineness;
-    // These are set by calling one of the wcWeavePatternFrom* below
-    // after all parameters above have been defined
+
+// These are set by calling one of the wcWeavePatternFrom* functions
+// after all parameters above have been defined
     uint32_t pattern_height;
     uint32_t pattern_width;
     PaletteEntry * pattern_entry;

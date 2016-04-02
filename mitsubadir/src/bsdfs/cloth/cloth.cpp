@@ -129,6 +129,11 @@
             result.s = normalize(dpdu - result.n
                     * dot(result.n, dpdu));
             result.t = cross(result.n, result.s);
+
+            //Flip the normal if it points in the wrong direction
+            if (dot(result.n, its.geoFrame.n) < 0)
+                result.n *= -1;
+
             return result;
         }
 
