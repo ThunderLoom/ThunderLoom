@@ -1,4 +1,30 @@
 #include <math.h>
+#include <stdint.h>
+
+/* Tiny Encryption Algorithm by David Wheeler and Roger Needham */
+    /* Taken from mitsuba source code. */
+static uint64_t wcSampleTEA(uint32_t v0, uint32_t v1, int rounds) {
+	uint32_t sum = 0;
+
+	for (int i=0; i<rounds; ++i) {
+		sum += 0x9e3779b9;
+		v0 += ((v1 << 4) + 0xA341316C) ^ (v1 + sum) ^ ((v1 >> 5) + 0xC8013EA4);
+		v1 += ((v0 << 4) + 0xAD90777D) ^ (v0 + sum) ^ ((v0 >> 5) + 0x7E95761E);
+	}
+
+	return ((uint64_t) v1 << 32) + v0;
+}
+
+float wcSampleTEASingle(uint32_t v0, uint32_t v1, int rounds ) {
+	union {
+		uint32_t u;
+		float f;
+	} x;
+	x.u = ((wcSampleTEA(v0, v1, rounds) & 0xFFFFFFFF) >> 9) | 0x3f800000UL;
+	return x.f - 1.0f;
+}
+
+/* Perlin Noise */
 
 //Permutation table from Ken Perlin.
 static int p[] = { 151,160,137,91,90,15,

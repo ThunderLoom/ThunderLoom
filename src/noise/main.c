@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     float scale = (float)atof(argv[3]);
     float persistance = (float)atof(argv[4]);
 
-    printf("args, size: %d, octs: %g, scale: %g pers: %g'", size, octaves, scale, persistance);
+    printf("args, size: %d, octs: %d, scale: %g pers: %g'", size, octaves, scale, persistance);
 
     int i;
     for (i = 0; i < size; i++) {
