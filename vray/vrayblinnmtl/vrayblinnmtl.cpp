@@ -384,14 +384,6 @@ void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
 }
 
 void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
-    //-- Read Wif file --
-    MSTR filename = pblock->GetStr(mtl_wiffile,t);
-    WeaveData *data = wif_read_wchar(filename);
-    m_weave_parameters.pattern_entry = wif_get_pattern(data,
-        &m_weave_parameters.pattern_width,
-        &m_weave_parameters.pattern_height);
-    wif_free_weavedata(data);
-
     m_weave_parameters.uscale = uscale;
     m_weave_parameters.vscale = vscale;
     m_weave_parameters.umax   = umax;
@@ -401,6 +393,9 @@ void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
     m_weave_parameters.delta_x = delta_x;
     m_weave_parameters.specular_strength = specular;
     m_weave_parameters.specular_normalization = 1.f;
+
+    MSTR filename = pblock->GetStr(mtl_wiffile,t);
+    wcWeavePatternFromWIF_wchar(&m_weave_parameters,filename);
 
 	const VR::VRaySequenceData &sdata=vray->getSequenceData();
 	bsdfPool.init(sdata.maxRenderThreads);

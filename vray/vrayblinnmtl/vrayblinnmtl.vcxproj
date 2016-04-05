@@ -521,8 +521,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\wif\ini.cpp" />
-    <ClCompile Include="..\..\src\wif\wif.cpp" />
     <ClCompile Include="..\..\src\woven_cloth.cpp" />
     <ClCompile Include="..\Dynamic\Dynamic.cpp" />
     <ClCompile Include="blinnbrdf.cpp">

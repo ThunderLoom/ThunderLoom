@@ -166,6 +166,15 @@ void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
     finalize_weave_parmeters(params);
 }
 
+void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params, const wchar_t *filename)
+{
+    WeaveData *data = wif_read_wchar(filename);
+    params->pattern_entry = wif_get_pattern(data,
+        &params->pattern_width, &params->pattern_height);
+    wif_free_weavedata(data);
+    finalize_weave_parmeters(params);
+}
+
 void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *pattern,
     float *warp_color, float *weft_color, uint32_t pattern_width,
     uint32_t pattern_height)

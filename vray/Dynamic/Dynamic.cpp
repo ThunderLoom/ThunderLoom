@@ -25,14 +25,7 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
         return VUtils::Color(0.f,0.f,0.f);
     }
     wcIntersectionData intersection_data;
-    
-    float m_delta_x = weave_parameters->delta_x;
-    float m_umax = weave_parameters->umax;
-    float m_alpha = weave_parameters->alpha;
-    float m_beta = weave_parameters->beta;
-    float m_psi = weave_parameters->psi;
-
-
+   
     const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);
 	VR::VRayInterface &vri=const_cast<VR::VRayInterface&>(vri_const);
 	ShadeContext &sc=static_cast<ShadeContext&>(vri);
@@ -94,14 +87,7 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
 
     wcPatternData dat = wcGetPatternData(intersection_data,weave_parameters);
 
-    float reflection;
-    if(weave_parameters->psi < 0.001f){
-        reflection =
-            wcEvalFilamentSpecular(intersection_data,dat,weave_parameters);
-    }else{
-        reflection =
-            wcEvalStapleSpecular(intersection_data,dat,weave_parameters);
-    }
+    float reflection = wcEvalSpecular(intersection_data,dat,weave_parameters);
 
     float specular = weave_parameters->specular_strength;
     float diffuse = 1.f - specular;

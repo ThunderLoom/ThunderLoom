@@ -42,6 +42,8 @@ typedef struct
 } wcIntersectionData;
 
 void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename);
+void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
+    const wchar_t *filename);
 void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *pattern,
     float *warp_color, float *weft_color, uint32_t pattern_width,
     uint32_t pattern_height);
