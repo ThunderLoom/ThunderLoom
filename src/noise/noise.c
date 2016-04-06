@@ -3,7 +3,7 @@
 
 /* Tiny Encryption Algorithm by David Wheeler and Roger Needham */
     /* Taken from mitsuba source code. */
-static uint64_t wcSampleTEA(uint32_t v0, uint32_t v1, int rounds) {
+/*static uint64_t wcSampleTEA(uint32_t v0, uint32_t v1, int rounds) {
 	uint32_t sum = 0;
 
 	for (int i=0; i<rounds; ++i) {
@@ -23,7 +23,7 @@ float wcSampleTEASingle(uint32_t v0, uint32_t v1, int rounds ) {
 	x.u = ((wcSampleTEA(v0, v1, rounds) & 0xFFFFFFFF) >> 9) | 0x3f800000UL;
 	return x.f - 1.0f;
 }
-
+*/
 /* Perlin Noise */
 
 //Permutation table from Ken Perlin.

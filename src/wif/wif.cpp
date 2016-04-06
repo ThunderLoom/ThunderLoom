@@ -172,12 +172,12 @@ WeaveData *wif_read(const char *filename)
     return data;
 }
 
-#ifdef WIN32
+
 WeaveData *wif_read_wchar(const wchar_t *filename)
 {
     WeaveData *data;
     data = (WeaveData*)calloc(1,sizeof(WeaveData));
-
+    #ifdef WIN32
     FILE* file;
     int error = -1;
 
@@ -189,9 +189,10 @@ WeaveData *wif_read_wchar(const wchar_t *filename)
     if (error < 0) {
         wprintf(L"Could not read \"%s\"\n",filename);
     }
+    #endif
     return data;
 }
-#endif
+
 
 void wif_free_weavedata(WeaveData *data)
 {

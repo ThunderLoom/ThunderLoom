@@ -1,6 +1,7 @@
 #include "woven_cloth.h"
 #include "wif/wif.cpp"
 #include "wif/ini.cpp"
+#include "noise/noise.c"
 
 // For M_PI etc.
 #define _USE_MATH_DEFINES
@@ -56,6 +57,10 @@ static wcVector wcVector_add(wcVector a, wcVector b)
     return ret;
 }
 
+static float wcClamp(float x, float min, float max)
+{
+    return (x < min) ? min : (x > max) ? max : x;
+}
 // -- //
 
 //Returns a random float in the range [0,1]
@@ -132,6 +137,7 @@ static void finalize_weave_parmeters(wcWeaveParameters *params)
     size_t nSamples = 10000;
     float result = 0.0f;
     params->specular_normalization = 1.f;
+    
     for (size_t i=0; i<nSamples; ++i) {
 
         wcIntersectionData intersection_data;
@@ -155,11 +161,21 @@ static void finalize_weave_parmeters(wcWeaveParameters *params)
     }else{
         params->specular_normalization = nSamples / (result * M_PI);
     }
+    
 }
 
 void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
 {
     WeaveData *data = wif_read(filename);
+    params->pattern_entry = wif_get_pattern(data,
+        &params->pattern_width, &params->pattern_height);
+    wif_free_weavedata(data);
+    finalize_weave_parmeters(params);
+}
+
+void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params, const wchar_t *filename)
+{
+    WeaveData *data = wif_read_wchar(filename);
     params->pattern_entry = wif_get_pattern(data,
         &params->pattern_width, &params->pattern_height);
     wif_free_weavedata(data);
@@ -185,17 +201,26 @@ static float intensityVariation(wcPatternData pattern_data,
     }
     // have index to make a grid of finess*fineness squares 
     // of which to have the same brightness variations.
-    
-    //TODO(Peter): Clean this up a bit...
+
+    uint32_t tindex_x = pattern_data.total_index_x;
+    uint32_t tindex_y = pattern_data.total_index_y;
+
+    //Switch X and Y for warp, so that we have the yarn going along y
+    if(!pattern_data.warp_above){
+        float tmp = tindex_x;
+        tindex_x = tindex_y;
+        tindex_y = tmp;
+    }
+
     //segment start x,y
-    float startx = pattern_data.total_x - pattern_data.x*pattern_data.width;
-    float starty = pattern_data.total_y - pattern_data.y*pattern_data.length;
+    float startx = tindex_x - (pattern_data.x*0.5 + 0.5)*pattern_data.width;
+    float starty = tindex_y - (pattern_data.y*0.5 + 0.5)*pattern_data.length;
     float centerx = startx + pattern_data.width/2.0;
     float centery = starty + pattern_data.length/2.0;
     
-    uint32_t r1 = (uint32_t) ((centerx + pattern_data.total_x) 
+    uint32_t r1 = (uint32_t) ((centerx + tindex_x) 
             * params->intensity_fineness);
-    uint32_t r2 = (uint32_t) ((centery + pattern_data.total_y) 
+    uint32_t r2 = (uint32_t) ((centery + tindex_y) 
             * params->intensity_fineness);
 
     //srand(r1+r2); //bad way to do it?
@@ -206,6 +231,50 @@ static float intensityVariation(wcPatternData pattern_data,
     float log_xi = -logf(xi);
     return log_xi < 10.f ? log_xi : 10.f;
 }
+
+
+static float yarnVariation(wcPatternData pattern_data, 
+        const wcWeaveParameters *params)
+{
+
+    float variation = 1.f;
+
+    uint32_t tindex_x = pattern_data.total_index_x;
+    uint32_t tindex_y = pattern_data.total_index_y;
+
+    //Switch X and Y for warp, so that we have the yarn going along y
+    if(!pattern_data.warp_above){
+        float tmp = tindex_x;
+        tindex_x = tindex_y;
+        tindex_y = tmp;
+    }
+
+    //We want to vary the intesity along the yarn.
+    //For a parrallel yarn we want a diffrent variation. 
+    //Use a large xscale to make the values different.
+    
+    float xscale = 500.f;  //parameter
+    float yscale = 0.2;  //paramater
+    float amplitude = 1.f;  //paramater
+    int octaves = 1; //paramter
+    float persistance = 0.3; //paramter
+
+    float x_noise = (tindex_x/(float)params->pattern_width) * xscale;
+    float y_noise = (tindex_y + (pattern_data.y/2.f + 0.5))
+        /(float)params->pattern_width * yscale;
+
+    variation = octavePerlin(x_noise, y_noise, 0,
+            octaves, persistance) * amplitude + 1.f;
+
+    return wcClamp(variation, 0.f, 1.f);
+
+    //NOTE(Peter): Right now there is perlin on both warp and weft.
+    //Would be useful to specify only warp or weft. Or even better, 
+    //if a yanr_type definition is made, 
+    // define noise parmeters for a certain yarn. along with other 
+    // yarn properties.
+}
+
 
 static void calculateLengthOfSegment(bool warp_above, uint32_t pattern_x,
                 uint32_t pattern_y, uint32_t *steps_left,
@@ -342,7 +411,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     float segment_u = y*params->umax;
     float segment_v = x*M_PI_2;
 
-    //Calculate the normal in thread-local coordinates
+    //Calculate the normal in yarn-local coordinates
     float normal_x = sinf(segment_v);
     float normal_y = sinf(segment_u)*cosf(segment_v);
     float normal_z = cosf(segment_u)*cosf(segment_v);
@@ -369,8 +438,8 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     ret_data.normal_x = normal_x;
     ret_data.normal_y = normal_y;
     ret_data.normal_z = normal_z;
-    ret_data.total_x = total_x; 
-    ret_data.total_y = total_y; 
+    ret_data.total_index_x = total_x; //total x index of wrapped pattern matrix
+    ret_data.total_index_y = total_y; //total y index of wrapped pattern matrix
 
     //return the results
     return ret_data;
@@ -532,8 +601,20 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     return reflection;
 }
 
+float wcEvalDiffuse(wcIntersectionData intersection_data,
+        wcPatternData data, const wcWeaveParameters *params)
+{
+    // currently only deals with noise variation.
+    // Bump displacment is handled differently depending on rendering engine used.
+    // Mitsuba uses a frame to inform sampling
+    // vray .... ???
+
+        return yarnVariation(data, params);
+}
+
 float wcEvalSpecular(wcIntersectionData intersection_data,
-        wcPatternData data, const wcWeaveParameters *params){
+        wcPatternData data, const wcWeaveParameters *params)
+{
     // Depending on the given psi parameter the yarn is considered
     // staple or filament. They are treated differently in order
     // to work better numerically. 
@@ -546,5 +627,5 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
         reflection = wcEvalStapleSpecular(intersection_data, data, params); 
     }
     return reflection * params->specular_normalization
-        * intensityVariation(data, params) ;
+        * intensityVariation(data, params);
 }

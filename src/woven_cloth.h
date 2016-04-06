@@ -26,11 +26,11 @@ typedef struct
 typedef struct
 {
     float color_r, color_g, color_b;
-    float normal_x, normal_y, normal_z;
+    float normal_x, normal_y, normal_z; //(not yarn local coordinates)
     float u, v; //Segment uv coordinates (in angles)
     float length, width; //Segment length and width
-    float x, y; //position within segment. 
-    float total_x, total_y; //index for elements. 
+    float x, y; //position within segment (in yarn local coordiantes). 
+    uint32_t total_index_x, total_index_y; //index for elements (not yarn local coordinates). TODO(Peter): perhaps a better name would be good?
     bool warp_above; 
 } wcPatternData;
 
@@ -42,12 +42,17 @@ typedef struct
 } wcIntersectionData;
 
 void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename);
+void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
+    const wchar_t *filename);
 void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *pattern,
     float *warp_color, float *weft_color, uint32_t pattern_width,
     uint32_t pattern_height);
 
 wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     const wcWeaveParameters *params);
+
+float wcEvalDiffuse(wcIntersectionData intersection_data,
+    wcPatternData data, const wcWeaveParameters *params);
 
 float wcEvalSpecular(wcIntersectionData intersection_data,
     wcPatternData data, const wcWeaveParameters *params);

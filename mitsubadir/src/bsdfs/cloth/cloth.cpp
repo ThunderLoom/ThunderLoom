@@ -182,13 +182,15 @@
 
             Spectrum specular(m_specular_strength
                 * wcEvalSpecular(intersection_data,
-                    pattern_data,&m_weave_params));
+                    pattern_data, &m_weave_params));
+            Spectrum diffuse((1.f - m_specular_strength)
+                * wcEvalDiffuse(intersection_data,
+                    pattern_data, &m_weave_params));
             Spectrum col;
             col.fromSRGB(pattern_data.color_r, pattern_data.color_g,
                 pattern_data.color_b);
             return m_reflectance->eval(bRec.its) * diffuse_mask * 
-                col*(1.f - m_specular_strength) *
-                (INV_PI * Frame::cosTheta(perturbed_wo)) +
+                col*diffuse*(INV_PI * Frame::cosTheta(perturbed_wo)) +
                 m_specular_strength*specular*Frame::cosTheta(bRec.wo);
         }
 
@@ -259,13 +261,15 @@
             }
             Spectrum specular(m_specular_strength
                 * wcEvalSpecular(intersection_data,
-                    pattern_data,&m_weave_params));
+                    pattern_data, &m_weave_params));
+            Spectrum diffuse((1.f - m_specular_strength)
+                * wcEvalDiffuse(intersection_data,
+                    pattern_data, &m_weave_params));
             Spectrum col;
             col.fromSRGB(pattern_data.color_r, pattern_data.color_g,
                 pattern_data.color_b);
             return m_reflectance->eval(bRec.its) * diffuse_mask *
-                col*(1.f - m_specular_strength)
-                + m_specular_strength*specular;// *
+                col*diffuse + m_specular_strength*specular;
         }
 
         Spectrum sample(BSDFSamplingRecord &bRec, Float &pdf, const Point2 &sample) const {
@@ -307,13 +311,15 @@
             }
             Spectrum specular(m_specular_strength
                 * wcEvalSpecular(intersection_data,
-                    pattern_data,&m_weave_params));
+                    pattern_data, &m_weave_params));
+            Spectrum diffuse((1.f - m_specular_strength)
+                * wcEvalDiffuse(intersection_data,
+                    pattern_data, &m_weave_params));
             Spectrum col;
             col.fromSRGB(pattern_data.color_r, pattern_data.color_g,
                 pattern_data.color_b);
             return m_reflectance->eval(bRec.its) * diffuse_mask *
-                col*(1.f - m_specular_strength)
-                + m_specular_strength*specular;// * 
+                col*diffuse + m_specular_strength*specular;
         }
 
         void addChild(const std::string &name, ConfigurableObject *child) {
