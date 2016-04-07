@@ -62,6 +62,9 @@ static double noise(double x, double y, double z) {
     int A = p[X     ]+Y, AA = p[A]+Z, AB = p[A+1]+Z,
         B = p[X+1   ]+Y, BA = p[B]+Z, BB = p[B+1]+Z;
 
+    //if ( x <= 0.01 || x >= 0.99 || y <= 0.01 || y >= 0.99) //lattice borders
+    //    return 1.f;
+    //
     return lerp(w,  lerp(v, lerp(u, grad(p[AA  ], x  , y  , z   ),
                                     grad(p[BA  ], x-1, y  , z   )), 
                             lerp(u, grad(p[AB  ], x  , y-1, z   ), 

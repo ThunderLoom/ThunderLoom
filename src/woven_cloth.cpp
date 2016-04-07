@@ -255,12 +255,12 @@ static float yarnVariation(wcPatternData pattern_data,
     //We want to vary the intesity along the yarn.
     //For a parrallel yarn we want a diffrent variation. 
     //Use a large xscale to make the values different.
-    
-    float xscale = 500.f;  //parameter
-    float yscale = 0.2;  //paramater
-    float amplitude = 1.f;  //paramater
-    int octaves = 1; //paramter
-    float persistance = 0.3; //paramter
+
+    float amplitude = params->yarnvar_amplitude;
+    float xscale = params->yarnvar_xscale;
+    float yscale = params->yarnvar_yscale;
+    int octaves = params->yarnvar_octaves;
+    float persistance = params->yarnvar_persistance; //paramter
 
     float x_noise = (tindex_x/(float)params->pattern_width) * xscale;
     float y_noise = (tindex_y + (pattern_data.y/2.f + 0.5))
@@ -612,7 +612,13 @@ float wcEvalDiffuse(wcIntersectionData intersection_data,
     // Mitsuba uses a frame to inform sampling
     // vray .... ???
 
-        return yarnVariation(data, params);
+    float value = 1.f;
+
+    if (params->yarnvar_amplitude > 0.001f) {
+        value *= yarnVariation(data, params);
+    }
+
+    return value;
 }
 
 float wcEvalSpecular(wcIntersectionData intersection_data,

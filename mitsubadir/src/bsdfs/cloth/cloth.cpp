@@ -61,6 +61,17 @@
                     //noise
                     m_weave_params.intensity_fineness =
                         props.getFloat("intensity_fineness", 0.0f);
+                    //yarnvar
+                    m_weave_params.yarnvar_amplitude =
+                        props.getFloat("yarnvar_amplitude", 0.0f);
+                    m_weave_params.yarnvar_xscale =
+                        props.getFloat("yarnvar_xscale", 1.0f);
+                    m_weave_params.yarnvar_yscale =
+                        props.getFloat("yarnvar_yscale", 1.0f);
+                    m_weave_params.yarnvar_persistance =
+                        props.getFloat("yarnvar_persistance", 1.0f);
+                    m_weave_params.yarnvar_octaves =
+                        props.getFloat("yarnvar_octaves", 1.0f); //Should be integer
 
                     m_specular_strength = props.getFloat("specular_strength", 0.5f);
 

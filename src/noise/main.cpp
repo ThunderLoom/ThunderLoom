@@ -21,12 +21,12 @@ int main(int argc, char *argv[]) {
 
     int i;
     for (i = 0; i < size; i++) {
-        int j;
-        for (j = 0; j < size; j++) {
-            float   u = ((float)i)/((float)size)*scale,
-                    v = ((float)j)/((float)size)*scale;
-            fprintf(fp, "%f\n", octavePerlin(u,v,0,octaves,persistance));
-        }
+        //int j;
+        //for (j = 0; j < size; j++) {
+            float   u = ((float)i)/((float)size)*scale;
+          //          v = ((float)j)/((float)size)*scale;
+            fprintf(fp, "%f\n", octavePerlin(u,0,0,octaves,persistance));
+       // }
     }
     fclose(fp);
     return 0;

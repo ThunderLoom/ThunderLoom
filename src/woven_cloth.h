@@ -14,6 +14,11 @@ typedef struct
     float delta_x;
     float specular_strength; //TODO(Vidar): Does this really belong here?
     float intensity_fineness;
+    float yarnvar_amplitude;
+    float yarnvar_xscale;
+    float yarnvar_yscale;
+    float yarnvar_persistance;
+    uint32_t yarnvar_octaves;
 
 // These are set by calling one of the wcWeavePatternFrom* functions
 // after all parameters above have been defined
