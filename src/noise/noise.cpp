@@ -1,30 +1,5 @@
+#include <stdlib.h>
 #include <math.h>
-#include <stdint.h>
-
-/* Tiny Encryption Algorithm by David Wheeler and Roger Needham */
-    /* Taken from mitsuba source code. */
-/*static uint64_t wcSampleTEA(uint32_t v0, uint32_t v1, int rounds) {
-	uint32_t sum = 0;
-
-	for (int i=0; i<rounds; ++i) {
-		sum += 0x9e3779b9;
-		v0 += ((v1 << 4) + 0xA341316C) ^ (v1 + sum) ^ ((v1 >> 5) + 0xC8013EA4);
-		v1 += ((v0 << 4) + 0xAD90777D) ^ (v0 + sum) ^ ((v0 >> 5) + 0x7E95761E);
-	}
-
-	return ((uint64_t) v1 << 32) + v0;
-}
-
-float wcSampleTEASingle(uint32_t v0, uint32_t v1, int rounds ) {
-	union {
-		uint32_t u;
-		float f;
-	} x;
-	x.u = ((wcSampleTEA(v0, v1, rounds) & 0xFFFFFFFF) >> 9) | 0x3f800000UL;
-	return x.f - 1.0f;
-}
-*/
-/* Perlin Noise */
 
 //Permutation table from Ken Perlin.
 static int p[] = { 151,160,137,91,90,15,
@@ -55,22 +30,22 @@ static int p[] = { 151,160,137,91,90,15,
     138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
 };
 
-double fade(double t) {
+static double fade(double t) {
   return t * t * t * (t * (t * 6 - 15) + 10); 
 }
 
-double lerp(double t, double a, double b) {
+static double lerp(double t, double a, double b) {
   return a + t * (b - a);
 }
 
-double grad(int hash, double x, double y, double z) {
+static double grad(int hash, double x, double y, double z) {
     int h = hash & 15;
     double u = h<8 ? x : y,
            v = h<4 ? y : h==12||h==14 ? x : z;
     return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
 }
 
-double noise(double x, double y, double z) {
+static double noise(double x, double y, double z) {
     int X = (int)floor(x) & 255;
     int Y = (int)floor(y) & 255;
     int Z = (int)floor(z) & 255;
@@ -87,7 +62,6 @@ double noise(double x, double y, double z) {
     int A = p[X     ]+Y, AA = p[A]+Z, AB = p[A+1]+Z,
         B = p[X+1   ]+Y, BA = p[B]+Z, BB = p[B+1]+Z;
 
-
     return lerp(w,  lerp(v, lerp(u, grad(p[AA  ], x  , y  , z   ),
                                     grad(p[BA  ], x-1, y  , z   )), 
                             lerp(u, grad(p[AB  ], x  , y-1, z   ), 
@@ -95,12 +69,11 @@ double noise(double x, double y, double z) {
                     lerp(v, lerp(u, grad(p[AA+1], x  , y  , z-1 ),
                                     grad(p[BA+1], x-1, y  , z-1 )),
                             lerp(u, grad(p[AB+1], x  , y-1, z-1 ),
-                                    grad(p[BB+1], x-1, y-1, z-1 ))
-                     )
+                                    grad(p[BB+1], x-1, y-1, z-1 )))
                 );
 }
 
-double octavePerlin(double x, double y, double z, int octaves, double persistance) {
+static double octavePerlin(double x, double y, double z, int octaves, double persistance) {
     double total = 0;
     double frequency = 1;
     double amplitude = 1;

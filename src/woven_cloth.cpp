@@ -1,7 +1,7 @@
 #include "woven_cloth.h"
 #include "wif/wif.cpp"
 #include "wif/ini.cpp"
-#include "noise/noise.c"
+#include "noise/noise.cpp"
 
 // For M_PI etc.
 #define _USE_MATH_DEFINES
@@ -57,11 +57,12 @@ static wcVector wcVector_add(wcVector a, wcVector b)
     return ret;
 }
 
+// -- //
+
 static float wcClamp(float x, float min, float max)
 {
     return (x < min) ? min : (x > max) ? max : x;
 }
-// -- //
 
 //Returns a random float in the range [0,1]
 //TODO(Vidar): Better rng
@@ -70,7 +71,8 @@ float get_random_float()
     return (float)rand()/(float)(RAND_MAX);
 }
 
-//From Mitsuba
+/* Tiny Encryption Algorithm by David Wheeler and Roger Needham */
+/* Taken from mitsuba source code. */
 static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds = 4)
 {
 	uint32_t sum = 0;
@@ -96,6 +98,7 @@ static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds = 4)
     x.u = ((sampleTEA(v0, v1, rounds) & 0xFFFFFFFF) >> 9) | 0x3f800000UL;
     return x.f - 1.0f;
 }
+/* - */
 
 void sample_cosine_hemisphere(float *p_x, float *p_y, float *p_z)
 {

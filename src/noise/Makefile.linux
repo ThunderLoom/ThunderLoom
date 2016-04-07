@@ -1,2 +1,2 @@
 build: main.c
-	gcc -o pnoise main.c noise.c -lm; ./pnoise 1 2 3
+	g++ -o pnoise main.cpp noise.cpp -lm; ./pnoise 1 2 3
