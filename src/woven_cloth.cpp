@@ -73,7 +73,7 @@ float get_random_float()
 
 /* Tiny Encryption Algorithm by David Wheeler and Roger Needham */
 /* Taken from mitsuba source code. */
-static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds = 4)
+static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds)
 {
 	uint32_t sum = 0;
 
@@ -87,7 +87,7 @@ static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds = 4)
 }
 
 //From Mitsuba
-static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds = 4)
+static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds)
 {
     /* Trick from MTGP: generate an uniformly distributed
     single precision number in [1,2) and subtract 1. */

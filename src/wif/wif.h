@@ -1,5 +1,7 @@
 #pragma once
 #include "common.h"
+#include "wchar.h"
+#include "stdbool.h"
 typedef struct{
     uint32_t num_threads;
     float spacing, thickness;
