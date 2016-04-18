@@ -90,7 +90,7 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     float reflection = wcEvalSpecular(intersection_data,dat,weave_parameters);
 
     float specular = weave_parameters->specular_strength;
-    float diffuse = 1.f - specular;
+    float diffuse = (1.f - specular) * wcEvalDiffuse(intersection_data,dat,weave_parameters);
 
     VUtils::Vector v;
     v.x = (specular*reflection + diffuse*dat.color_r) * lightColor.r;

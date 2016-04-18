@@ -84,6 +84,11 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
         layout.prop(self, 'utiling')
         layout.prop(self, 'vtiling')
         layout.prop(self, 'intensity_fineness')
+        layout.prop(self, 'yarnvar_amplitude')
+        layout.prop(self, 'yarnvar_xscale')
+        layout.prop(self, 'yarnvar_yscale')
+        layout.prop(self, 'yarnvar_persistance')
+        layout.prop(self, 'yarnvar_octaves')
 
     wiffile = StringProperty(name = 'WIF file', subtype = 'FILE_PATH')
     specular_strength = FloatProperty(name = 'Specular Strength', default = 0.5)
@@ -95,6 +100,11 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
     utiling = FloatProperty(name = 'U tiling', default = 1.0)
     vtiling = FloatProperty(name = 'V tiling', default = 1.0)
     intensity_fineness = FloatProperty(name = 'Intensity var fineness', default = 0.0)
+    yarnvar_amplitude = FloatProperty(name = 'Yarnvar. Amplitude', default = 0.0)
+    yarnvar_xscale = FloatProperty(name = 'Yarnvar. xScale', default = 1.0)
+    yarnvar_yscale = FloatProperty(name = 'Yarnvar. yScale', default = 1.0)
+    yarnvar_persistance = FloatProperty(name = 'Yarnvar. Perlin persistance', default = 1.0)
+    yarnvar_octaves = FloatProperty(name = 'Yarnvar. Perlin octaves', default = 1.0)
 
     custom_inputs = [
         {'type': 'MtsSocketColor_diffuseReflectance', 'name': 'Diffuse Reflectance'},
@@ -117,6 +127,11 @@ class MtsNodeBsdf_cloth(mitsuba_bsdf_node, Node):
             'utiling': self.utiling,
             'vtiling': self.vtiling,
             'intensity_fineness': self.intensity_fineness,
+            'yarnvar_amplitude': self.yarnvar_amplitude,
+            'yarnvar_xscale': self.yarnvar_xscale,
+            'yarnvar_yscale': self.yarnvar_yscale,
+            'yarnvar_persistance': self.yarnvar_persistance,
+            'yarnvar_octaves': self.yarnvar_octaves,
             'reflectance': self.inputs['Diffuse Reflectance'].get_color_dict(export_ctx),
         }
 

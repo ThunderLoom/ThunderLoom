@@ -12,7 +12,7 @@
 		</transform>
 
 		<sampler type="ldsampler">
-			<integer name="sampleCount" value="16"/>
+			<integer name="sampleCount" value="32"/>
 		</sampler>
 
 		<film type="ldrfilm" id="film">
@@ -41,8 +41,12 @@
     <bsdf type="cloth" id="__cloth">
         <string name="wiffile" value="34779.wif"/>
         <float name="umax" value="0.7"/>
-        <float name="uscale" value="2.0"/>
-        <float name="vscale" value="2.0"/>
+        <float name="psi" value="0.1"/>
+        <float name="deltaX" value="0.2"/>
+        <float name="specular_strength" value="0.3"/>
+        <float name="intensity_fineness" value="0"/>
+        <float name="utiling" value="2.0"/>
+        <float name="vtiling" value="2.0"/>
 	</bsdf>
 
 	<texture type="checkerboard" id="__planetex">
