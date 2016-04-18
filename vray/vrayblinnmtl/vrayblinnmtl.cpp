@@ -166,6 +166,10 @@ static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial paramet
 		p_default, 0.1f,
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
+    mtl_intensity_fineness, _FT("intensity_fineness"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 1.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
+	PB_END,
     mtl_wiffile, _FT("wifFile"), TYPE_FILENAME, P_ANIMATABLE, 0,
         p_default, _FT(""),
 		p_ui, TYPE_FILEOPENBUTTON, ctrlID(),
@@ -375,9 +379,7 @@ void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
         pblock->GetValue(mtl_alpha,t, alpha,ivalid);
         pblock->GetValue(mtl_beta,t, beta,ivalid);
         pblock->GetValue(mtl_specular,t, specular,ivalid);
-
-        psi *= M_PI_2;
-        umax *= M_PI_2;
+        pblock->GetValue(mtl_intensity_fineness,t, intensity_fineness,ivalid);
 	}
 
 	valid &= ivalid;

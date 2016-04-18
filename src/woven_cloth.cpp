@@ -186,6 +186,13 @@ void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *pattern,
     finalize_weave_parmeters(params);
 }
 
+void wcFreeWeavePattern(wcWeaveParameters *params)
+{
+    if(params->pattern_entry){
+        free(params->pattern_entry);
+    }
+}
+
 static float intensityVariation(wcPatternData pattern_data,
     const wcWeaveParameters *params)
 {
@@ -275,7 +282,13 @@ static float vonMises(float cos_x, float b) {
 }
 
 wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
-        const wcWeaveParameters *params) {
+        const wcWeaveParameters *params)
+{
+
+    if(params->pattern_entry == 0){
+        wcPatternData data = {0};
+        return data;
+    }
     float uv_x = intersection_data.uv_x;
     float uv_y = intersection_data.uv_y;
 
@@ -547,6 +560,9 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
     // staple or filament. They are treated differently in order
     // to work better numerically. 
     float reflection = 0.f;
+    if(params->pattern_entry == 0){
+        return 0.f;
+    }
     if (params->psi <= 0.001f) {
         //Filament yarn
         reflection = wcEvalFilamentSpecular(intersection_data, data, params); 

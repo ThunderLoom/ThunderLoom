@@ -49,6 +49,7 @@ enum {
     mtl_beta,
     mtl_wiffile,
     mtl_specular,
+    mtl_intensity_fineness,
 
     mtl_texture,
 };
@@ -85,7 +86,7 @@ public:
 
     float umax, uscale, vscale;
     float psi, delta_x, specular;
-    float alpha, beta;
+    float alpha, beta, intensity_fineness;
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	

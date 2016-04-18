@@ -48,6 +48,8 @@ void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *pattern,
     float *warp_color, float *weft_color, uint32_t pattern_width,
     uint32_t pattern_height);
 
+void wcFreeWeavePattern(wcWeaveParameters *params);
+
 wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     const wcWeaveParameters *params);
 
