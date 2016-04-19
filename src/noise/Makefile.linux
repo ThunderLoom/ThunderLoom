@@ -1,2 +1,0 @@
-build: main.c
-	g++ -o pnoise main.cpp noise.cpp -lm; ./pnoise 1 2 3
