@@ -1,7 +1,7 @@
 #include "woven_cloth.h"
 #include "wif/wif.cpp"
 #include "wif/ini.cpp"
-#include "noise.h"
+#include "perlin.h"
 
 // For M_PI etc.
 #define _USE_MATH_DEFINES
