@@ -137,7 +137,7 @@ static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial paramet
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
     mtl_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
+		p_default, 0.5,
 		p_range, 0.0f, 1.f,
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
@@ -150,7 +150,7 @@ static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial paramet
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
     mtl_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
+		p_default, 0.5,
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
     mtl_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
@@ -159,16 +159,36 @@ static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial paramet
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
     mtl_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
+		p_default, 0.05,
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
     mtl_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0.1f,
+		p_default, 4.f,
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
     mtl_intensity_fineness, _FT("intensity_fineness"), TYPE_FLOAT, P_ANIMATABLE, 0,
 		p_default, 1.f,
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
+	PB_END,
+	mtl_yarnvar_amplitude, _FT("yarnvar_amplitude"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 1.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
+	PB_END,
+	mtl_yarnvar_xscale, _FT("yarnvar_xscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 1.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
+	PB_END,
+	mtl_yarnvar_yscale, _FT("yarnvar_yscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 1.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
+	PB_END,
+	mtl_yarnvar_persistance, _FT("yarnvar_persistance"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 1.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
+	PB_END,
+	mtl_yarnvar_octaves, _FT("yarnvar_octaves"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 0,
+		p_ui, TYPE_SPINNER, EDITTYPE_INT, ctrlID(), ctrlID(), 1,
 	PB_END,
     mtl_wiffile, _FT("wifFile"), TYPE_FILENAME, P_ANIMATABLE, 0,
         p_default, _FT(""),
@@ -380,6 +400,11 @@ void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
         pblock->GetValue(mtl_beta,t, beta,ivalid);
         pblock->GetValue(mtl_specular,t, specular,ivalid);
         pblock->GetValue(mtl_intensity_fineness,t, intensity_fineness,ivalid);
+		pblock->GetValue(mtl_yarnvar_amplitude,t, yarnvar_amplitude,ivalid);
+		pblock->GetValue(mtl_yarnvar_xscale,t, yarnvar_xscale,ivalid);
+		pblock->GetValue(mtl_yarnvar_yscale,t, yarnvar_yscale,ivalid);
+		pblock->GetValue(mtl_yarnvar_persistance,t, yarnvar_persistance,ivalid);
+		pblock->GetValue(mtl_yarnvar_octaves,t, yarnvar_octaves,ivalid);
 	}
 
 	valid &= ivalid;
@@ -395,6 +420,12 @@ void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
     m_weave_parameters.delta_x = delta_x;
     m_weave_parameters.specular_strength = specular;
     m_weave_parameters.specular_normalization = 1.f;
+	m_weave_parameters.intensity_fineness = intensity_fineness;
+	m_weave_parameters.yarnvar_amplitude = yarnvar_amplitude;
+	m_weave_parameters.yarnvar_xscale = yarnvar_xscale;
+	m_weave_parameters.yarnvar_yscale = yarnvar_yscale;
+	m_weave_parameters.yarnvar_persistance = yarnvar_persistance;
+	m_weave_parameters.yarnvar_octaves = yarnvar_octaves;
 
     MSTR filename = pblock->GetStr(mtl_wiffile,t);
     wcWeavePatternFromWIF_wchar(&m_weave_parameters,filename);

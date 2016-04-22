@@ -395,7 +395,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>$(ADSK_3DSMAX_SDK_2016)\include;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;..\..\src\wif;..\Dynamic;.;..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;DYNAMIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;DYNAMIC;MAX_RELEASE_R18;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\..\..\build\vrayblinnmtl\max90\x64\official\</ObjectFileName>
