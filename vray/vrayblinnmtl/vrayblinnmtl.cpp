@@ -171,7 +171,7 @@ static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial paramet
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
 	mtl_yarnvar_amplitude, _FT("yarnvar_amplitude"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
+		p_default, 0.f,
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
 	mtl_yarnvar_xscale, _FT("yarnvar_xscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
@@ -187,8 +187,8 @@ static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial paramet
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
 	mtl_yarnvar_octaves, _FT("yarnvar_octaves"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0,
-		p_ui, TYPE_SPINNER, EDITTYPE_INT, ctrlID(), ctrlID(), 1,
+		p_default, 1.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 1.f,
 	PB_END,
     mtl_wiffile, _FT("wifFile"), TYPE_FILENAME, P_ANIMATABLE, 0,
         p_default, _FT(""),
@@ -425,7 +425,7 @@ void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	m_weave_parameters.yarnvar_xscale = yarnvar_xscale;
 	m_weave_parameters.yarnvar_yscale = yarnvar_yscale;
 	m_weave_parameters.yarnvar_persistance = yarnvar_persistance;
-	m_weave_parameters.yarnvar_octaves = yarnvar_octaves;
+	m_weave_parameters.yarnvar_octaves = (int)yarnvar_octaves;
 
     MSTR filename = pblock->GetStr(mtl_wiffile,t);
     wcWeavePatternFromWIF_wchar(&m_weave_parameters,filename);

@@ -39,7 +39,6 @@ enum { mtl_params, };
 // Paramblock2 parameter list
 enum {
 	mtl_diffuse,
-
     mtl_umax,
     mtl_uscale,
     mtl_vscale,
@@ -91,8 +90,7 @@ public:
     float umax, uscale, vscale;
     float psi, delta_x, specular;
     float alpha, beta, intensity_fineness;
-	float yarnvar_amplitude, yarnvar_xscale, yarnvar_yscale, yarnvar_persistance;
-	int yarnvar_octaves;
+	float yarnvar_amplitude, yarnvar_xscale, yarnvar_yscale, yarnvar_persistance, yarnvar_octaves;
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	
