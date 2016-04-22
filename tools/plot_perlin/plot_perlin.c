@@ -1,9 +1,6 @@
+#include "../../src/perlin.h"
 #include <stdlib.h>
 #include <stdio.h>
-// For M_PI etc.
-#include <math.h>
-#include "noise.cpp"
-
 
 // This file is only used for testing purposes. Generates random numbers
 // and stores them in a text file. These can then be visualized by
@@ -31,4 +28,3 @@ int main(int argc, char *argv[]) {
     fclose(fp);
     return 0;
 }
-

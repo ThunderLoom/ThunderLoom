@@ -1,4 +1,5 @@
-#include <stdlib.h>
+#pragma once
+
 #include <math.h>
 
 //Permutation table from Ken Perlin.
