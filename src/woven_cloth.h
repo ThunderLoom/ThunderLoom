@@ -36,7 +36,7 @@ typedef struct
     float length, width; //Segment length and width
     float x, y; //position within segment (in yarn local coordiantes). 
     uint32_t total_index_x, total_index_y; //index for elements (not yarn local coordinates). TODO(Peter): perhaps a better name would be good?
-    bool warp_above; 
+    uint8_t warp_above; 
 } wcPatternData;
 
 typedef struct
@@ -46,12 +46,22 @@ typedef struct
     float wo_x, wo_y, wo_z;
 } wcIntersectionData;
 
+void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *warp_above,
+    float *warp_color, float *weft_color, uint32_t pattern_width,
+    uint32_t pattern_height);
+void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename);
+void wcWeavePatternFromFile_wchar(wcWeaveParameters *params,
+    const wchar_t *filename);
+/* wcWeavePatternFromFile calles one of the functions below depending on
+ * file extension*/
 void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename);
 void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
     const wchar_t *filename);
-void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *pattern,
-    float *warp_color, float *weft_color, uint32_t pattern_width,
-    uint32_t pattern_height);
+void wcWeavePatternFromWeaveFile(wcWeaveParameters *params, const char *filename);
+void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
+    const wchar_t *filename);
+
+
 
 void wcFreeWeavePattern(wcWeaveParameters *params);
 

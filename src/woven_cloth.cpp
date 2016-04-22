@@ -119,6 +119,61 @@ void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x, float 
     *p_z = sqrtf(1.0f - (*p_x)*(*p_x) - (*p_y)*(*p_y));
 }
 
+static char * find_next_newline(char * buffer)
+{
+    char *r = buffer;
+    while(*r != 0 && *r != '\n'){
+        r++;
+    }
+    return r;
+}
+
+static char * read_color_from_weave_string(char *string, float * color)
+{
+    char *s = string;
+    for(int i=0;i<3;i++){
+        int a = atoi(s);
+        s = find_next_newline(s+1);
+        color[i] = (float)a/255.f;
+    }
+    return find_next_newline(find_next_newline(s)+1)+1;
+}
+
+static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
+    uint32_t *pattern_height, PaletteEntry **pattern)
+{
+    float warp_color[3], weft_color[3];
+    s = read_color_from_weave_string(s,warp_color);
+    s = read_color_from_weave_string(s,weft_color);
+
+    char * t = find_next_newline(s);
+    *pattern_width = t - s;
+    int i = 0;
+    int num_chars = 0;
+    while(s[i] != 0) {
+        if(s[i] == '0' || s[i] == '1'){
+            num_chars++;
+        }
+        i++;
+    }
+    *pattern = (PaletteEntry*)calloc(num_chars,sizeof(PaletteEntry));
+    *pattern_height = num_chars/(*pattern_width);
+    i = 0;
+    int ii =0;
+    while(s[i] != 0) {
+        if(s[i] == '0' || s[i] == '1'){
+            if(s[i] == '1'){
+                (*pattern)[ii].warp_above = 1;
+                memcpy((*pattern)[ii].color,warp_color,3*sizeof(float));
+            }else{
+                memcpy((*pattern)[ii].color,weft_color,3*sizeof(float));
+            }
+            ii++;
+        }
+        i++;
+    }
+}
+
 static void finalize_weave_parmeters(wcWeaveParameters *params)
 {
     //Calculate normalization factor for the specular reflection
@@ -163,6 +218,35 @@ static void finalize_weave_parmeters(wcWeaveParameters *params)
     
 }
 
+void wcWeavePatternFromFile(wcWeaveParameters *params,
+    const char *filename)
+{
+    if(strlen(filename) > 4){
+        if(strcmp(filename+strlen(filename)-4,".wif") == 0){
+            wcWeavePatternFromWIF(params,filename);
+        } else {
+            wcWeavePatternFromWeaveFile(params,filename);
+        }
+    }else{
+        params->pattern_height = params->pattern_width = 0;
+        params->pattern_entry = 0;
+    }
+}
+void wcWeavePatternFromFile_wchar(wcWeaveParameters *params,
+    const wchar_t *filename)
+{
+    if(wcslen(filename) > 4){
+        if(wcscmp(filename+wcslen(filename)-4,L".wif") == 0){
+            wcWeavePatternFromWIF_wchar(params,filename);
+        } else {
+            wcWeavePatternFromWeaveFile_wchar(params,filename);
+        }
+    }else{
+        params->pattern_height = params->pattern_width = 0;
+        params->pattern_entry = 0;
+    }
+}
+
 void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
 {
     WeaveData *data = wif_read(filename);
@@ -172,7 +256,8 @@ void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
     finalize_weave_parmeters(params);
 }
 
-void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params, const wchar_t *filename)
+void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
+        const wchar_t *filename)
 {
     WeaveData *data = wif_read_wchar(filename);
     params->pattern_entry = wif_get_pattern(data,
@@ -190,6 +275,46 @@ void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *pattern,
     params->pattern_entry  = wif_build_pattern_from_data(pattern,
             warp_color, weft_color, pattern_width, pattern_height);
     finalize_weave_parmeters(params);
+}
+
+static void weave_pattern_from_weave_file(wcWeaveParameters *params,
+    FILE *f)
+{
+    fseek (f , 0 , SEEK_END);
+    long lSize = ftell (f);
+    rewind (f);
+    char *buffer = (char*) calloc (lSize+1,sizeof(char));
+    if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
+    fread (buffer,1,lSize,f);
+    read_pattern_from_weave_string(buffer, &params->pattern_width,
+        &params->pattern_height, &params->pattern_entry);
+    finalize_weave_parmeters(params);
+}
+
+void wcWeavePatternFromWeaveFile(wcWeaveParameters *params,
+    const char *filename)
+{
+    FILE *f = fopen(filename,"rt");
+    if(f){
+        weave_pattern_from_weave_file(params,f);
+        fclose(f);
+    }else{
+        params->pattern_width = params->pattern_height;
+    }
+}
+
+void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
+    const wchar_t *filename)
+{
+#ifdef WIN32
+    FILE *f = _wfopen(filename, L"rt");
+    if(f){
+        weave_pattern_from_weave_file(params,f);
+        fclose(f);
+    }else{
+        params->pattern_width = params->pattern_height;
+    }
+#endif
 }
 
 void wcFreeWeavePattern(wcWeaveParameters *params)
@@ -282,7 +407,7 @@ static float yarnVariation(wcPatternData pattern_data,
 }
 
 
-static void calculateLengthOfSegment(bool warp_above, uint32_t pattern_x,
+static void calculateLengthOfSegment(uint8_t warp_above, uint32_t pattern_x,
                 uint32_t pattern_y, uint32_t *steps_left,
                 uint32_t *steps_right,  uint32_t pattern_width,
                 uint32_t pattern_height, PaletteEntry *pattern_entry)
@@ -300,7 +425,7 @@ static void calculateLengthOfSegment(bool warp_above, uint32_t pattern_x,
         if(*incremented_coord == max_size){
             *incremented_coord = 0;
         }
-        if((bool)(pattern_entry[current_x +
+        if((pattern_entry[current_x +
                 current_y*pattern_width].warp_above) != warp_above){
             break;
         }
@@ -313,7 +438,7 @@ static void calculateLengthOfSegment(bool warp_above, uint32_t pattern_x,
             *incremented_coord = max_size;
         }
         (*incremented_coord)--;
-        if((bool)(pattern_entry[current_x +
+        if((pattern_entry[current_x +
                 current_y*pattern_width].warp_above) != warp_above){
             break;
         }
@@ -435,7 +560,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         normal_y = -tmp;
     }
   
-    wcPatternData ret_data = {};
+    wcPatternData ret_data;
     ret_data.color_r = current_point.color[0];
     ret_data.color_g = current_point.color[1];
     ret_data.color_b = current_point.color[2];

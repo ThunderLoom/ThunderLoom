@@ -397,7 +397,7 @@ void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
     m_weave_parameters.specular_normalization = 1.f;
 
     MSTR filename = pblock->GetStr(mtl_wiffile,t);
-    wcWeavePatternFromWIF_wchar(&m_weave_parameters,filename);
+    wcWeavePatternFromFile_wchar(&m_weave_parameters,filename);
 
 	const VR::VRaySequenceData &sdata=vray->getSequenceData();
 	bsdfPool.init(sdata.maxRenderThreads);
