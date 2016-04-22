@@ -56,7 +56,8 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     Point3 n_vec = sc.Normal().Normalize();
     Point3 u_vec = dpdUVW[0].Normalize();
     Point3 v_vec = dpdUVW[1].Normalize();
-    //u_vec = v_vec ^ n_vec;
+    u_vec = v_vec ^ n_vec;
+    v_vec = n_vec ^ u_vec;
 
     Matrix3 mat(u_vec, v_vec, n_vec, Point3(0.f,0.f,0.f));
     mat.Invert(); // TODO(Vidar) transposing would be better...

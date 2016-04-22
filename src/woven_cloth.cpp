@@ -2,6 +2,7 @@
 #include "wif/wif.cpp"
 #include "wif/ini.cpp"
 #include "perlin.h"
+#include "halton.h"
 
 // For M_PI etc.
 #define _USE_MATH_DEFINES
@@ -64,13 +65,6 @@ static float wcClamp(float x, float min, float max)
     return (x < min) ? min : (x > max) ? max : x;
 }
 
-//Returns a random float in the range [0,1]
-//TODO(Vidar): Better rng
-float get_random_float()
-{
-    return (float)rand()/(float)(RAND_MAX);
-}
-
 /* Tiny Encryption Algorithm by David Wheeler and Roger Needham */
 /* Taken from mitsuba source code. */
 static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds)
@@ -100,12 +94,10 @@ static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds)
 }
 /* - */
 
-void sample_cosine_hemisphere(float *p_x, float *p_y, float *p_z)
+void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x, float *p_y, float *p_z)
 {
     //sample uniform disk concentric
     // From mitsuba warp.cpp
-    float sample_x = get_random_float();
-    float sample_y = get_random_float();
 	float r1 = 2.0f*sample_x - 1.0f;
 	float r2 = 2.0f*sample_y - 1.0f;
 
@@ -136,22 +128,26 @@ static void finalize_weave_parmeters(wcWeaveParameters *params)
        component */
 
     //TODO(Vidar): Better rng... Or quasi-monte carlo?
-    srand(3452); // We always want the same seed
     size_t nSamples = 10000;
     float result = 0.0f;
     params->specular_normalization = 1.f;
     
     for (size_t i=0; i<nSamples; ++i) {
 
+        float halton_point[6];
+        halton_6(i+50,halton_point);
+
         wcIntersectionData intersection_data;
-        intersection_data.uv_x = get_random_float();
-        intersection_data.uv_y = get_random_float();
+        intersection_data.uv_x = halton_point[0];
+        intersection_data.uv_y = halton_point[1];
 
-        sample_cosine_hemisphere(&intersection_data.wi_x,
-            &intersection_data.wi_y, &intersection_data.wi_z);
+        sample_cosine_hemisphere(halton_point[2], halton_point[3],
+            &intersection_data.wi_x, &intersection_data.wi_y,
+            &intersection_data.wi_z);
 
-        sample_cosine_hemisphere(&intersection_data.wo_x,
-            &intersection_data.wo_y, &intersection_data.wo_z);
+        sample_cosine_hemisphere(halton_point[4], halton_point[5],
+            &intersection_data.wo_x, &intersection_data.wo_y,
+            &intersection_data.wo_z);
 
         wcPatternData pattern_data = wcGetPatternData(
             intersection_data, params);
