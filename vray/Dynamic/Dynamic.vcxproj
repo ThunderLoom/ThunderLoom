@@ -149,7 +149,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ADSK_3DSMAX_x64_2015)plugins\vrayplugins\</OutDir>
+    <OutDir>$(ADSK_3DSMAX_x64_2016)plugins\vrayplugins\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
