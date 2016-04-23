@@ -299,7 +299,7 @@ void wcWeavePatternFromWeaveFile(wcWeaveParameters *params,
         weave_pattern_from_weave_file(params,f);
         fclose(f);
     }else{
-        params->pattern_width = params->pattern_height;
+        params->pattern_width = params->pattern_height = 0;
     }
 }
 
@@ -312,7 +312,7 @@ void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
         weave_pattern_from_weave_file(params,f);
         fclose(f);
     }else{
-        params->pattern_width = params->pattern_height;
+        params->pattern_width = params->pattern_height = 0;
     }
 #endif
 }
