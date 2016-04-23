@@ -115,7 +115,7 @@ void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x, float 
 	}
 
     *p_x = r * cosf(phi);
-    *p_x = r * sinf(phi);
+    *p_y = r * sinf(phi);
     *p_z = sqrtf(1.0f - (*p_x)*(*p_x) - (*p_y)*(*p_y));
 }
 
