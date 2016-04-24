@@ -8,7 +8,9 @@
 #include "halton.h"
 
 // For M_PI etc.
+#ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
+#endif
 #include <math.h>
 
 // -- 3D Vector data structure -- //
