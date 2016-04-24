@@ -207,14 +207,14 @@ void wif_free_weavedata(WeaveData *data)
 }
 
 
-PaletteEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h)
+PatternEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h)
 {
     uint32_t x,y;
-    PaletteEntry *pattern = 0;
+    PatternEntry *pattern = 0;
     *w = data->warp.num_threads;
     *h = data->weft.num_threads;
     if(*w > 0 && *h >0){
-        pattern = (PaletteEntry*)malloc((*w)*(*h)*sizeof(PaletteEntry));
+        pattern = (PatternEntry*)malloc((*w)*(*h)*sizeof(PatternEntry));
         for(y=0;y<*h;y++){
             for(x=0;x<*w;x++){
                 uint32_t v = data->threading[x];
@@ -232,27 +232,8 @@ PaletteEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h)
     return pattern;
 }
 
-PaletteEntry *wif_build_pattern_from_data(uint8_t *warp_above,
-        float *warp_color, float *weft_color, uint32_t w, uint32_t h)
-{
-    uint32_t x,y;
-    PaletteEntry *pattern;
-    pattern = (PaletteEntry*)malloc((w)*(h)*sizeof(PaletteEntry));
-    for(y=0;y<h;y++){
-        for(x=0;x<w;x++){
-            pattern[x+y*w].warp_above = warp_above[x+y*w];
-            float *col = warp_above[x+y*w] ? warp_color : weft_color;
-            pattern[x+y*w].color[0] = col[0];
-            pattern[x+y*w].color[1] = col[1];
-            pattern[x+y*w].color[2] = col[2];
-        }
-    }
-    return pattern;
-}
 
-
-
-void wif_free_pattern(PaletteEntry *pattern)
+void wif_free_pattern(PatternEntry *pattern)
 {
     free(pattern);
 }

@@ -2,6 +2,10 @@
 #include <stdint.h>
 #include "wif/wif.h"
 
+#ifndef WC_PREFIX
+#define WC_PREFIX
+#endif
+
 typedef struct
 {
 // These are the parameters to the model
@@ -12,7 +16,7 @@ typedef struct
     float alpha;
     float beta;
     float delta_x;
-    float specular_strength; //TODO(Vidar): Does this really belong here?
+    float specular_strength;
     float intensity_fineness;
     float yarnvar_amplitude;
     float yarnvar_xscale;
@@ -24,7 +28,7 @@ typedef struct
 // after all parameters above have been defined
     uint32_t pattern_height;
     uint32_t pattern_width;
-    PaletteEntry * pattern_entry;
+    PatternEntry * pattern_entry;
     float specular_normalization;
 } wcWeaveParameters;
 
@@ -46,31 +50,38 @@ typedef struct
     float wo_x, wo_y, wo_z;
 } wcIntersectionData;
 
+WC_PREFIX
 void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *warp_above,
     float *warp_color, float *weft_color, uint32_t pattern_width,
     uint32_t pattern_height);
+WC_PREFIX
 void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename);
+WC_PREFIX
 void wcWeavePatternFromFile_wchar(wcWeaveParameters *params,
     const wchar_t *filename);
 /* wcWeavePatternFromFile calles one of the functions below depending on
  * file extension*/
+WC_PREFIX
 void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename);
+WC_PREFIX
 void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
     const wchar_t *filename);
+WC_PREFIX
 void wcWeavePatternFromWeaveFile(wcWeaveParameters *params, const char *filename);
+WC_PREFIX
 void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
     const wchar_t *filename);
 
 
-
+WC_PREFIX
 void wcFreeWeavePattern(wcWeaveParameters *params);
-
+WC_PREFIX
 wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     const wcWeaveParameters *params);
-
+WC_PREFIX
 float wcEvalDiffuse(wcIntersectionData intersection_data,
     wcPatternData data, const wcWeaveParameters *params);
-
+WC_PREFIX
 float wcEvalSpecular(wcIntersectionData intersection_data,
     wcPatternData data, const wcWeaveParameters *params);
 

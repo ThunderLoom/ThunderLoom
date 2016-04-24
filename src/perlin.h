@@ -3,6 +3,7 @@
 #include <math.h>
 
 //Permutation table from Ken Perlin.
+WC_PREFIX
 static int p[] = { 151,160,137,91,90,15,
     131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
     190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
@@ -31,14 +32,17 @@ static int p[] = { 151,160,137,91,90,15,
     138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
 };
 
+WC_PREFIX
 static double fade(double t) {
   return t * t * t * (t * (t * 6 - 15) + 10); 
 }
 
+WC_PREFIX
 static double lerp(double t, double a, double b) {
   return a + t * (b - a);
 }
 
+WC_PREFIX
 static double grad(int hash, double x, double y, double z) {
     int h = hash & 15;
     double u = h<8 ? x : y,
@@ -46,6 +50,7 @@ static double grad(int hash, double x, double y, double z) {
     return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
 }
 
+WC_PREFIX
 static double noise(double x, double y, double z) {
     int X = (int)floor(x) & 255;
     int Y = (int)floor(y) & 255;
@@ -77,6 +82,7 @@ static double noise(double x, double y, double z) {
                 );
 }
 
+WC_PREFIX
 static double octavePerlin(double x, double y, double z, int octaves, double persistance) {
     double total = 0;
     double frequency = 1;
