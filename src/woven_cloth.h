@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 #include "wif/wif.h"
 
 #ifndef WC_PREFIX

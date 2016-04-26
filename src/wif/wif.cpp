@@ -207,7 +207,8 @@ void wif_free_weavedata(WeaveData *data)
 }
 
 
-PatternEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h, float *rw, float *rh)
+PatternEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h, 
+        float *rw, float *rh)
 {
     uint32_t x,y;
     PatternEntry *pattern = 0;

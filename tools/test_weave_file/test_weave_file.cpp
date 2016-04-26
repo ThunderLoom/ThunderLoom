@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "../../src/woven_cloth.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +8,7 @@ int main(int argc, char **argv)
 {
     wcWeaveParameters params;
     params.realworld_uv = true;
-    wcWeavePatternFromFile_wchar(&params,L"test.weave");
+    wcWeavePatternFromFile(&params,"test.weave");
     printf("Pattern height: %d \n", params.pattern_height);
     printf("Pattern width: %d \n", params.pattern_width);
     printf("Pattern realheight: %f \n", params.pattern_realheight);

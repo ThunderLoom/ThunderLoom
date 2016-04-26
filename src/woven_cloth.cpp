@@ -5,6 +5,7 @@
 #include "wif/ini.cpp"
 #endif
 
+#include "str2d.h"
 #include "perlin.h"
 #include "halton.h"
 
@@ -162,9 +163,9 @@ static char * read_dimensions_from_weave_string(char *string, float * thicknessw
 {
     char *s = string;
     
-    *thicknessw = (float)atof(s);
+    *thicknessw = (float)str2d(s);
     s = find_next_newline(s+1);
-    *thicknessh = (float)atof(s);
+    *thicknessh = (float)str2d(s);
     s = find_next_newline(s+1);
     
     return find_next_newline(find_next_newline(s)+1)+1;
@@ -287,8 +288,7 @@ static void finalize_weave_parmeters(wcWeaveParameters *params)
 
 #ifndef WC_NO_FILES
 WC_PREFIX
-void wcWeavePatternFromFile(wcWeaveParameters *params,
-    const char *filename)
+void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename)
 {
     if(strlen(filename) > 4){
         if(strcmp(filename+strlen(filename)-4,".wif") == 0){
