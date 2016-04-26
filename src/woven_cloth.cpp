@@ -1,5 +1,6 @@
 #include "woven_cloth.h"
 #ifndef WC_NO_FILES
+#define REALWORLD_UV_WIF_TO_MM 10.0
 #include "wif/wif.cpp"
 #include "wif/ini.cpp"
 #endif
@@ -172,7 +173,7 @@ static char * read_dimensions_from_weave_string(char *string, float * thicknessw
 
 WC_PREFIX
 static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
-    uint32_t *pattern_height, float * pattern_realwidth, float * pattern_realheight,
+    uint32_t *pattern_height, float *pattern_realwidth, float *pattern_realheight,
     PatternEntry **pattern)
 {
     //A Weave file has 2-three sets of color
@@ -180,11 +181,12 @@ static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
     //a pattern matrix
 
     float warp_color[3], weft_color[3], 
-          warp_thickness, weft_thickness,
-          warp_spacing, weft_spacing;
+          warp_thickness, weft_thickness;
     s = read_color_from_weave_string(s,warp_color);
     s = read_color_from_weave_string(s,weft_color);
-    s = read_dimensions_from_weave_string(s,pattern_realwidth, pattern_realheight);
+    s = read_dimensions_from_weave_string(s, &warp_thickness, &weft_thickness);
+
+    printf("warp_thickness: %f, weft_thickness: %f", warp_thickness, weft_thickness);
 
     char * t = find_next_newline(s);
     *pattern_width = t - s;
@@ -198,6 +200,11 @@ static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
     }
     *pattern = (PatternEntry*)calloc(num_chars,sizeof(PatternEntry));
     *pattern_height = num_chars/(*pattern_width);
+    
+    *pattern_realwidth = REALWORLD_UV_WIF_TO_MM * (*pattern_width * (warp_thickness)); 
+    *pattern_realheight = REALWORLD_UV_WIF_TO_MM * (*pattern_height * (weft_thickness)); 
+   
+    
     i = 0;
     int ii =0;
     while(s[i] != 0) {

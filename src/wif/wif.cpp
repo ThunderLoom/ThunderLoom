@@ -219,8 +219,8 @@ PatternEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h, float *
 
     //Real width/height in meters
     //TODO(Peter): Assuming unit in wif is centimeters for thickness and spacing. Make it more general.
-    *rw = 10.0*(*rw * (data->warp.thickness) + (*rw - 1) * (data->warp.spacing)); 
-    *rh = 10.0*(*rh * (data->weft.thickness) + (*rh - 1) * (data->weft.spacing)); 
+    *rw = REALWORLD_UV_WIF_TO_MM*(*w * (data->warp.thickness) + (*w - 1) * (data->warp.spacing)); 
+    *rh = REALWORLD_UV_WIF_TO_MM*(*h * (data->weft.thickness) + (*h - 1) * (data->weft.spacing)); 
 
     if(*w > 0 && *h >0){
         pattern = (PatternEntry*)malloc((*w)*(*h)*sizeof(PatternEntry));

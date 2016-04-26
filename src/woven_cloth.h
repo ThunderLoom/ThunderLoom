@@ -22,8 +22,6 @@ typedef struct
     float yarnvar_xscale;
     float yarnvar_yscale;
     float yarnvar_persistance;
-    float pattern_realheight; //uses yarn thickness and spacing to calculate real sizes.
-    float pattern_realwidth;
     uint32_t yarnvar_octaves;
     bool realworld_uv;
 
@@ -33,6 +31,8 @@ typedef struct
     uint32_t pattern_width;
     PatternEntry * pattern_entry;
     float specular_normalization;
+    float pattern_realheight; //uses yarn thickness and spacing to calculate real sizes.
+    float pattern_realwidth;
 } wcWeaveParameters;
 
 typedef struct
