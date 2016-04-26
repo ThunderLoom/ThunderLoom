@@ -157,12 +157,34 @@ static char * read_color_from_weave_string(char *string, float * color)
 }
 
 WC_PREFIX
-static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
-    uint32_t *pattern_height, PatternEntry **pattern)
+static char * read_dimensions_from_weave_string(char *string, float * thicknessw, float * thicknessh)
 {
-    float warp_color[3], weft_color[3];
+    char *s = string;
+    
+    *thicknessw = (float)atof(s);
+    s = find_next_newline(s+1);
+    *thicknessh = (float)atof(s);
+    s = find_next_newline(s+1);
+    
+    return find_next_newline(find_next_newline(s)+1)+1;
+}
+
+
+WC_PREFIX
+static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
+    uint32_t *pattern_height, float * pattern_realwidth, float * pattern_realheight,
+    PatternEntry **pattern)
+{
+    //A Weave file has 2-three sets of color
+    //2-two sets of thickness and spacing in cm
+    //a pattern matrix
+
+    float warp_color[3], weft_color[3], 
+          warp_thickness, weft_thickness,
+          warp_spacing, weft_spacing;
     s = read_color_from_weave_string(s,warp_color);
     s = read_color_from_weave_string(s,weft_color);
+    s = read_dimensions_from_weave_string(s,pattern_realwidth, pattern_realheight);
 
     char * t = find_next_newline(s);
     *pattern_width = t - s;
@@ -322,8 +344,10 @@ static void weave_pattern_from_weave_file(wcWeaveParameters *params,
     char *buffer = (char*) calloc (lSize+1,sizeof(char));
     if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
     fread (buffer,1,lSize,f);
-    read_pattern_from_weave_string(buffer, &params->pattern_width,
-        &params->pattern_height, &params->pattern_entry);
+    read_pattern_from_weave_string(buffer, 
+            &params->pattern_width, &params->pattern_height,
+            &params->pattern_realwidth, &params->pattern_realheight,
+            &params->pattern_entry);
     finalize_weave_parmeters(params);
 }
 
@@ -344,7 +368,7 @@ WC_PREFIX
 void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
     const wchar_t *filename)
 {
-#ifdef WIN32
+#ifdef _WIN32
     FILE *f = _wfopen(filename, L"rt");
     if(f){
         weave_pattern_from_weave_file(params,f);
