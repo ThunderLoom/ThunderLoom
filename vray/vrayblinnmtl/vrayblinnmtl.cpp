@@ -141,6 +141,10 @@ static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial paramet
 		p_range, 0.0f, 1.f,
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
 	PB_END,
+	mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
+		p_default, FALSE,
+		p_ui, TYPE_SINGLECHEKBOX, ctrlID(),
+	PB_END,
     mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
 		p_default, 1.f,
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
@@ -392,6 +396,7 @@ void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
 		pblock->GetValue(mtl_diffuse, t, diffuse, ivalid);
 
         pblock->GetValue(mtl_umax,t, umax,ivalid);
+		pblock->GetValue(mtl_realworld,t, realworld,ivalid);
         pblock->GetValue(mtl_uscale,t, uscale,ivalid);
         pblock->GetValue(mtl_vscale,t, vscale,ivalid);
         pblock->GetValue(mtl_psi,t, psi,ivalid);
@@ -411,6 +416,7 @@ void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
 }
 
 void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
+	m_weave_parameters.realworld_uv = realworld;
     m_weave_parameters.uscale = uscale;
     m_weave_parameters.vscale = vscale;
     m_weave_parameters.umax   = umax;

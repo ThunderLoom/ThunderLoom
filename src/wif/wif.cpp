@@ -207,12 +207,21 @@ void wif_free_weavedata(WeaveData *data)
 }
 
 
-PatternEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h)
+PatternEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h, float *rw, float *rh)
 {
     uint32_t x,y;
     PatternEntry *pattern = 0;
+
+    //Pattern width/height in num of elements
+    //TODO(Peter) should these not be reversed? :/
     *w = data->warp.num_threads;
     *h = data->weft.num_threads;
+
+    //Real width/height in meters
+    //TODO(Peter): Assuming unit in wif is centimeters for thickness and spacing. Make it more general.
+    *rw = 10.0*(*rw * (data->warp.thickness) + (*rw - 1) * (data->warp.spacing)); 
+    *rh = 10.0*(*rh * (data->weft.thickness) + (*rh - 1) * (data->weft.spacing)); 
+
     if(*w > 0 && *h >0){
         pattern = (PatternEntry*)malloc((*w)*(*h)*sizeof(PatternEntry));
         for(y=0;y<*h;y++){

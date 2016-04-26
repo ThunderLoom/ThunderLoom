@@ -40,6 +40,7 @@ enum { mtl_params, };
 enum {
 	mtl_diffuse,
     mtl_umax,
+	mtl_realworld,
     mtl_uscale,
     mtl_vscale,
     mtl_psi,
@@ -91,6 +92,7 @@ public:
     float psi, delta_x, specular;
     float alpha, beta, intensity_fineness;
 	float yarnvar_amplitude, yarnvar_xscale, yarnvar_yscale, yarnvar_persistance, yarnvar_octaves;
+	int realworld;
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	

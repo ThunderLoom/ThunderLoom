@@ -294,7 +294,8 @@ void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
 {
     WeaveData *data = wif_read(filename);
     params->pattern_entry = wif_get_pattern(data,
-        &params->pattern_width, &params->pattern_height);
+        &params->pattern_width, &params->pattern_height,
+        &params->pattern_realwidth, &params->pattern_realheight);
     wif_free_weavedata(data);
     finalize_weave_parmeters(params);
 }
@@ -305,7 +306,8 @@ void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
 {
     WeaveData *data = wif_read_wchar(filename);
     params->pattern_entry = wif_get_pattern(data,
-        &params->pattern_width, &params->pattern_height);
+        &params->pattern_width, &params->pattern_height,
+        &params->pattern_realwidth, &params->pattern_realheight);
     wif_free_weavedata(data);
     finalize_weave_parmeters(params);
 }
@@ -529,9 +531,24 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     float uv_x = intersection_data.uv_x;
     float uv_y = intersection_data.uv_y;
 
+    //Real world scaling.
+    //uv_x is in meters. pattern_realwidth is in meters.
+    //but we want uvs repeated with 1.
+
+    //need uv_x needs to be scaled.
+    
+    
     //Set repeating uv coordinates.
-    float u_repeat = fmod(uv_x*params->uscale,1.f);
-    float v_repeat = fmod(uv_y*params->vscale,1.f);
+    //Either set using realworld scale or uvscale parameters.
+    float u_repeat;
+    float v_repeat;
+    if (params->realworld_uv) {
+        u_repeat = fmod(uv_x/params->pattern_realwidth,1.f);
+        v_repeat = fmod(uv_y/params->pattern_realheight,1.f);
+    } else {
+        u_repeat = fmod(uv_x*params->uscale,1.f);
+        v_repeat = fmod(uv_y*params->vscale,1.f);
+    }
 
     //pattern index
     //TODO(Peter): these are new. perhaps they can be used later 

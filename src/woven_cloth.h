@@ -22,7 +22,10 @@ typedef struct
     float yarnvar_xscale;
     float yarnvar_yscale;
     float yarnvar_persistance;
+    float pattern_realheight; //uses yarn thickness and spacing to calculate real sizes.
+    float pattern_realwidth;
     uint32_t yarnvar_octaves;
+    bool realworld_uv;
 
 // These are set by calling one of the wcWeavePatternFrom* functions
 // after all parameters above have been defined
