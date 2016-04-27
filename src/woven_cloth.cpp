@@ -564,30 +564,28 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     float uv_y = intersection_data.uv_y;
 
     //Real world scaling.
-    //uv_x is in meters. pattern_realwidth is in meters.
-    //but we want uvs repeated with 1.
-
-    //need uv_x needs to be scaled.
-    
-    
     //Set repeating uv coordinates.
     //Either set using realworld scale or uvscale parameters.
-    float u_repeat;
-    float v_repeat;
+    float u_scale, v_scale;
     if (params->realworld_uv) {
-        u_repeat = fmod(uv_x/params->pattern_realwidth,1.f);
-        v_repeat = fmod(uv_y/params->pattern_realheight,1.f);
+        //the user parameters uscale, vscale change roles when realworld_uv is true
+        //they are then used to tweak the realworld scales
+        u_scale = params->uscale/params->pattern_realwidth; 
+        v_scale = params->vscale/params->pattern_realheight;
     } else {
-        u_repeat = fmod(uv_x*params->uscale,1.f);
-        v_repeat = fmod(uv_y*params->vscale,1.f);
+        u_scale = params->uscale;
+        v_scale = params->vscale;
     }
-
+        
+    float u_repeat = fmod(uv_x*u_scale,1.f);
+    float v_repeat = fmod(uv_y*v_scale,1.f);
+    
     //pattern index
     //TODO(Peter): these are new. perhaps they can be used later 
     // to avoid duplicate calculations.
     //TODO(Peter): come up with a better name for these...
-    uint32_t total_x = uv_x*params->uscale*params->pattern_width;
-    uint32_t total_y = uv_y*params->vscale*params->pattern_height;
+    uint32_t total_x = uv_x*u_scale*params->pattern_width;
+    uint32_t total_y = uv_y*v_scale*params->pattern_height;
 
     //TODO(Vidar): Check why this crashes sometimes
     if (u_repeat < 0.f) {
