@@ -1,6 +1,5 @@
 #pragma once
 #include <stdint.h>
-#include <stdbool.h>
 #include "wif/wif.h"
 
 #ifndef WC_PREFIX
@@ -24,7 +23,7 @@ typedef struct
     float yarnvar_yscale;
     float yarnvar_persistance;
     uint32_t yarnvar_octaves;
-    bool realworld_uv;
+    uint8_t realworld_uv;
 
 // These are set by calling one of the wcWeavePatternFrom* functions
 // after all parameters above have been defined
