@@ -79,9 +79,7 @@ Color MyBaseBSDF::getLightMult(Color &lightColor) {
 Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction, Color &lightColor, Color &origLightColor, float probLight, int flags) {
 #ifdef DYNAMIC
     if(EvalFunc){
-        float cs=(float) (direction*normal);
-		if (cs<0.0f) cs=0.0f;
-        return cs*EvalFunc(rc,direction,lightColor,origLightColor,probLight,flags,m_weave_parameters,nm);
+        return EvalFunc(rc,direction,lightColor,origLightColor,probLight,flags,m_weave_parameters,nm);
     } else {
         return Color(1.f,0.f,1.f);
     }
@@ -90,28 +88,6 @@ Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction, Color &li
 	if (cs<0.0f) cs=0.0f;
     return cs*dynamic_eval(rc,direction,lightColor,origLightColor,probLight,flags,m_weave_parameters,nm);
 #endif
-    /*
-	// Skip this part if diffuse component is not required
-	if (0!=(flags & FBRDF_DIFFUSE)) {
-		float cs=(float) (direction*normal);
-		if (cs<0.0f) cs=0.0f;
-		float probReflection=2.0f*cs;
-
-		float k=getReflectionWeight(probLight, probReflection);
-		res+=(0.5f*probReflection*k)*(diffuse_color*lightColor);
-	}
-
-	// Skip this part if specular component is not required
-	if (!dontTrace && glossiness>=0.0f && 0!=(flags & FBRDF_SPECULAR)) {
-		float probReflection=getGlossyProbability(direction, rc.rayparams.viewDir);
-		float k=getReflectionWeight(probLight, probReflection);
-		res+=(0.5f*probReflection*k)*(reflect_filter*lightColor);
-	}
-
-	lightColor*=transparency;
-	origLightColor*=transparency;
-
-	return res;*/
 }
 
 void MyBaseBSDF::traceForward(VRayContext &rc, int doDiffuse) {

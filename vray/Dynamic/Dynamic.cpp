@@ -52,7 +52,6 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     Point3 dpdUVW[3];
     sc.DPdUVW(dpdUVW,1);
 
-    //TODO(Vidar): I'm not certain that we want these dot products...
     Point3 n_vec = sc.Normal().Normalize();
     Point3 u_vec = dpdUVW[0].Normalize();
     Point3 v_vec = dpdUVW[1].Normalize();
@@ -62,17 +61,8 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     Matrix3 mat(u_vec, v_vec, n_vec, Point3(0.f,0.f,0.f));
     mat.Invert(); // TODO(Vidar) transposing would be better...
 
-    Point3 localViewDir = (p * mat).Normalize();
-    Point3 localDir     = (d * mat).Normalize();
-
-    VUtils::Vector wo;
-    wo.x = localViewDir.x;
-    wo.y = localViewDir.y;
-    wo.z = localViewDir.z;
-    VUtils::Vector wi;
-    wi.x = localDir.x;
-    wi.y = localDir.y;
-    wi.z = localDir.z;
+    Point3 wo = (p * mat).Normalize();
+    Point3 wi = (d * mat).Normalize();
 
     intersection_data.wi_x = wi.x;
     intersection_data.wi_y = wi.y;
@@ -84,7 +74,6 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
 
     intersection_data.uv_x = uv.x;
     intersection_data.uv_y = uv.y;
-
 
     wcPatternData dat = wcGetPatternData(intersection_data,weave_parameters);
 
@@ -98,6 +87,14 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     v.y = (specular*reflection + diffuse*dat.color_g) * lightColor.g;
     v.z = (specular*reflection + diffuse*dat.color_b) * lightColor.b;
 
-    VUtils::Color res(fabsf(v.x), fabsf(v.y), fabsf(v.z));
-    return res;
+    Point3 normal;
+    normal.x = dat.normal_x;
+    normal.y = dat.normal_y;
+    normal.z = dat.normal_z;
+
+    float cs = DotProd(normal, wi);
+	if (cs<0.0f) cs=0.0f;
+
+    VUtils::Color res(v.x, v.y, v.z);
+    return cs*res;
 }
