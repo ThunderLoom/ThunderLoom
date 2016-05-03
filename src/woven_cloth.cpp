@@ -3,9 +3,9 @@
 #define REALWORLD_UV_WIF_TO_MM 10.0
 #include "wif/wif.cpp"
 #include "wif/ini.cpp"
+#include "str2d.h"
 #endif
 
-#include "str2d.h"
 #include "perlin.h"
 #include "halton.h"
 
@@ -136,6 +136,74 @@ void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x, float 
     *p_z = sqrtf(1.0f - (*p_x)*(*p_x) - (*p_y)*(*p_y));
 }
 
+
+WC_PREFIX
+static void finalize_weave_parmeters(wcWeaveParameters *params)
+{
+    //Calculate normalization factor for the specular reflection
+    //Irawan:
+    /* Estimate the average reflectance under diffuse
+       illumination and use it to normalize the specular
+       component */
+
+    //TODO(Vidar): Better rng... Or quasi-monte carlo?
+    size_t nSamples = 10000;
+    float result = 0.0f;
+    params->specular_normalization = 1.f;
+    
+    for (size_t i=0; i<nSamples; ++i) {
+
+        float halton_point[6];
+        halton_6(i+50,halton_point);
+
+        wcIntersectionData intersection_data;
+        intersection_data.uv_x = halton_point[0];
+        intersection_data.uv_y = halton_point[1];
+
+        sample_cosine_hemisphere(halton_point[2], halton_point[3],
+            &intersection_data.wi_x, &intersection_data.wi_y,
+            &intersection_data.wi_z);
+
+        sample_cosine_hemisphere(halton_point[4], halton_point[5],
+            &intersection_data.wo_x, &intersection_data.wo_y,
+            &intersection_data.wo_z);
+
+        wcPatternData pattern_data = wcGetPatternData(
+            intersection_data, params);
+        result += wcEvalSpecular(intersection_data,
+                pattern_data,params);
+    }
+
+    if (result <= 0.0001f){
+        params->specular_normalization = 0.f;
+    }else{
+        params->specular_normalization = nSamples / (result * M_PI);
+    }
+    
+}
+
+
+WC_PREFIX
+static PatternEntry *build_pattern_from_data(uint8_t *warp_above,
+        float *warp_color, float *weft_color, uint32_t w, uint32_t h)
+{
+    uint32_t x,y;
+    PatternEntry *pattern;
+    pattern = (PatternEntry*)malloc((w)*(h)*sizeof(PatternEntry));
+    for(y=0;y<h;y++){
+        for(x=0;x<w;x++){
+            pattern[x+y*w].warp_above = warp_above[x+y*w];
+            float *col = warp_above[x+y*w] ? warp_color : weft_color;
+            pattern[x+y*w].color[0] = col[0];
+            pattern[x+y*w].color[1] = col[1];
+            pattern[x+y*w].color[2] = col[2];
+        }
+    }
+    return pattern;
+}
+
+#ifndef WC_NO_FILES
+
 WC_PREFIX
 static char * find_next_newline(char * buffer)
 {
@@ -222,71 +290,6 @@ static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
     }
 }
 
-WC_PREFIX
-static PatternEntry *build_pattern_from_data(uint8_t *warp_above,
-        float *warp_color, float *weft_color, uint32_t w, uint32_t h)
-{
-    uint32_t x,y;
-    PatternEntry *pattern;
-    pattern = (PatternEntry*)malloc((w)*(h)*sizeof(PatternEntry));
-    for(y=0;y<h;y++){
-        for(x=0;x<w;x++){
-            pattern[x+y*w].warp_above = warp_above[x+y*w];
-            float *col = warp_above[x+y*w] ? warp_color : weft_color;
-            pattern[x+y*w].color[0] = col[0];
-            pattern[x+y*w].color[1] = col[1];
-            pattern[x+y*w].color[2] = col[2];
-        }
-    }
-    return pattern;
-}
-
-WC_PREFIX
-static void finalize_weave_parmeters(wcWeaveParameters *params)
-{
-    //Calculate normalization factor for the specular reflection
-    //Irawan:
-    /* Estimate the average reflectance under diffuse
-       illumination and use it to normalize the specular
-       component */
-
-    //TODO(Vidar): Better rng... Or quasi-monte carlo?
-    size_t nSamples = 10000;
-    float result = 0.0f;
-    params->specular_normalization = 1.f;
-    
-    for (size_t i=0; i<nSamples; ++i) {
-
-        float halton_point[6];
-        halton_6(i+50,halton_point);
-
-        wcIntersectionData intersection_data;
-        intersection_data.uv_x = halton_point[0];
-        intersection_data.uv_y = halton_point[1];
-
-        sample_cosine_hemisphere(halton_point[2], halton_point[3],
-            &intersection_data.wi_x, &intersection_data.wi_y,
-            &intersection_data.wi_z);
-
-        sample_cosine_hemisphere(halton_point[4], halton_point[5],
-            &intersection_data.wo_x, &intersection_data.wo_y,
-            &intersection_data.wo_z);
-
-        wcPatternData pattern_data = wcGetPatternData(
-            intersection_data, params);
-        result += wcEvalSpecular(intersection_data,
-                pattern_data,params);
-    }
-
-    if (result <= 0.0001f){
-        params->specular_normalization = 0.f;
-    }else{
-        params->specular_normalization = nSamples / (result * M_PI);
-    }
-    
-}
-
-#ifndef WC_NO_FILES
 WC_PREFIX
 void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename)
 {
