@@ -92,6 +92,6 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     VUtils::Color res(v.x, v.y, v.z);
     //VUtils::Color res(intersection_data.wo_x, intersection_data.wo_y, intersection_data.wo_z);
     //VUtils::Color res(1.f,1.f,0.f);
-    return res;
+    return cs*res;
     //return cs*res;
 }
