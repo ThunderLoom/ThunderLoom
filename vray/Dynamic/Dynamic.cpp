@@ -22,7 +22,7 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
                            wcWeaveParameters *weave_parameters, Matrix nm) {
     if(weave_parameters->pattern_entry == 0){
         //Invalid pattern
-        return VUtils::Color(0.f,0.f,0.f);
+        return VUtils::Color(1.f,0.f,0.f);
     }
     wcIntersectionData intersection_data;
    
@@ -32,21 +32,19 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
 
     Point3 uv = sc.UVW(1);
 
-    //Convert wi and wo to the correct coordinate system
+    //Convertthe view and light directions to the correct coordinate system
+    Point3 viewDir, lightDir;
+    viewDir.x = -rc.rayparams.viewDir.x;
+    viewDir.y = -rc.rayparams.viewDir.y;
+    viewDir.z = -rc.rayparams.viewDir.z;
+    viewDir = sc.VectorFrom(viewDir,REF_WORLD);
+    viewDir = viewDir.Normalize();
 
-    //NOTE(Vidar): These are in world space...
-    Point3 p, d;
-    p.x = rc.rayparams.viewDir.x;
-    p.y = rc.rayparams.viewDir.y;
-    p.z = rc.rayparams.viewDir.z;
-    p = sc.VectorFrom(p,REF_WORLD);
-    p = p.Normalize();
-
-    d.x = direction.x;
-    d.y = direction.y;
-    d.z = direction.z;
-    d = sc.VectorFrom(d,REF_WORLD);
-    d = d.Normalize();
+    lightDir.x = direction.x;
+    lightDir.y = direction.y;
+    lightDir.z = direction.z;
+    lightDir = sc.VectorFrom(lightDir,REF_WORLD);
+    lightDir = lightDir.Normalize();
 
     // UVW derivatives
     Point3 dpdUVW[3];
@@ -58,19 +56,15 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     u_vec = v_vec ^ n_vec;
     v_vec = n_vec ^ u_vec;
 
-    Matrix3 mat(u_vec, v_vec, n_vec, Point3(0.f,0.f,0.f));
-    mat.Invert(); // TODO(Vidar) transposing would be better...
+    intersection_data.wi_x = DotProd(lightDir, u_vec);
+    intersection_data.wi_y = DotProd(lightDir, v_vec);
+    intersection_data.wi_z = DotProd(lightDir, n_vec);
 
-    Point3 wo = (p * mat).Normalize();
-    Point3 wi = (d * mat).Normalize();
+    //DebugPrint(L"%f %f %f\n", viewDir.x, viewDir.y, viewDir.z);
 
-    intersection_data.wi_x = wi.x;
-    intersection_data.wi_y = wi.y;
-    intersection_data.wi_z = wi.z;
-
-    intersection_data.wo_x = wo.x;
-    intersection_data.wo_y = wo.y;
-    intersection_data.wo_z = wo.z;
+    intersection_data.wo_x = DotProd(viewDir, u_vec);
+    intersection_data.wo_y = DotProd(viewDir, v_vec);
+    intersection_data.wo_z = DotProd(viewDir, n_vec);
 
     intersection_data.uv_x = uv.x;
     intersection_data.uv_y = uv.y;
@@ -87,14 +81,17 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     v.y = (specular*reflection + diffuse*dat.color_g) * lightColor.g;
     v.z = (specular*reflection + diffuse*dat.color_b) * lightColor.b;
 
-    Point3 normal;
-    normal.x = dat.normal_x;
-    normal.y = dat.normal_y;
-    normal.z = dat.normal_z;
+    //float cs_perturbed = DotProd(normal, wi);
+	//if (cs_perturbed<0.0f) cs_perturbed=0.0f;
 
-    float cs = DotProd(normal, wi);
+    float cs = intersection_data.wi_z;
 	if (cs<0.0f) cs=0.0f;
 
+    //cs = 0.0f*cs + 1.0f*cs_perturbed;
+
     VUtils::Color res(v.x, v.y, v.z);
-    return cs*res;
+    //VUtils::Color res(intersection_data.wo_x, intersection_data.wo_y, intersection_data.wo_z);
+    //VUtils::Color res(1.f,1.f,0.f);
+    return res;
+    //return cs*res;
 }

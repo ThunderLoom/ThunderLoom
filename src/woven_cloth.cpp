@@ -607,12 +607,12 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     if (current_point.warp_above) {
         calculateLengthOfSegment(current_point.warp_above, pattern_x,
             pattern_y, &steps_left_warp, &steps_right_warp,
-            params->pattern_height, params->pattern_width,
+            params->pattern_width, params->pattern_height,
             params->pattern_entry);
     }else{
         calculateLengthOfSegment(current_point.warp_above, pattern_x,
             pattern_y, &steps_left_weft, &steps_right_weft,
-            params->pattern_height, params->pattern_width,
+            params->pattern_width, params->pattern_height,
             params->pattern_entry);
     }
 
