@@ -81,17 +81,28 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     v.y = (specular*reflection + diffuse*dat.color_g) * lightColor.g;
     v.z = (specular*reflection + diffuse*dat.color_b) * lightColor.b;
 
+	Point3 normal;
+    normal.x = dat.normal_x;
+    normal.y = dat.normal_y;
+    normal.z = dat.normal_z;
+	Point3 wi;
+	wi.x = intersection_data.wi_x;
+    wi.y = intersection_data.wi_y;
+    wi.z = intersection_data.wi_z;
+
+	float cs = DotProd(normal, wi);
+		if (cs<0.0f) cs=0.0f;
+
     //float cs_perturbed = DotProd(normal, wi);
 	//if (cs_perturbed<0.0f) cs_perturbed=0.0f;
+	//cs = 0.0f*cs + 1.0f*cs_perturbed;
 
-    float cs = intersection_data.wi_z;
-	if (cs<0.0f) cs=0.0f;
-
-    //cs = 0.0f*cs + 1.0f*cs_perturbed;
+	//wrong.
+    //float cs = intersection_data.wi_z;
+	//if (cs<0.0f) cs=0.0f;
 
     VUtils::Color res(v.x, v.y, v.z);
     //VUtils::Color res(intersection_data.wo_x, intersection_data.wo_y, intersection_data.wo_z);
     //VUtils::Color res(1.f,1.f,0.f);
     return cs*res;
-    //return cs*res;
 }
