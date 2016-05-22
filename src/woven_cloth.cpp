@@ -108,18 +108,18 @@ static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds)
     x.u = ((sampleTEA(v0, v1, rounds) & 0xFFFFFFFF) >> 9) | 0x3f800000UL;
     return x.f - 1.0f;
 }
-/* - */
 
 WC_PREFIX
-void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x, float *p_y, float *p_z)
+void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x,
+        float *p_y, float *p_z)
 {
     //sample uniform disk concentric
     // From mitsuba warp.cpp
 	float r1 = 2.0f*sample_x - 1.0f;
 	float r2 = 2.0f*sample_y - 1.0f;
 
-	/* Modified concencric map code with less branching (by Dave Cline), see
-	   http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html */
+// Modified concencric map code with less branching (by Dave Cline), see
+// http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
 	float phi, r;
 	if (r1 == 0 && r2 == 0) {
 		r = phi = 0;
@@ -136,47 +136,112 @@ void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x, float 
     *p_z = sqrtf(1.0f - (*p_x)*(*p_x) - (*p_y)*(*p_y));
 }
 
+WC_PREFIX
+void sample_uniform_hemisphere(float sample_x, float sample_y, float *p_x,
+        float *p_y, float *p_z)
+{
+    //Source: http://mathworld.wolfram.com/SpherePointPicking.html
+    float theta = M_PI*2.f*sample_x;
+    float phi   = acos(2.f*sample_y - 1.f);
+    *p_x = cosf(theta)*cosf(phi);
+    *p_y = sinf(theta)*cosf(phi);
+    *p_z = sinf(phi);
+}
+
+WC_PREFIX
+void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
+        const wcWeaveParameters *params)
+{
+    //Calculate the yarn-segment-local u v coordinates along the curved cylinder
+    //NOTE: This is different from how Irawan does it
+    /*segment_u = asinf(x*sinf(params->umax));
+        segment_v = asinf(y);*/
+    //TODO(Vidar): Use a parameter for choosing model?
+    float segment_u = pattern_data->y*params->umax;
+    float segment_v = pattern_data->x*M_PI_2;
+
+    //Calculate the normal in yarn-local coordinates
+    float normal_x = sinf(segment_v);
+    float normal_y = sinf(segment_u)*cosf(segment_v);
+    float normal_z = cosf(segment_u)*cosf(segment_v);
+    
+    //TODO(Vidar): This is pretty weird, right? Now x and y are not yarn-local
+    // anymore...
+    // Transform the normal back to shading space
+    if(!pattern_data->warp_above){
+        float tmp = normal_x;
+        normal_x  = normal_y;
+        normal_y  = -tmp;
+    }
+
+    pattern_data->u        = segment_u;
+    pattern_data->v        = segment_v;
+    pattern_data->normal_x = normal_x;
+    pattern_data->normal_y = normal_y;
+    pattern_data->normal_z = normal_z;
+}
+
+
 
 WC_PREFIX
 static void finalize_weave_parmeters(wcWeaveParameters *params)
 {
     //Calculate normalization factor for the specular reflection
 
-    size_t nSamples = 10000;
-    float result = 0.0f;
+    size_t nLocationSamples  = 100;
+    size_t nDirectionSamples = 1000;
     params->specular_normalization = 1.f;
 
-    //TODO(Vidar): Calculate this properly...
+    float highest_result = 0.f;
     
-    for (size_t i=0; i<nSamples; ++i) {
+    // Temporarily disable intensity variation...
+    float tmp_intensity_fineness = params->intensity_fineness;
+    params->intensity_fineness = 0.f;
 
-        float halton_point[6];
-        halton_6(i+50,halton_point);
+    // Normalize by the largest reflection across all uv coords and
+    // incident directions
+    for (size_t i=0; i<nLocationSamples; i++) {
+        float result = 0.0f;
+        float halton_point[4];
+        halton_4(i+50,halton_point);
+        wcPatternData pattern_data;
+        // Pick a random location on a segment rectangle...
+        pattern_data.x = -1.f + 2.f*halton_point[0];
+        pattern_data.y = -1.f + 2.f*halton_point[1];
+        pattern_data.length = 1.f;
+        pattern_data.width = 1.f;
+        pattern_data.warp_above = 0;
+        calculate_segment_uv_and_normal(&pattern_data, params);
+        pattern_data.total_index_x = 0;
+        pattern_data.total_index_y = 0;
 
         wcIntersectionData intersection_data;
-        intersection_data.uv_x = halton_point[0];
-        intersection_data.uv_y = halton_point[1];
-
-        sample_cosine_hemisphere(halton_point[2], halton_point[3],
+        sample_uniform_hemisphere(halton_point[2], halton_point[3],
             &intersection_data.wi_x, &intersection_data.wi_y,
             &intersection_data.wi_z);
 
-        sample_cosine_hemisphere(halton_point[4], halton_point[5],
-            &intersection_data.wo_x, &intersection_data.wo_y,
-            &intersection_data.wo_z);
-
-        wcPatternData pattern_data = wcGetPatternData(
-            intersection_data, params);
-        result += wcEvalSpecular(intersection_data,
-                pattern_data,params);
+        for (size_t j=0; j<nDirectionSamples; j++) {
+            float halton_direction[4];
+            halton_4(j+50+nLocationSamples,halton_direction);
+            // Since we use cosine sampling here, we can ignore the cos term
+            // in the integral
+            sample_cosine_hemisphere(halton_direction[0], halton_direction[1],
+                &intersection_data.wo_x, &intersection_data.wo_y,
+                &intersection_data.wo_z);
+            result += wcEvalSpecular(intersection_data,pattern_data,params);
+        }
+        if(result > highest_result){
+            highest_result = result;
+        }
     }
 
-    if (result <= 0.0001f){
+    if (highest_result <= 0.0001f){
         params->specular_normalization = 0.f;
     }else{
-        params->specular_normalization = nSamples / (result * M_PI);
+        params->specular_normalization =
+            (float)nDirectionSamples /highest_result;
     }
-    
+    params->intensity_fineness = tmp_intensity_fineness;
 }
 
 
@@ -224,7 +289,8 @@ static char * read_color_from_weave_string(char *string, float * color)
 }
 
 WC_PREFIX
-static char * read_dimensions_from_weave_string(char *string, float * thicknessw, float * thicknessh)
+static char * read_dimensions_from_weave_string(char *string,
+        float * thicknessw, float * thicknessh)
 {
     char *s = string;
     
@@ -239,8 +305,8 @@ static char * read_dimensions_from_weave_string(char *string, float * thicknessw
 
 WC_PREFIX
 static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
-    uint32_t *pattern_height, float *pattern_realwidth, float *pattern_realheight,
-    PatternEntry **pattern)
+    uint32_t *pattern_height, float *pattern_realwidth,
+    float *pattern_realheight, PatternEntry **pattern)
 {
     //A Weave file has 2-three sets of color
     //2-two sets of thickness and spacing in cm
@@ -265,8 +331,10 @@ static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
     *pattern = (PatternEntry*)calloc(num_chars,sizeof(PatternEntry));
     *pattern_height = num_chars/(*pattern_width);
     
-    *pattern_realwidth = REALWORLD_UV_WIF_TO_MM * (*pattern_width * (warp_thickness)); 
-    *pattern_realheight = REALWORLD_UV_WIF_TO_MM * (*pattern_height * (weft_thickness)); 
+    *pattern_realwidth = REALWORLD_UV_WIF_TO_MM
+        * (*pattern_width * (warp_thickness)); 
+    *pattern_realheight = REALWORLD_UV_WIF_TO_MM
+        * (*pattern_height * (weft_thickness)); 
    
     
     i = 0;
@@ -559,7 +627,8 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     //Either set using realworld scale or uvscale parameters.
     float u_scale, v_scale;
     if (params->realworld_uv) {
-        //the user parameters uscale, vscale change roles when realworld_uv is true
+        //the user parameters uscale, vscale change roles when realworld_uv
+        // is true
         //they are then used to tweak the realworld scales
         u_scale = params->uscale/params->pattern_realwidth; 
         v_scale = params->vscale/params->pattern_realheight;
@@ -628,42 +697,18 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         w = l;
         l = tmp2;
     }
-
-    //Calculate the yarn-segment-local u v coordinates along the curved cylinder
-    //NOTE: This is different from how Irawan does it
-    /*segment_u = asinf(x*sinf(params->umax));
-        segment_v = asinf(y);*/
-    //TODO(Vidar): Use a parameter for choosing model?
-    float segment_u = y*params->umax;
-    float segment_v = x*M_PI_2;
-
-    //Calculate the normal in yarn-local coordinates
-    float normal_x = sinf(segment_v);
-    float normal_y = sinf(segment_u)*cosf(segment_v);
-    float normal_z = cosf(segment_u)*cosf(segment_v);
-    
-    //Transform the normal back to shading space
-    if(!current_point.warp_above){
-        float tmp = normal_x;
-        normal_x = normal_y;
-        normal_y = -tmp;
-    }
   
     //return the results
     wcPatternData ret_data;
     ret_data.color_r = current_point.color[0];
     ret_data.color_g = current_point.color[1];
     ret_data.color_b = current_point.color[2];
-    ret_data.u = segment_u;
-    ret_data.v = segment_v;
     ret_data.length = l; 
     ret_data.width  = w; 
     ret_data.x = x; 
     ret_data.y = y; 
     ret_data.warp_above = current_point.warp_above; 
-    ret_data.normal_x = normal_x;
-    ret_data.normal_y = normal_y;
-    ret_data.normal_z = normal_z;
+    calculate_segment_uv_and_normal(&ret_data, params);
     ret_data.total_index_x = total_x; //total x index of wrapped pattern matrix
     ret_data.total_index_y = total_y; //total y index of wrapped pattern matrix
     return ret_data;
@@ -720,7 +765,8 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
         specular_y = specular_y > -1.f + params->delta_x ? specular_y :
             -1.f + params->delta_x;
 
-        if (fabsf(specular_y - y) < params->delta_x) { //this takes the role of xi in the irawan paper.
+        //this takes the role of xi in the irawan paper.
+        if (fabsf(specular_y - y) < params->delta_x) {
             // --- Set Gu, using (6)
             float a = 1.f; //radius of yarn
             float R = 1.f/(sin(params->umax)); //radius of curvature
@@ -735,12 +781,11 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
             // --- Set A
             float widotn = wcVector_dot(wi, highlight_normal);
             float wodotn = wcVector_dot(wo, highlight_normal);
-            //float A = m_sigma_s/m_sigma_t * (widotn*wodotn)/(widotn + wodotn);
             widotn = (widotn < 0.f) ? 0.f : widotn;   
             wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
             float A = 0.f;
             if(widotn > 0.f && wodotn > 0.f){
-                A = 1.f / (4.0 * M_PI) * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
+                A = 1.f / (4.0 * M_PI) * (widotn*wodotn)/(widotn + wodotn);
                 //TODO(Peter): Explain from where the 1/4*PI factor comes from
             }
             float l = 2.f;
@@ -774,15 +819,16 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     float D;
     {
         float a = H.y*sinf(u) + H.z*cosf(u);
-        D = (H.y*cosf(u)-H.z*sinf(u))/(sqrtf(H.x*H.x + a*a)) / tanf(params->psi);
+        D = (H.y*cosf(u)-H.z*sinf(u))/(sqrtf(H.x*H.x + a*a))/tanf(params->psi);
     }
     float reflection = 0.f;
             
-    float specular_v = atan2f(-H.y*sinf(u) - H.z*cosf(u), H.x) + acosf(D); //Plus eller minus i sista termen.
+    //Plus eller minus i sista termen?
+    float specular_v = atan2f(-H.y*sinf(u) - H.z*cosf(u), H.x) + acosf(D);
     //TODO(Vidar): Clamp specular_v, do we need it?
     // Make normal for highlights, uses u and specular_v
-    wcVector highlight_normal = wcVector_normalize(wcvector(sinf(specular_v), sinf(u)*cosf(specular_v),
-        cosf(u)*cosf(specular_v)));
+    wcVector highlight_normal = wcVector_normalize(wcvector(sinf(specular_v),
+        sinf(u)*cosf(specular_v), cosf(u)*cosf(specular_v)));
 
     if (fabsf(specular_v) < M_PI_2 && fabsf(D) < 1.f) {
         //we have specular reflection
@@ -797,7 +843,7 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
         specular_x = specular_x > -1.f + params->delta_x ? specular_x :
             -1.f + params->delta_x;
 
-        if (fabsf(specular_x - x) < params->delta_x) { //this takes the role of xi in the irawan paper.
+        if (fabsf(specular_x - x) < params->delta_x) {
             // --- Set Gv
             float a = 1.f; //radius of yarn
             float R = 1.f/(sin(params->umax)); //radius of curvature
@@ -810,13 +856,12 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
             // --- Set A
             float widotn = wcVector_dot(wi, highlight_normal);
             float wodotn = wcVector_dot(wo, highlight_normal);
-            //float A = m_sigma_s/m_sigma_t * (widotn*wodotn)/(widotn + wodotn);
             widotn = (widotn < 0.f) ? 0.f : widotn;   
             wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
             //TODO(Vidar): This is where we get the NAN
-            float A = 0.f; //sigmas are "unimportant"
+            float A = 0.f;
             if(widotn > 0.f && wodotn > 0.f){
-                A = 1.f / (4.0 * M_PI) * (widotn*wodotn)/(widotn + wodotn); //sigmas are "unimportant"
+                A = 1.f / (4.0 * M_PI) * (widotn*wodotn)/(widotn + wodotn);
                 //TODO(Peter): Explain from where the 1/4*PI factor comes from
             }
             float w = 2.f;
@@ -872,8 +917,11 @@ wcColor wcShade(wcIntersectionData intersection_data,
     wcPatternData data = wcGetPatternData(intersection_data,params);
     wcColor ret = wcEvalDiffuse(intersection_data,data,params);
     float spec  = wcEvalSpecular(intersection_data,data,params);
-    ret.r = ret.r*(1.f-params->specular_strength) + params->specular_strength*spec;
-    ret.g = ret.g*(1.f-params->specular_strength) + params->specular_strength*spec;
-    ret.b = ret.b*(1.f-params->specular_strength) + params->specular_strength*spec;
+    ret.r =
+        ret.r*(1.f-params->specular_strength) + params->specular_strength*spec;
+    ret.g =
+        ret.g*(1.f-params->specular_strength) + params->specular_strength*spec;
+    ret.b =
+        ret.b*(1.f-params->specular_strength) + params->specular_strength*spec;
     return ret;
 }
