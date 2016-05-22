@@ -60,8 +60,6 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     intersection_data.wi_y = DotProd(lightDir, v_vec);
     intersection_data.wi_z = DotProd(lightDir, n_vec);
 
-    //DebugPrint(L"%f %f %f\n", viewDir.x, viewDir.y, viewDir.z);
-
     intersection_data.wo_x = DotProd(viewDir, u_vec);
     intersection_data.wo_y = DotProd(viewDir, v_vec);
     intersection_data.wo_z = DotProd(viewDir, n_vec);
@@ -69,29 +67,11 @@ VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const Vector &directio
     intersection_data.uv_x = uv.x;
     intersection_data.uv_y = uv.y;
 
-    wcPatternData dat = wcGetPatternData(intersection_data,weave_parameters);
+    wcColor col = wcShade(intersection_data,weave_parameters);
 
-    float reflection = wcEvalSpecular(intersection_data,dat,weave_parameters);
-
-    float specular = weave_parameters->specular_strength;
-    float diffuse = (1.f - specular) * wcEvalDiffuse(intersection_data,dat,weave_parameters);
-
-    VUtils::Vector v;
-    v.x = (specular*reflection + diffuse*dat.color_r) * lightColor.r;
-    v.y = (specular*reflection + diffuse*dat.color_g) * lightColor.g;
-    v.z = (specular*reflection + diffuse*dat.color_b) * lightColor.b;
-
-    //float cs_perturbed = DotProd(normal, wi);
-	//if (cs_perturbed<0.0f) cs_perturbed=0.0f;
-
-    float cs = intersection_data.wi_z;
-	if (cs<0.0f) cs=0.0f;
-
-    //cs = 0.0f*cs + 1.0f*cs_perturbed;
-
-    VUtils::Color res(v.x, v.y, v.z);
-    //VUtils::Color res(intersection_data.wo_x, intersection_data.wo_y, intersection_data.wo_z);
-    //VUtils::Color res(1.f,1.f,0.f);
-    return cs*res;
-    //return cs*res;
+    VUtils::Color ret(
+        col.r * lightColor.r,
+        col.g * lightColor.g,
+        col.b * lightColor.b);
+    return ret;
 }

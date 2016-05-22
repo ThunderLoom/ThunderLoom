@@ -141,15 +141,12 @@ WC_PREFIX
 static void finalize_weave_parmeters(wcWeaveParameters *params)
 {
     //Calculate normalization factor for the specular reflection
-    //Irawan:
-    /* Estimate the average reflectance under diffuse
-       illumination and use it to normalize the specular
-       component */
 
-    //TODO(Vidar): Better rng... Or quasi-monte carlo?
     size_t nSamples = 10000;
     float result = 0.0f;
     params->specular_normalization = 1.f;
+
+    //TODO(Vidar): Calculate this properly...
     
     for (size_t i=0; i<nSamples; ++i) {
 
@@ -254,8 +251,6 @@ static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
     s = read_color_from_weave_string(s,warp_color);
     s = read_color_from_weave_string(s,weft_color);
     s = read_dimensions_from_weave_string(s, &warp_thickness, &weft_thickness);
-
-    printf("warp_thickness: %f, weft_thickness: %f", warp_thickness, weft_thickness);
 
     char * t = find_next_newline(s);
     *pattern_width = t - s;
@@ -432,19 +427,13 @@ static float intensityVariation(wcPatternData pattern_data,
     }
 
     //segment start x,y
-    float startx = tindex_x - (pattern_data.x*0.5 + 0.5)*pattern_data.width;
-    float starty = tindex_y - (pattern_data.y*0.5 + 0.5)*pattern_data.length;
-    float centerx = startx + pattern_data.width/2.0;
-    float centery = starty + pattern_data.length/2.0;
+    float centerx = tindex_x - (pattern_data.x*0.5f)*pattern_data.width;
+    float centery = tindex_y - (pattern_data.y*0.5f)*pattern_data.length;
     
     uint32_t r1 = (uint32_t) ((centerx + tindex_x) 
             * params->intensity_fineness);
     uint32_t r2 = (uint32_t) ((centery + tindex_y) 
             * params->intensity_fineness);
-
-    //srand(r1+r2); //bad way to do it?
-    //float xi = rand();
-    //return fmin(-math::fastlog(xi), (float) 10.0f);
     
     float xi = sampleTEASingle(r1, r2, 8);
     float log_xi = -logf(xi);
@@ -469,7 +458,7 @@ static float yarnVariation(wcPatternData pattern_data,
     }
 
     //We want to vary the intesity along the yarn.
-    //For a parrallel yarn we want a diffrent variation. 
+    //For a parallel yarn we want a diffrent variation. 
     //Use a large xscale to make the values different.
 
     float amplitude = params->yarnvar_amplitude;
@@ -479,6 +468,7 @@ static float yarnVariation(wcPatternData pattern_data,
     float persistance = params->yarnvar_persistance; //paramter
 
     float x_noise = (tindex_x/(float)params->pattern_width) * xscale;
+    //NOTE(Vidar): Should it really be pattern_width here too? Ask Peter...
     float y_noise = (tindex_y + (pattern_data.y/2.f + 0.5))
         /(float)params->pattern_width * yscale;
 
@@ -489,7 +479,7 @@ static float yarnVariation(wcPatternData pattern_data,
 
     //NOTE(Peter): Right now there is perlin on both warp and weft.
     //Would be useful to specify only warp or weft. Or even better, 
-    //if a yanr_type definition is made, 
+    //if a yarn_type definition is made, 
     // define noise parmeters for a certain yarn. along with other 
     // yarn properties.
 }
@@ -558,14 +548,12 @@ WC_PREFIX
 wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         const wcWeaveParameters *params)
 {
-
     if(params->pattern_entry == 0){
         wcPatternData data = {0};
         return data;
     }
     float uv_x = intersection_data.uv_x;
     float uv_y = intersection_data.uv_y;
-
     //Real world scaling.
     //Set repeating uv coordinates.
     //Either set using realworld scale or uvscale parameters.
@@ -579,10 +567,8 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         u_scale = params->uscale;
         v_scale = params->vscale;
     }
-        
     float u_repeat = fmod(uv_x*u_scale,1.f);
     float v_repeat = fmod(uv_y*v_scale,1.f);
-    
     //pattern index
     //TODO(Peter): these are new. perhaps they can be used later 
     // to avoid duplicate calculations.
@@ -663,11 +649,11 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         normal_y = -tmp;
     }
   
+    //return the results
     wcPatternData ret_data;
     ret_data.color_r = current_point.color[0];
     ret_data.color_g = current_point.color[1];
     ret_data.color_b = current_point.color[2];
-
     ret_data.u = segment_u;
     ret_data.v = segment_v;
     ret_data.length = l; 
@@ -680,8 +666,6 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     ret_data.normal_z = normal_z;
     ret_data.total_index_x = total_x; //total x index of wrapped pattern matrix
     ret_data.total_index_y = total_y; //total y index of wrapped pattern matrix
-
-    //return the results
     return ret_data;
 }
 
@@ -843,21 +827,21 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
 }
 
 WC_PREFIX
-float wcEvalDiffuse(wcIntersectionData intersection_data,
+wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
         wcPatternData data, const wcWeaveParameters *params)
 {
-    // currently only deals with noise variation.
-    // Bump displacment is handled differently depending on rendering engine used.
-    // Mitsuba uses a frame to inform sampling
-    // vray .... ???
-
-    float value = 1.f;
+    float value = intersection_data.wi_z;
 
     if (params->yarnvar_amplitude > 0.001f) {
         value *= yarnVariation(data, params);
     }
 
-    return value;
+    wcColor color = {
+        data.color_r * value,
+        data.color_g * value,
+        data.color_b * value
+    };
+    return color;
 }
 
 WC_PREFIX
@@ -880,4 +864,16 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
     }
     return reflection * params->specular_normalization
         * intensityVariation(data, params);
+}
+
+wcColor wcShade(wcIntersectionData intersection_data,
+        const wcWeaveParameters *params)
+{
+    wcPatternData data = wcGetPatternData(intersection_data,params);
+    wcColor ret = wcEvalDiffuse(intersection_data,data,params);
+    float spec  = wcEvalSpecular(intersection_data,data,params);
+    ret.r = ret.r*(1.f-params->specular_strength) + params->specular_strength*spec;
+    ret.g = ret.g*(1.f-params->specular_strength) + params->specular_strength*spec;
+    ret.b = ret.b*(1.f-params->specular_strength) + params->specular_strength*spec;
+    return ret;
 }
