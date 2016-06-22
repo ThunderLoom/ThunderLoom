@@ -64,9 +64,6 @@ enum {
 
 class MyBlinnBSDF: public VR::MyBaseBSDF {
 public:
-	VR::Vector getGlossyReflectionDir(float uc, float vc, const VR::Vector &viewDir, float &rayProbability);
-	VR::real getGlossyProbability(const VR::Vector &direction, const VR::Vector &viewDir);
-	float remapGlossiness(float nk);
 };
 
 /*===========================================================================*\

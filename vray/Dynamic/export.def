@@ -1,3 +1,4 @@
 LIBRARY   vrayblinnmtl_dynamic.dll
 EXPORTS
-   dynamic_eval		@1
+   eval_diffuse			@1
+   eval_specular		@2

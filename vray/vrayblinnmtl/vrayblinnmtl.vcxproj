@@ -346,7 +346,7 @@
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <StringPooling>true</StringPooling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>$(ADSK_3DSMAX_SDK_2015)\include;C:\Program Files\Chaos Group\V-Ray\3dsmax 2015 for x64\include;..\..\src\wif;..\Dynamic;.;..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

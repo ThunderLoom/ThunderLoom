@@ -7,34 +7,22 @@ namespace VUtils {
 
 class MyBaseBSDF: public BRDFSampler, public BSDFSampler {
 protected:
-	Color reflect_filter, transparency;
-	real glossiness;
-	int nsamples;
-	int doubleSided;
 	Color diffuse_color;
 
-	int dontTrace; // true if we need to trace reflections and false otherwise
-	int origBackside;
-
 	Vector normal, gnormal;
+    int orig_backside;
 
 	Matrix nm, inm; // A matrix with the normal as the z-axis; can be used for anisotropy
 
     wcWeaveParameters *m_weave_parameters;
 
-	virtual void computeNormalMatrix(const VRayContext &rc, const Vector &normal, Matrix &nm);
 public:
-	// Methods required for derived classes
-	virtual Vector getGlossyReflectionDir(float uc, float vc, const Vector &viewDir, float &rayProbability)=0;
-	virtual VUtils::real getGlossyProbability(const Vector &direction, const Vector &viewDir)=0;
-	virtual float remapGlossiness(float nk)=0;
 
 	// Initialization
-	void init(const VRayContext &rc, const Color &reflectionColor, real reflectionGlossiness,
-        int subdivs, const Color &transp, int dblSided, const Color &diffuse,
-        wcWeaveParameters *weave_parameters);
+	void init(const VRayContext &rc, wcWeaveParameters *weave_parameters);
 
 	// From BRDFSampler
+	Vector getDiffuseNormal(const VR::VRayContext &rc);
 	Color getDiffuseColor(Color &lightColor);
 	Color getLightMult(Color &lightColor);
 	Color getTransparency(const VRayContext &rc);

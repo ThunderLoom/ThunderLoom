@@ -10,7 +10,10 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-EVALFUNC EvalFunc = 0;
+#ifdef DYNAMIC
+EVALSPECULARFUNC EvalSpecularFunc = 0;
+EVALDIFFUSEFUNC EvalDiffuseFunc = 0;
+#endif
 
 
 // no param block script access for VRay free
@@ -105,7 +108,10 @@ public:
 #endif
 		return _T("Materials\\V-Ray");
 	}
-	Bitmap* GetEntryThumbnail() const { return NULL; }
+	Bitmap* GetEntryThumbnail() const {
+        //TODO(Vidar): return thumbnail :)
+        return NULL;
+    }
 #endif
 };
 
@@ -223,8 +229,6 @@ public:
                 unload_dlls();
 
                 DebugPrint(L"Unloaded dll\n");
-    
-                EvalFunc = (EVALFUNC)get_dynamic_func("dynamic_eval");
 #endif
 				break;
             }
@@ -391,46 +395,35 @@ void SkeletonMaterial::NotifyChanged() {
 }
 
 void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
-	if (!ivalid.InInterval(t)) {
-		ivalid.SetInfinite();
-		pblock->GetValue(mtl_diffuse, t, diffuse, ivalid);
-
-        pblock->GetValue(mtl_umax,t, umax,ivalid);
-		pblock->GetValue(mtl_realworld,t, realworld,ivalid);
-        pblock->GetValue(mtl_uscale,t, uscale,ivalid);
-        pblock->GetValue(mtl_vscale,t, vscale,ivalid);
-        pblock->GetValue(mtl_psi,t, psi,ivalid);
-        pblock->GetValue(mtl_delta_x,t, delta_x,ivalid);
-        pblock->GetValue(mtl_alpha,t, alpha,ivalid);
-        pblock->GetValue(mtl_beta,t, beta,ivalid);
-        pblock->GetValue(mtl_specular,t, specular,ivalid);
-        pblock->GetValue(mtl_intensity_fineness,t, intensity_fineness,ivalid);
-		pblock->GetValue(mtl_yarnvar_amplitude,t, yarnvar_amplitude,ivalid);
-		pblock->GetValue(mtl_yarnvar_xscale,t, yarnvar_xscale,ivalid);
-		pblock->GetValue(mtl_yarnvar_yscale,t, yarnvar_yscale,ivalid);
-		pblock->GetValue(mtl_yarnvar_persistance,t, yarnvar_persistance,ivalid);
-		pblock->GetValue(mtl_yarnvar_octaves,t, yarnvar_octaves,ivalid);
-	}
-
-	valid &= ivalid;
 }
 
 void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
-	m_weave_parameters.realworld_uv = realworld;
-    m_weave_parameters.uscale = uscale;
-    m_weave_parameters.vscale = vscale;
-    m_weave_parameters.umax   = umax;
-    m_weave_parameters.psi    = psi;
-    m_weave_parameters.alpha  = alpha;
-    m_weave_parameters.beta   = beta;
-    m_weave_parameters.delta_x = delta_x;
-    m_weave_parameters.specular_strength = specular;
-    m_weave_parameters.specular_normalization = 1.f;
-	m_weave_parameters.intensity_fineness = intensity_fineness;
-	m_weave_parameters.yarnvar_amplitude = yarnvar_amplitude;
-	m_weave_parameters.yarnvar_xscale = yarnvar_xscale;
-	m_weave_parameters.yarnvar_yscale = yarnvar_yscale;
-	m_weave_parameters.yarnvar_persistance = yarnvar_persistance;
+    ivalid.SetInfinite();
+	//pblock->GetValue(mtl_diffuse, t, diffuse, ivalid);
+#ifdef DYNAMIC
+    unload_dlls();
+    
+    EvalDiffuseFunc  = (EVALDIFFUSEFUNC) get_dynamic_func("eval_diffuse" );
+    EvalSpecularFunc = (EVALSPECULARFUNC)get_dynamic_func("eval_specular");
+#endif
+    pblock->GetValue(mtl_umax,t, m_weave_parameters.umax,ivalid);
+    int realworld;
+	pblock->GetValue(mtl_realworld,t, realworld ,ivalid);
+    m_weave_parameters.realworld_uv = realworld;
+    pblock->GetValue(mtl_uscale,t, m_weave_parameters.uscale,ivalid);
+    pblock->GetValue(mtl_vscale,t, m_weave_parameters.vscale,ivalid);
+    pblock->GetValue(mtl_psi,t, m_weave_parameters.psi,ivalid);
+    pblock->GetValue(mtl_delta_x,t, m_weave_parameters.delta_x,ivalid);
+    pblock->GetValue(mtl_alpha,t, m_weave_parameters.alpha,ivalid);
+    pblock->GetValue(mtl_beta,t, m_weave_parameters.beta,ivalid);
+    pblock->GetValue(mtl_specular,t, m_weave_parameters.specular_strength,ivalid);
+    pblock->GetValue(mtl_intensity_fineness,t, m_weave_parameters.intensity_fineness,ivalid);
+	pblock->GetValue(mtl_yarnvar_amplitude,t, m_weave_parameters.yarnvar_amplitude,ivalid);
+	pblock->GetValue(mtl_yarnvar_xscale,t, m_weave_parameters.yarnvar_xscale,ivalid);
+	pblock->GetValue(mtl_yarnvar_yscale,t, m_weave_parameters.yarnvar_yscale,ivalid);
+	pblock->GetValue(mtl_yarnvar_persistance,t, m_weave_parameters.yarnvar_persistance,ivalid);
+    float yarnvar_octaves;
+	pblock->GetValue(mtl_yarnvar_octaves,t, yarnvar_octaves,ivalid);
 	m_weave_parameters.yarnvar_octaves = (int)yarnvar_octaves;
 
     MSTR filename = pblock->GetStr(mtl_wiffile,t);
@@ -442,6 +435,7 @@ void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 
 void SkeletonMaterial::renderEnd(VR::VRayRenderer *vray) {
     //TODO(Vidar): Free pattern
+    wcFreeWeavePattern(&m_weave_parameters);
 	bsdfPool.freeMem();
 	renderChannels.freeMem();
 }
