@@ -148,6 +148,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(ADSK_3DSMAX_x64_2016)plugins\vrayplugins\</OutDir>
+    <TargetExt>.dllt</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>.\..\..\build\vrayblinnmtl\debug\x64\</OutDir>
@@ -581,10 +583,10 @@
     <ClInclude Include="vrayblinnmtl.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="vrayblinnmtl.rc" />
+    <Text Include="Skeleton.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Skeleton.txt" />
+    <ResourceCompile Include="vrayblinnmtl.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -52,11 +52,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="vrayblinnmtl.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
     <Text Include="Skeleton.txt">
       <Filter>ReadMe</Filter>
     </Text>
@@ -65,5 +60,10 @@
     <CustomBuild Include="plugin.def">
       <Filter>Source Files</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="vrayblinnmtl.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

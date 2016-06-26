@@ -36,6 +36,8 @@
 #define st_coat8                        1008
 #define st_coat9                        1009
 #define cb_additive                     1010
+#define IDC_EDIT1                       1012
+#define IDC_CHECK1                      1013
 #define IDC_SIMPLE_EDIT                 1032
 #define cs_blend1                       1032
 #define ed_texmap_blend_mult1           1033
@@ -101,7 +103,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1011
+#define _APS_NEXT_CONTROL_VALUE         1014
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

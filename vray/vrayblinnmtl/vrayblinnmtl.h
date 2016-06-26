@@ -37,6 +37,12 @@ extern ClassDesc* GetSkeletonMtlDesc();
 enum { mtl_params, }; 
 
 // Paramblock2 parameter list
+
+enum {
+	mtl_testparam,
+};
+
+/*
 enum {
 	mtl_diffuse,
     mtl_umax,
@@ -56,7 +62,7 @@ enum {
     mtl_yarnvar_persistance,
     mtl_yarnvar_octaves,
     mtl_texture,
-};
+};*/
 
 /*===========================================================================*\
  |	The actual BRDF
@@ -93,6 +99,7 @@ public:
     float alpha, beta, intensity_fineness;
 	float yarnvar_amplitude, yarnvar_xscale, yarnvar_yscale, yarnvar_persistance, yarnvar_octaves;
 	int realworld;
+	int testparam;
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	

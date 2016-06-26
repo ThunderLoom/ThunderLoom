@@ -123,6 +123,19 @@ ClassDesc* GetSkeletonMtlDesc() {return &SkelMtlCD;}
 static int numID=100;
 int ctrlID(void) { return numID++; }
 
+static ParamBlockDesc2 thunderLoom_param_blk (mtl_params, _T("Test mtl params"), 0, &SkelMtlCD, P_AUTO_CONSTRUCT + P_AUTO_UI, 0,
+											  //rollout
+											  IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, NULL, 
+											  //params
+												mtl_testparam, _FT("testparam"), TYPE_BOOL, 0, 0,
+													p_default, FALSE,
+													p_ui, TYPE_SINGLECHEKBOX, IDC_CHECK1,
+											PB_END,
+										PB_END
+										);
+											  
+
+/*
 static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial parameters"),  0, &SkelMtlCD, P_AUTO_CONSTRUCT + P_AUTO_UI, 0, 
 	//rollout
 	IDD_SKELETON_MATERIAL, IDS_PARAMETERS, 0, 0, NULL, 
@@ -203,6 +216,7 @@ static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial paramet
 	PB_END,
 PB_END
 );
+/*
 
 /*===========================================================================*\
  |	UI stuff
@@ -289,12 +303,12 @@ SkeletonMaterial::SkeletonMaterial(BOOL loading) {
 }
 
 ParamDlg* SkeletonMaterial::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
-	return new SkelMtlParamDlg(this, hwMtlEdit, imp);
-	/*
+	//return new SkelMtlParamDlg(this, hwMtlEdit, imp);
+	
 	IAutoMParamDlg* masterDlg = SkelMtlCD.CreateParamDlgs(hwMtlEdit, imp, this);
-	smtl_param_blk.SetUserDlgProc(new SkelMtlDlgProc(this));
+	//smtl_param_blk.SetUserDlgProc(new SkelMtlDlgProc(this));
 	return masterDlg;
-	*/
+	
 }
 
 BOOL SkeletonMaterial::SetDlgThing(ParamDlg* dlg) {
@@ -336,7 +350,8 @@ RefResult SkeletonMaterial::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 			ivalid.SetEmpty();
 			if (hTarget==pblock) {
 				ParamID changing_param = pblock->LastNotifyParamID();
-				smtl_param_blk.InvalidateUI(changing_param);
+				//smtl_param_blk.InvalidateUI(changing_param);
+				thunderLoom_param_blk.InvalidateUI(changing_param);
 			}
 			break;
 	}
@@ -393,6 +408,8 @@ void SkeletonMaterial::NotifyChanged() {
 void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
 	if (!ivalid.InInterval(t)) {
 		ivalid.SetInfinite();
+		pblock->GetValue(mtl_testparam,t, testparam,ivalid);
+		/*
 		pblock->GetValue(mtl_diffuse, t, diffuse, ivalid);
 
         pblock->GetValue(mtl_umax,t, umax,ivalid);
@@ -410,12 +427,15 @@ void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
 		pblock->GetValue(mtl_yarnvar_yscale,t, yarnvar_yscale,ivalid);
 		pblock->GetValue(mtl_yarnvar_persistance,t, yarnvar_persistance,ivalid);
 		pblock->GetValue(mtl_yarnvar_octaves,t, yarnvar_octaves,ivalid);
+		*/
 	}
 
 	valid &= ivalid;
 }
 
 void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
+	//m_weave_parameters.realworld_uv = realworld;
+	/*
 	m_weave_parameters.realworld_uv = realworld;
     m_weave_parameters.uscale = uscale;
     m_weave_parameters.vscale = vscale;
@@ -435,6 +455,7 @@ void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 
     MSTR filename = pblock->GetStr(mtl_wiffile,t);
     wcWeavePatternFromFile_wchar(&m_weave_parameters,filename);
+	*/
 
 	const VR::VRaySequenceData &sdata=vray->getSequenceData();
 	bsdfPool.init(sdata.maxRenderThreads);
