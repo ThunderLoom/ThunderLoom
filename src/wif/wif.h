@@ -13,6 +13,10 @@ typedef struct
 {
     WarpOrWeftData warp, weft;
     uint32_t num_shafts, num_treadles, num_colors;
+    uint32_t current_section;
+    uint32_t read_sections; //NOTE(Vidar): Which sections have been read?
+    uint32_t read_keys; //NOTE(Vidar): Which keys have been read in the current
+                        // section?
     uint8_t *tieup;
     uint32_t *treadling, *threading; //TODO(Vidar): Move to WarpOrWeftData?
     float *colors;
