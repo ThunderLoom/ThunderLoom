@@ -1,5 +1,5 @@
-//vrayblinnmtl.cpp
-// This file sets up the 3dsMax plugin.
+//3dsMaxThunderLoom.cpp
+// This file sets up and registers the 3dsMax plugin.
 
 #include "dynamic.h"
 
@@ -8,7 +8,7 @@
 #include "vrayinterface.h" //BSDFsampler amongst others..
 #include "vrender_unicode.h"
 
-#include "vrayblinnmtl.h"
+#include "3dsMaxThunderLoom.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -32,7 +32,7 @@ EVALFUNC EvalFunc = 0;
 \*===========================================================================*/
 //The class descriptor registers plugin with 3dsMax. 
 
-class SkeletonMaterialClassDesc : public ClassDesc2 
+class ThunderLoomClassDesc : public ClassDesc2 
 #if GET_MAX_RELEASE(VERSION_3DSMAX) >= 6000
 , public IMtlRender_Compatibility_MtlBase 
 	//This interface is used to determine whether
@@ -58,7 +58,7 @@ class SkeletonMaterialClassDesc : public ClassDesc2
 	HIMAGELIST imageList;
 public:
 	virtual int IsPublic() 							{ return IS_PUBLIC; }
-	virtual void* Create(BOOL loading = FALSE)		{ return new SkeletonMaterial(loading); }
+	virtual void* Create(BOOL loading = FALSE)		{ return new ThunderLoomMtl(loading); }
 	virtual const TCHAR *	ClassName() 			{ return STR_CLASSNAME; }
 	virtual SClass_ID SuperClassID() 				{ return MATERIAL_CLASS_ID; }
 	virtual Class_ID ClassID() 						{ return MTL_CLASSID; }
@@ -66,13 +66,13 @@ public:
 	virtual const TCHAR* InternalName() 			{ return _T("thunderLoomMtl"); }	// returns fixed parsable name (scripter-visible name)
 	virtual HINSTANCE HInstance() 					{ return hInstance; }					// returns owning module handle
 
-	SkeletonMaterialClassDesc(void) {
+	ThunderLoomClassDesc(void) {
 		imageList=NULL;
 #if GET_MAX_RELEASE(VERSION_3DSMAX) >= 6000
 		IMtlRender_Compatibility_MtlBase::Init(*this);
 #endif
 	}
-	~SkeletonMaterialClassDesc(void) {
+	~ThunderLoomClassDesc(void) {
 		if (imageList) ImageList_Destroy(imageList);
 		imageList=NULL;
 	}
@@ -127,8 +127,8 @@ public:
 };
 
 //Make instance of Plugin ClassDescriptor
-static SkeletonMaterialClassDesc SkelMtlCD;
-ClassDesc* GetSkeletonMtlDesc() {return &SkelMtlCD;}
+static ThunderLoomClassDesc thunderLoomDesc;
+ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
 
 /*===========================================================================*\
  |	Basic implimentation of a dialog handler
@@ -142,7 +142,7 @@ ClassDesc* GetSkeletonMtlDesc() {return &SkelMtlCD;}
 //static int numID=100;
 //int ctrlID(void) { return numID++; }
 
-static ParamBlockDesc2 thunderLoom_param_blk (mtl_params, _T("Test mtl params"), 0, &SkelMtlCD, P_AUTO_CONSTRUCT + P_AUTO_UI, 0,
+static ParamBlockDesc2 thunderLoom_param_blk (mtl_params, _T("Test mtl params"), 0, &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI, 0,
 	//rollout
 	IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, NULL, 
 	//params
@@ -292,12 +292,12 @@ PB_END
 
 //callbacks for messages.
 //TODO(Peter): better reason for keeping!
-class SkelMtlDlgProc : public ParamMap2UserDlgProc {
+class ThunderLoomMtlDlgProc : public ParamMap2UserDlgProc {
 public:
 	IParamMap *pmap;
-	SkeletonMaterial *sm;
+	ThunderLoomMtl *sm;
 
-	SkelMtlDlgProc(void) { sm = NULL; }
+	ThunderLoomMtlDlgProc(void) { sm = NULL; }
 	INT_PTR DlgProc(TimeValue t, IParamMap2 *map, HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		int id = LOWORD(wParam);
 		switch (msg) 
@@ -323,14 +323,12 @@ public:
 		return FALSE;
 	}
 	void DeleteThis() {}
-	void SetThing(ReferenceTarget *m) { sm = (SkeletonMaterial*)m; }
+	void SetThing(ReferenceTarget *m) { sm = (ThunderLoomMtl*)m; }
 };
 
-static SkelMtlDlgProc dlgProc;
-//static Pb2TemplateGenerator templateGenerator;
+static ThunderLoomMtlDlgProc dlgProc;
 
 //TODO(Peter): make own ParamDlg?
-
 /*
 class SkelMtlParamDlg: public ParamDlg {
 public:
@@ -367,33 +365,33 @@ public:
  |  Ask the ClassDesc2 to make the AUTO_CONSTRUCT paramblocks and wire them in
 \*===========================================================================*/
 
-void SkeletonMaterial::Reset() {
+void ThunderLoomMtl::Reset() {
 	ivalid.SetEmpty();
-	SkelMtlCD.Reset(this);
+	thunderLoomDesc.Reset(this);
 }
 
-SkeletonMaterial::SkeletonMaterial(BOOL loading) {
+ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
 	pblock=NULL;
 	ivalid.SetEmpty();
-	SkelMtlCD.MakeAutoParamBlocks(this);	// make and intialize paramblock2
+	thunderLoomDesc.MakeAutoParamBlocks(this);	// make and intialize paramblock2
 	Reset();
 }
 
-ParamDlg* SkeletonMaterial::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
+ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
 	//return new SkelMtlParamDlg(this, hwMtlEdit, imp);
 	
-	IAutoMParamDlg* masterDlg = SkelMtlCD.CreateParamDlgs(hwMtlEdit, imp, this);
+	IAutoMParamDlg* masterDlg = thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
 	//thunderLoom_param_blk.SetUserDlgProc(new SkelMtlDlgProc(this));
-	thunderLoom_param_blk.SetUserDlgProc(new SkelMtlDlgProc());
+	thunderLoom_param_blk.SetUserDlgProc(new ThunderLoomMtlDlgProc());
 	return masterDlg;
 	
 }
 
-BOOL SkeletonMaterial::SetDlgThing(ParamDlg* dlg) {
+BOOL ThunderLoomMtl::SetDlgThing(ParamDlg* dlg) {
 	return FALSE;
 }
 
-Interval SkeletonMaterial::Validity(TimeValue t) {
+Interval ThunderLoomMtl::Validity(TimeValue t) {
 	Interval temp=FOREVER;
 	Update(t, temp);
 	return ivalid;
@@ -403,26 +401,26 @@ Interval SkeletonMaterial::Validity(TimeValue t) {
  |	Subanim & References support
 \*===========================================================================*/
 
-RefTargetHandle SkeletonMaterial::GetReference(int i) {
+RefTargetHandle ThunderLoomMtl::GetReference(int i) {
 	if (i==0) return pblock;
 	return NULL;
 }
 
-void SkeletonMaterial::SetReference(int i, RefTargetHandle rtarg) {
+void ThunderLoomMtl::SetReference(int i, RefTargetHandle rtarg) {
 	if (i==0) pblock=(IParamBlock2*) rtarg;
 }
 
-TSTR SkeletonMaterial::SubAnimName(int i) {
+TSTR ThunderLoomMtl::SubAnimName(int i) {
 	if (i==0) return _T("Parameters");
 	return _T("");
 }
 
-Animatable* SkeletonMaterial::SubAnim(int i) {
+Animatable* ThunderLoomMtl::SubAnim(int i) {
 	if (i==0) return pblock;
 	return NULL;
 }
 
-RefResult SkeletonMaterial::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
+RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 	switch (message) {
 		case REFMSG_CHANGE:
 			ivalid.SetEmpty();
@@ -442,7 +440,7 @@ RefResult SkeletonMaterial::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 
 #define MTL_HDR_CHUNK 0x4000
 
-IOResult SkeletonMaterial::Save(ISave *isave) { 
+IOResult ThunderLoomMtl::Save(ISave *isave) { 
 	IOResult res;
 	isave->BeginChunk(MTL_HDR_CHUNK);
 	res = MtlBase::Save(isave);
@@ -451,7 +449,7 @@ IOResult SkeletonMaterial::Save(ISave *isave) {
 	return IO_OK;
 }	
 
-IOResult SkeletonMaterial::Load(ILoad *iload) { 
+IOResult ThunderLoomMtl::Load(ILoad *iload) { 
 	IOResult res;
 	int id;
 	while (IO_OK==(res=iload->OpenChunk())) {
@@ -470,8 +468,8 @@ IOResult SkeletonMaterial::Load(ILoad *iload) {
  |	Updating and cloning
 \*===========================================================================*/
 
-RefTargetHandle SkeletonMaterial::Clone(RemapDir &remap) {
-	SkeletonMaterial *mnew = new SkeletonMaterial(FALSE);
+RefTargetHandle ThunderLoomMtl::Clone(RemapDir &remap) {
+	ThunderLoomMtl *mnew = new ThunderLoomMtl(FALSE);
 	*((MtlBase*)mnew) = *((MtlBase*)this); 
 	BaseClone(this, mnew, remap);
 	mnew->ReplaceReference(0, remap.CloneRef(pblock));
@@ -479,11 +477,11 @@ RefTargetHandle SkeletonMaterial::Clone(RemapDir &remap) {
 	return (RefTargetHandle) mnew;
 }
 
-void SkeletonMaterial::NotifyChanged() {
+void ThunderLoomMtl::NotifyChanged() {
 	NotifyDependents(FOREVER, PART_ALL, REFMSG_CHANGE);
 }
 
-void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
+void ThunderLoomMtl::Update(TimeValue t, Interval& valid) {
 	if (!ivalid.InInterval(t)) {
 		ivalid.SetInfinite();
 
@@ -512,7 +510,46 @@ void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
 	valid &= ivalid;
 }
 
-void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
+/*===========================================================================*\
+ |	Determine the characteristics of the material
+\*===========================================================================*/
+
+void ThunderLoomMtl::SetAmbient(Color c, TimeValue t) {}		
+void ThunderLoomMtl::SetDiffuse(Color c, TimeValue t) {}		
+void ThunderLoomMtl::SetSpecular(Color c, TimeValue t) {}
+void ThunderLoomMtl::SetShininess(float v, TimeValue t) {}
+				
+Color ThunderLoomMtl::GetAmbient(int mtlNum, BOOL backFace) {
+	return Color(0,0,0);
+}
+
+Color ThunderLoomMtl::GetDiffuse(int mtlNum, BOOL backFace) {
+	return Color(0.5f, 0.5f, 0.5f);
+}
+
+Color ThunderLoomMtl::GetSpecular(int mtlNum, BOOL backFace) {
+	return Color(0,0,0);
+}
+
+float ThunderLoomMtl::GetXParency(int mtlNum, BOOL backFace) {
+	return 0.0f;
+}
+
+float ThunderLoomMtl::GetShininess(int mtlNum, BOOL backFace) {
+	return 0.0f;
+}
+
+float ThunderLoomMtl::GetShinStr(int mtlNum, BOOL backFace) {
+	return 0.0f;
+}
+
+float ThunderLoomMtl::WireSize(int mtlNum, BOOL backFace) {
+	return 0.0f;
+}
+
+// Render intialization and deinitialization
+
+void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	//m_weave_parameters.realworld_uv = realworld;
 
 	m_weave_parameters.uscale = uscale;
@@ -555,8 +592,34 @@ void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	bsdfPool.init(sdata.maxRenderThreads);
 }
 
-void SkeletonMaterial::renderEnd(VR::VRayRenderer *vray) {
+void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
     //TODO(Vidar): Free pattern
 	bsdfPool.freeMem();
 	renderChannels.freeMem();
 }
+
+/*===========================================================================*\
+ |	Actual shading takes place
+\*===========================================================================*/
+
+void ThunderLoomMtl::Shade(ShadeContext &sc) {
+	if (sc.ClassID()==VRAYCONTEXT_CLASS_ID)
+		shade(static_cast<VR::VRayInterface&>(sc), gbufID);
+	else {
+		if (gbufID) sc.SetGBufferID(gbufID);
+		sc.out.c.Black(); sc.out.t.Black();
+	}
+}
+
+float ThunderLoomMtl::EvalDisplacement(ShadeContext& sc)
+{
+	return 0.0f;
+}
+
+Interval ThunderLoomMtl::DisplacementValidity(TimeValue t)
+{
+	Interval iv;
+	iv.SetInfinite();
+	return iv;
+}
+	

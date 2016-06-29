@@ -38,7 +38,7 @@
     <ProjectGuid>{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Dynamic</RootNamespace>
-    <ProjectName>vrayblinnmtl_dynamic</ProjectName>
+    <ProjectName>3dsMaxPlugin_dynamic</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -150,6 +150,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(ADSK_3DSMAX_x64_2016)plugins\vrayplugins\</OutDir>
+    <TargetName>thunderLoom_dynamic</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

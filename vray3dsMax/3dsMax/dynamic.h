@@ -17,7 +17,7 @@ typedef VUtils::Color (*EVALFUNC)(const VUtils::VRayContext &rc, const VUtils::V
 
 static void *get_dynamic_func(const char *fname)
 {
-#define DYNAMIC_DLL_NAME L"vrayblinnmtl_dynamic.dll" //NOTE(Vidar): Edit me to match the name of the dll!
+#define DYNAMIC_DLL_NAME L"thunderLoom_dynamic.dll" //NOTE(Vidar): Edit me to match the name of the dll!
 #ifdef MAX_RELEASE_R18 
 #define PLUGIN_PATH L"C:\\Program Files\\Autodesk\\3ds Max 2016\\plugins\\vrayplugins\\" //NOTE(Vidar) Coould use IPathConfigMgr::GetPlugInDesc() instead...
 #else

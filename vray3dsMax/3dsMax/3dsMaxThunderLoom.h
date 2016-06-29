@@ -87,7 +87,7 @@ public:
  |	SkeletonMaterial class defn
 \*===========================================================================*/
 
-class SkeletonMaterial : public Mtl, public VR::VRenderMtl {
+class ThunderLoomMtl : public Mtl, public VR::VRenderMtl {
 	VR::BRDFPool<MyBlinnBSDF> bsdfPool;
 	VR::LayeredBSDFRenderChannels renderChannels;
 	VR::Color getBlend(ShadeContext &sc, int i);
@@ -115,7 +115,7 @@ public:
 	Interval Validity(TimeValue t);
 	void Reset();
 
-	SkeletonMaterial(BOOL loading);
+	ThunderLoomMtl(BOOL loading);
 	Class_ID ClassID() { return MTL_CLASSID; }
 	SClass_ID SuperClassID() { return MATERIAL_CLASS_ID; }
 	void GetClassName(TSTR& s) { s=STR_CLASSNAME; }

@@ -38,7 +38,7 @@
     <SccProjectName />
     <SccLocalPath />
     <ProjectGuid>{5A17DACE-8572-4AC1-B679-DFC296EA8557}</ProjectGuid>
-    <ProjectName>wovencloth</ProjectName>
+    <ProjectName>3dsMaxPlugin</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -149,7 +149,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(ADSK_3DSMAX_x64_2016)plugins\vrayplugins\</OutDir>
-    <TargetExt>.dllt</TargetExt>
+    <TargetExt>.dlt</TargetExt>
+    <TargetName>thunderLoom</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>.\..\..\build\vrayblinnmtl\debug\x64\</OutDir>
@@ -469,7 +470,7 @@
       <LinkDLL>true</LinkDLL>
       <OutputFile>$(ADSK_3DSMAX_x64_2015)\plugins\vrayplugins\vrayblinnmtl90.dlt</OutputFile>
       <ImportLibrary>.\..\..\build\vrayblinnmtl\debug\x64\vrayblinnmtl90.lib</ImportLibrary>
-      <AdditionalLibraryDirectories>C:\Program Files\Autodesk\3ds Max 2015 SDK\maxsdk\lib\x64\Release;..\..\..\lib\x64;..\..\..\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\Autodesk\3ds Max 2015 SDK\maxsdk\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>
       <BaseAddress>0x08B70000</BaseAddress>
       <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;vray2015.lib;vutils_s.lib;plugman_s.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -524,7 +525,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\woven_cloth.cpp" />
-    <ClCompile Include="..\Dynamic\Dynamic.cpp" />
+    <ClCompile Include="..\3dsMax_dynamic\Dynamic.cpp" />
     <ClCompile Include="blinnbrdf.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
@@ -535,7 +536,7 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
     </ClCompile>
-    <ClCompile Include="mtlshade.cpp">
+    <ClCompile Include="DllEntry.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
@@ -545,7 +546,7 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
     </ClCompile>
-    <ClCompile Include="plugin.cpp">
+    <ClCompile Include="3dsMaxThunderLoom.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
@@ -555,16 +556,7 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
     </ClCompile>
-    <ClCompile Include="vrayblinnmtl.cpp">
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
-    </ClCompile>
+    <ClCompile Include="mtlshade.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="plugin.def">
@@ -581,7 +573,7 @@
     <ClInclude Include="dynamic.h" />
     <ClInclude Include="helper.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="vrayblinnmtl.h" />
+    <ClInclude Include="3dsMaxThunderLoom.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Skeleton.txt" />

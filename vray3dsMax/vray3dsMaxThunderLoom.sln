@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wovencloth", "vrayblinnmtl.vcxproj", "{5A17DACE-8572-4AC1-B679-DFC296EA8557}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3dsMaxPlugin", "3dsMax\3dsMaxPlugin.vcxproj", "{5A17DACE-8572-4AC1-B679-DFC296EA8557}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vrayblinnmtl_dynamic", "..\Dynamic\Dynamic.vcxproj", "{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3dsMaxPlugin_dynamic", "3dsMax_dynamic\Dynamic.vcxproj", "{B8691CC0-0BFB-4F3D-8ED1-AEE0A01C20F8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
