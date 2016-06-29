@@ -556,7 +556,6 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
     </ClCompile>
-    <ClCompile Include="mtlshade.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="plugin.def">

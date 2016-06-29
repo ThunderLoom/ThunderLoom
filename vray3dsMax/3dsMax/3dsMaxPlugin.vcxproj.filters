@@ -30,9 +30,6 @@
     <ClCompile Include="DllEntry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mtlshade.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\3dsMax_dynamic\Dynamic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

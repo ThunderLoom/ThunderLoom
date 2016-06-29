@@ -37,16 +37,15 @@ EVALDIFFUSEFUNC EvalDiffuseFunc = 0;
 
 class ThunderLoomClassDesc : public ClassDesc2 
 #if GET_MAX_RELEASE(VERSION_3DSMAX) >= 6000
+//This interface is used to determine whether
+//a material/map flags itself as being compatible
+//with a specific renderer plugin.
+//The interface also provides a way of defining
+//an icon that appears in the material browser
+//- GetCustomMtlBrowserIcon. 
 , public IMtlRender_Compatibility_MtlBase 
-	//This interface is used to determine whether
-	//a material/map flags itself as being compatible
-	//with a specific renderer plugin.
-	//The interface also provides a way of defining
-	//an icon that appears in the material browser
-	//- GetCustomMtlBrowserIcon. 
 #endif
 #if GET_MAX_RELEASE(VERSION_3DSMAX) >= 13900
-, public IMaterialBrowserEntryInfo
 //This interface allows materials and textures to customize their
 //appearance in the Material Browser
 //If implemented, the plug-in class should
@@ -56,6 +55,7 @@ class ThunderLoomClassDesc : public ClassDesc2
 //appearance of its entries, as shown in the Material Browser.
 //This includes the display name, the thumbnail, and the location
 //(or category) of entries.
+, public IMaterialBrowserEntryInfo
 #endif
 {
 	HIMAGELIST imageList;
@@ -80,7 +80,7 @@ public:
 		imageList=NULL;
 	}
 
-#if GET_MAX_RELEASE(VERSION_3DSMAX) >= 6000 //NOTE(Peter): have a minimum version requirement? minimum VERSION_3DSMAX = 1490`0?
+#if GET_MAX_RELEASE(VERSION_3DSMAX) >= 6000 //NOTE(Peter): have a minimum version requirement? minimum VERSION_3DSMAX = 14900?
 	// From IMtlRender_Compatibility_MtlBase
 	bool IsCompatibleWithRenderer(ClassDesc& rendererClassDesc) {
 		if (rendererClassDesc.ClassID()!=VRENDER_CLASS_ID) return false;
@@ -103,10 +103,11 @@ public:
 		activeIndex=1;
 		disabledIndex=2;
 		return true;
-	} //TODO(Peter): Is this needed?
+	} //TODO(Peter): Is this needed? Do we want custom icon?
 #endif
 
 #if GET_MAX_RELEASE(VERSION_3DSMAX) >= 13900
+	//Get material to show up in vray section of the material browser.
 	FPInterface* GetInterface(Interface_ID id) {
 		if (IMATERIAL_BROWSER_ENTRY_INFO_INTERFACE==id) {
 			return static_cast<IMaterialBrowserEntryInfo*>(this);
@@ -141,10 +142,7 @@ ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
  |	Paramblock2 Descriptor
 \*===========================================================================*/
 
-// Used for vray auto ui
-//static int numID=100;
-//int ctrlID(void) { return numID++; }
-
+//Set upp paramblock to handle storing values and managing ui elements for us
 static ParamBlockDesc2 thunderLoom_param_blk (mtl_params, _T("Test mtl params"), 0, &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI, 0,
 	//rollout
 	IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, NULL, 
@@ -195,106 +193,14 @@ static ParamBlockDesc2 thunderLoom_param_blk (mtl_params, _T("Test mtl params"),
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
 	PB_END,
 PB_END
-);
-											  
-
-/*
-	distortion_str,	_T("distortionStr"),		 TYPE_FLOAT,	P_ANIMATABLE,	IDS_DISTORTION_STRENGTH,
-		p_default,		0.1f,
-		p_range,		0.0f, 1000.0f,
-		p_ui, 			TYPE_SPINNER, EDITTYPE_FLOAT, IDC_DISTORTION_EDIT, IDC_DISTORTION_SPIN, 0.001f, 
-		p_end,
-*/
-
-/*
-static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial parameters"),  0, &SkelMtlCD, P_AUTO_CONSTRUCT + P_AUTO_UI, 0, 
-	//rollout
-	IDD_SKELETON_MATERIAL, IDS_PARAMETERS, 0, 0, NULL, 
-	// params
-	mtl_diffuse, _FT("diffuse"), TYPE_RGBA, P_ANIMATABLE, 0,
-		p_default, Color(0.5f, 0.5f, 0.5f),
-		p_ui, TYPE_COLORSWATCH, ctrlID(),
-	PB_END,
-    mtl_specular, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
-		p_range, 0.0f, 1.f,
-		
-	PB_END,
-    mtl_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0.5,
-		p_range, 0.0f, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-	mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
-		p_default, FALSE,
-		p_ui, TYPE_SINGLECHEKBOX, ctrlID(),
-	PB_END,
-    mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-    mtl_vscale, _FT("vscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-    mtl_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0.5,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-    mtl_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0.5f,
-        p_range, 0.0f, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-    mtl_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0.05,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-    mtl_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 4.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-    mtl_intensity_fineness, _FT("intensity_fineness"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-	mtl_yarnvar_amplitude, _FT("yarnvar_amplitude"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-	mtl_yarnvar_xscale, _FT("yarnvar_xscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-	mtl_yarnvar_yscale, _FT("yarnvar_yscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-	mtl_yarnvar_persistance, _FT("yarnvar_persistance"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
-	PB_END,
-	mtl_yarnvar_octaves, _FT("yarnvar_octaves"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 1.f,
-	PB_END,
-    mtl_wiffile, _FT("wifFile"), TYPE_FILENAME, P_ANIMATABLE, 0,
-        p_default, _FT(""),
-		p_ui, TYPE_FILEOPENBUTTON, ctrlID(),
-	PB_END,
-    mtl_texture, _FT("texture"), TYPE_TEXMAP, 0, 0,
-		p_ui, TYPE_TEXMAPBUTTON, ctrlID(),
-	PB_END,
-PB_END
-);
-/*
+);									 
 
 /*===========================================================================*\
  |	UI stuff
 \*===========================================================================*/
 
-//callbacks for messages.
-//TODO(Peter): better reason for keeping!
+//Here there is the option to add custom behaviour to certain messages.
+//For the time being only initdiolog is intercepted and triggers a dll unload.
 class ThunderLoomMtlDlgProc : public ParamMap2UserDlgProc {
 public:
 	IParamMap *pmap;
@@ -325,41 +231,8 @@ public:
 	void DeleteThis() {}
 	void SetThing(ReferenceTarget *m) { sm = (ThunderLoomMtl*)m; }
 };
-
 static ThunderLoomMtlDlgProc dlgProc;
 
-//TODO(Peter): make own ParamDlg?
-/*
-class SkelMtlParamDlg: public ParamDlg {
-public:
-	SkeletonMaterial *mtl;
-	IMtlParams *ip;
-	IParamMap2 *pmap;
-	
-	SkelMtlParamDlg(SkeletonMaterial *m, HWND hWnd, IMtlParams *i) {
-		mtl=m;
-		ip=i;
-
-		
-		//DLGTEMPLATE* tmp=templateGenerator.GenerateTemplate(mtl->pblock, STR_DLGTITLE, 217);
-		//pmap=CreateMParamMap2(mtl->pblock, ip, hInstance, hWnd, NULL, NULL, tmp, STR_DLGTITLE, 0, &dlgProc);
-		//templateGenerator.ReleaseDlgTemplate(tmp);
-	}
-
-	void DeleteThis(void) {
-		if (pmap) DestroyMParamMap2(pmap);
-		pmap=NULL;
-		delete this;
-	}
-	
-	Class_ID ClassID(void) { return MTL_CLASSID; }
-	void SetThing(ReferenceTarget *m) { mtl=(SkeletonMaterial*) m; pmap->SetParamBlock(mtl->pblock); }
-	ReferenceTarget* GetThing(void) { return mtl; }
-	void SetTime(TimeValue t) {}
-	void ReloadDialog(void) {}
-	void ActivateDlg(BOOL onOff) {}
-};
-*/
 /*===========================================================================*\
  |	Constructor and Reset systems
  |  Ask the ClassDesc2 to make the AUTO_CONSTRUCT paramblocks and wire them in
@@ -378,13 +251,9 @@ ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
 }
 
 ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
-	//return new SkelMtlParamDlg(this, hwMtlEdit, imp);
-	
 	IAutoMParamDlg* masterDlg = thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
-	//thunderLoom_param_blk.SetUserDlgProc(new SkelMtlDlgProc(this));
 	thunderLoom_param_blk.SetUserDlgProc(new ThunderLoomMtlDlgProc());
 	return masterDlg;
-	
 }
 
 BOOL ThunderLoomMtl::SetDlgThing(ParamDlg* dlg) {
@@ -486,12 +355,11 @@ void ThunderLoomMtl::Update(TimeValue t, Interval& valid) {
 	//	ivalid.SetInfinite();
 	// ...
 	//}
-
 	//valid &= ivalid;
 }
 
 /*===========================================================================*\
- |	Determine the characteristics of the material
+ |	Determine the characteristics of the material  (required for Mtl class)
 \*===========================================================================*/
 
 void ThunderLoomMtl::SetAmbient(Color c, TimeValue t) {}		
@@ -527,7 +395,9 @@ float ThunderLoomMtl::WireSize(int mtlNum, BOOL backFace) {
 	return 0.0f;
 }
 
-// Render intialization and deinitialization
+/*===========================================================================*\
+ |	Render intialization and deinitialization (From VUtils::VRenderMtl)
+\*===========================================================================*/
 
 void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	ivalid.SetInfinite();
@@ -550,19 +420,15 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
     pblock->GetValue(mtl_alpha,t, m_weave_parameters.alpha,ivalid);
     pblock->GetValue(mtl_beta,t, m_weave_parameters.beta,ivalid);
 
-	DBOUT( "Updating params, uscale: " << uscale );
-	DBOUT( "Updating params, vscale: " << vscale );
-	DBOUT( "Updating params, realworld: " << realworld );
-	DBOUT( "Updating params, umax: " << umax );
-	DBOUT( "Updating params, psi: " << psi );
-	DBOUT( "Updating params, specular: " << specular );
-	DBOUT( "Updating params, delta_x: " << delta_x );
-	DBOUT( "Updating params, alpha: " << alpha );
-	DBOUT( "Updating params, beta: " << beta );
-
-	//TODO(Peter): What to do about diffuse?
-	//set default to white for now.
-	//diffuse.White();
+	DBOUT( "Updating params, uscale: " << m_weave_parameters.uscale );
+	DBOUT( "Updating params, vscale: " << m_weave_parameters.vscale );
+	DBOUT( "Updating params, realworld: " << m_weave_parameters.realworld_uv );
+	DBOUT( "Updating params, umax: " << m_weave_parameters.umax );
+	DBOUT( "Updating params, psi: " << m_weave_parameters.psi );
+	DBOUT( "Updating params, specular: " << m_weave_parameters.specular_strength );
+	DBOUT( "Updating params, delta_x: " << m_weave_parameters.delta_x );
+	DBOUT( "Updating params, alpha: " << m_weave_parameters.alpha );
+	DBOUT( "Updating params, beta: " << m_weave_parameters.beta );
 
 	//default values for the time being.
 	//these paramters will be removed later, is the plan
@@ -579,8 +445,6 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	//Will need to load file, and update ui based on content.
     MSTR filename = pblock->GetStr(mtl_wiffile,t);
     wcWeavePatternFromFile_wchar(&m_weave_parameters,filename);
-
-	DBOUT( "begin render params, specular: " << specular );
 	DBOUT( "begin render params, filename: " << filename );
 
 	const VR::VRaySequenceData &sdata=vray->getSequenceData();
@@ -595,12 +459,37 @@ void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
 	renderChannels.freeMem();
 }
 
+VR::BSDFSampler* ThunderLoomMtl::newBSDF(const VR::VRayContext &rc, VR::VRenderMtlFlags flags) {
+	MyBlinnBSDF *bsdf=bsdfPool.newBRDF(rc);
+	if (!bsdf) return NULL;
+    bsdf->init(rc, &m_weave_parameters);
+	return bsdf;
+}
+
+void ThunderLoomMtl::deleteBSDF(const VR::VRayContext &rc, VR::BSDFSampler *b) {
+	if (!b) return;
+	MyBlinnBSDF *bsdf=static_cast<MyBlinnBSDF*>(b);
+	bsdfPool.deleteBRDF(rc, bsdf);
+}
+
+void ThunderLoomMtl::addRenderChannel(int index) {
+	renderChannels+=index;
+}
+
+VR::VRayVolume* ThunderLoomMtl::getVolume(const VR::VRayContext &rc) {
+	return NULL;
+}
+
 /*===========================================================================*\
- |	Actual shading takes place
+ |	Actual shading takes place (From BaseMTl)
 \*===========================================================================*/
 
 void ThunderLoomMtl::Shade(ShadeContext &sc) {
 	if (sc.ClassID()==VRAYCONTEXT_CLASS_ID)
+		//shade() creates brdf, shades and deletes the brdf
+		//it does this using the corresponding methods that have
+		//been implemented from VUtils::VRenderMtl
+		//newsBSDF, getVolume and deleteBSDF
 		shade(static_cast<VR::VRayInterface&>(sc), gbufID);
 	else {
 		if (gbufID) sc.SetGBufferID(gbufID);
@@ -619,4 +508,3 @@ Interval ThunderLoomMtl::DisplacementValidity(TimeValue t)
 	iv.SetInfinite();
 	return iv;
 }
-	

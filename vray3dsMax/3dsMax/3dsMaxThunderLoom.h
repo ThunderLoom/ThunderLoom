@@ -94,16 +94,16 @@ public:
     wcWeaveParameters m_weave_parameters;
 
 	// Cached parameters
-	float glossiness;
-	Color reflect, diffuse;
+	//float glossiness;
+	//Color reflect, diffuse;
 	//Color opacity;
 
-    float umax, uscale, vscale;
-    float psi, delta_x, specular;
-    float alpha, beta, intensity_fineness;
-	float yarnvar_amplitude, yarnvar_xscale, yarnvar_yscale, yarnvar_persistance, yarnvar_octaves;
-	int realworld;
-	int testparam;
+    //float umax, uscale, vscale;
+    //float psi, delta_x, specular;
+    //float alpha, beta, intensity_fineness;
+	//float yarnvar_amplitude, yarnvar_xscale, yarnvar_yscale, yarnvar_persistance, yarnvar_octaves;
+	//int realworld;
+	//int testparam;
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	//ref 0
@@ -132,11 +132,6 @@ public:
 	virtual float GetShininess(int mtlNum=0, BOOL backFace=FALSE);		
 	virtual float GetShinStr(int mtlNum=0, BOOL backFace=FALSE);
 	virtual float WireSize(int mtlNum=0, BOOL backFace=FALSE);
-			
-	// Shade and displacement calculation
-	virtual void Shade(ShadeContext& sc);
-	virtual float EvalDisplacement(ShadeContext& sc); 
-	virtual Interval DisplacementValidity(TimeValue t); 
 
 	//This method is called on a material coming into an existing set of ParamDlgs,
 	//once for each secondary ParamDlg and it should set the appropriate 'thing' into
@@ -197,6 +192,10 @@ public:
 	void deleteBSDF(const VR::VRayContext &rc, VR::BSDFSampler *bsdf);
 	void addRenderChannel(int index);
 	VR::VRayVolume* getVolume(const VR::VRayContext &rc);
-};
 
+	// Shade and displacement calculation
+	virtual void Shade(ShadeContext& sc);
+	virtual float EvalDisplacement(ShadeContext& sc); 
+	virtual Interval DisplacementValidity(TimeValue t); 
+};
 #endif
