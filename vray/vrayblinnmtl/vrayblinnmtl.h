@@ -37,12 +37,12 @@ extern ClassDesc* GetSkeletonMtlDesc();
 enum { mtl_params, }; 
 
 // Paramblock2 parameter list
-
+/*
 enum {
 	mtl_testparam,
-};
+};*/
 
-/*
+
 enum {
 	mtl_diffuse,
     mtl_umax,
@@ -62,12 +62,20 @@ enum {
     mtl_yarnvar_persistance,
     mtl_yarnvar_octaves,
     mtl_texture,
-};*/
+};
 
 /*===========================================================================*\
  |	The actual BRDF
 \*===========================================================================*/
 
+//MyBaseBSDF defined in dynamic part is subclass of BSDFSampler
+//From vray docs: This class is used to describe both sides
+//of an object's surface. 
+//An instance of this class is passed to VRayContext::evalLight() 
+//to evaluate the contribution of lights for the surface. 
+//To completely describe the optical properties of a surface, 
+//two BRDFs (one for each side of the surface) are coupled
+//together to form a BSDF (bi-directional scattering distribution function). 
 class MyBlinnBSDF: public VR::MyBaseBSDF {
 public:
 	VR::Vector getGlossyReflectionDir(float uc, float vc, const VR::Vector &viewDir, float &rayProbability);
@@ -82,7 +90,6 @@ public:
 class SkeletonMaterial : public Mtl, public VR::VRenderMtl {
 	VR::BRDFPool<MyBlinnBSDF> bsdfPool;
 	VR::LayeredBSDFRenderChannels renderChannels;
-
 	VR::Color getBlend(ShadeContext &sc, int i);
 public:
 	// various variables
@@ -102,7 +109,7 @@ public:
 	int testparam;
 
 	// Parameter and UI management
-	IParamBlock2 *pblock; 	
+	IParamBlock2 *pblock; 	//ref 0
 	ParamDlg* CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp);
 	void Update(TimeValue t, Interval& valid);
 	Interval Validity(TimeValue t);
@@ -117,24 +124,35 @@ public:
 	void NotifyChanged();
 
 	// From MtlBase and Mtl
-	void SetAmbient(Color c, TimeValue t);		
-	void SetDiffuse(Color c, TimeValue t);		
-	void SetSpecular(Color c, TimeValue t);
-	void SetShininess(float v, TimeValue t);
-	Color GetAmbient(int mtlNum=0, BOOL backFace=FALSE);
-	Color GetDiffuse(int mtlNum=0, BOOL backFace=FALSE);
-	Color GetSpecular(int mtlNum=0, BOOL backFace=FALSE);
-	float GetXParency(int mtlNum=0, BOOL backFace=FALSE);
-	float GetShininess(int mtlNum=0, BOOL backFace=FALSE);		
-	float GetShinStr(int mtlNum=0, BOOL backFace=FALSE);
-	float WireSize(int mtlNum=0, BOOL backFace=FALSE);
+	virtual void SetAmbient(Color c, TimeValue t);		
+	virtual void SetDiffuse(Color c, TimeValue t);		
+	virtual void SetSpecular(Color c, TimeValue t);
+	virtual void SetShininess(float v, TimeValue t);
+	virtual Color GetAmbient(int mtlNum=0, BOOL backFace=FALSE);
+	virtual Color GetDiffuse(int mtlNum=0, BOOL backFace=FALSE);
+	virtual Color GetSpecular(int mtlNum=0, BOOL backFace=FALSE);
+	virtual float GetXParency(int mtlNum=0, BOOL backFace=FALSE);
+	virtual float GetShininess(int mtlNum=0, BOOL backFace=FALSE);		
+	virtual float GetShinStr(int mtlNum=0, BOOL backFace=FALSE);
+	virtual float WireSize(int mtlNum=0, BOOL backFace=FALSE);
 			
 	// Shade and displacement calculation
-	void Shade(ShadeContext& sc);
-	float EvalDisplacement(ShadeContext& sc); 
-	Interval DisplacementValidity(TimeValue t); 
+	virtual void Shade(ShadeContext& sc);
+	virtual float EvalDisplacement(ShadeContext& sc); 
+	virtual Interval DisplacementValidity(TimeValue t); 
+
+	//This method is called on a material coming into an existing set of ParamDlgs,
+	//once for each secondary ParamDlg and it should set the appropriate 'thing' into
+	//the given dlg (the 'thing' being, for example, a Texout* or UVGen*). 
+	BOOL SetDlgThing(ParamDlg* dlg);
+
+	// Loading/Saving
+	RefTargetHandle Clone(RemapDir& remap);
+	IOResult Save(ISave *isave); 
+	IOResult Load(ILoad *iload); 
 
 	// SubMaterial access methods
+	// We have no sub materials.
 	int NumSubMtls() { return 0; }
 	Mtl* GetSubMtl(int i) { return NULL; }
 	void SetSubMtl(int i, Mtl *m) {}
@@ -142,6 +160,7 @@ public:
 	TSTR GetSubMtlTVName(int i) { return _T(""); }
 
 	// SubTexmap access methods
+	// We have no sub Texmaps
 	int NumSubTexmaps() { return 0; }
 	Texmap* GetSubTexmap(int i) { return NULL; }
 	void SetSubTexmap(int i, Texmap *m) {}
@@ -149,28 +168,26 @@ public:
 	TSTR GetSubTexmapTVName(int i) { return _T(""); }
 
 	// Number of subanims
+	//TODO(Peter): What is this?
 	int NumSubs() { return 1; } 
 	Animatable* SubAnim(int i);
 	TSTR SubAnimName(int i);
 	int SubNumToRefNum(int subNum) { return subNum; }
 
 	// Number of references
+	//TODO(Peter): What is this?
  	int NumRefs() { return 1; }
 	RefTargetHandle GetReference(int i);
 	void SetReference(int i, RefTargetHandle rtarg);
 	RefResult NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS);
 
-	RefTargetHandle Clone(RemapDir& remap);
-
-	IOResult Save(ISave *isave); 
-	IOResult Load(ILoad *iload); 
-
 	// Direct Paramblock2 access
 	int	NumParamBlocks() { return 1; }
 	IParamBlock2* GetParamBlock(int i) { return pblock; }
 	IParamBlock2* GetParamBlockByID(BlockID id) { return (pblock->ID() == id) ? pblock : NULL; } 
-	BOOL SetDlgThing(ParamDlg* dlg);
 
+	//From Mtl, uses integers to identify the interface IDs. 
+	//Used to determine if an animatable can be used as the type a certain interface is representing
 	void* GetInterface(ULONG id) {
 		if (id==I_VRAYMTL) return static_cast<VR::VRenderMtl*>(this);
 		return Mtl::GetInterface(id);
@@ -184,9 +201,5 @@ public:
 	void addRenderChannel(int index);
 	VR::VRayVolume* getVolume(const VR::VRayContext &rc);
 };
-
-/*===========================================================================*\
- |	Dialog Processor
-\*===========================================================================*/
 
 #endif

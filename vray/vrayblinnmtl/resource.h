@@ -26,6 +26,7 @@
 #define IDB_BITMAP2                     102
 #define bm_MTLMASK                      102
 #define bm_POWERSHADER                  104
+#define IDB_LOGO                        107
 #define st_coat1                        1001
 #define st_coat2                        1002
 #define st_coat3                        1003
@@ -36,18 +37,47 @@
 #define st_coat8                        1008
 #define st_coat9                        1009
 #define cb_additive                     1010
-#define IDC_EDIT1                       1012
+#define IDC_SPECULAR_EDIT               1012
 #define IDC_CHECK1                      1013
+#define IDC_USCALE_EDIT                 1013
+#define IDC_SPECULAR_SPIN               1014
+#define IDC_USCALE_SPIN                 1015
+#define IDC_VSCALE_EDIT                 1016
+#define IDC_VSCALE_SPIN                 1017
+#define IDC_UMAX_EDIT                   1018
+#define IDC_UMAX_SPIN                   1019
+#define IDC_VERSION                     1020
+#define IDC_PATTERN_GROUP               1021
+#define IDC_USCALE_LABEL                1022
+#define IDC_VSCALE_LABEL                1023
+#define IDC_REALWORLD_LABEL             1024
+#define IDC_REALWORLD_CHECK             1025
+#define IDC_UMAX_LABEL                  1026
+#define IDC_PSI_LABEL                   1027
+#define IDC_PSI_EDIT                    1028
+#define IDC_PSI_SPIN                    1029
+#define IDC_DELTAX_EDIT                 1030
+#define IDC_DELTAX_SPIN                 1031
 #define IDC_SIMPLE_EDIT                 1032
 #define cs_blend1                       1032
+#define IDC_DELTAX_LABEL                1032
 #define ed_texmap_blend_mult1           1033
+#define IDC_ALPHA_LABEL                 1033
 #define cs_blend2                       1034
+#define IDC_ALPHA_EDIT                  1034
 #define ed_texmap_blend_mult2           1035
+#define IDC_ALPHA_SPIN                  1035
 #define cs_blend3                       1036
+#define IDC_ALPHA_LABEL2                1036
 #define ed_texmap_blend_mult3           1037
+#define IDC_BETA_EDIT                   1037
 #define cs_blend4                       1038
+#define IDC_BETA_SPIN                   1038
 #define ed_texmap_blend_mult4           1039
+#define IDC_USCALE_LABEL2               1039
+#define IDC_WIFFILE_LABEL               1039
 #define cs_blend5                       1040
+#define IDC_WIFFILE_BUTTON              1040
 #define ed_texmap_blend_mult5           1041
 #define cs_blend6                       1042
 #define ed_texmap_blend_mult6           1043
@@ -101,9 +131,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        105
+#define _APS_NEXT_RESOURCE_VALUE        108
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1014
+#define _APS_NEXT_CONTROL_VALUE         1033
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

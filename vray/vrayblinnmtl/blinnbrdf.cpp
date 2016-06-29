@@ -1,3 +1,6 @@
+//blinnbrdf.cpp
+//More Vray specific things. Implements methods for the BSDFSampler interface.
+
 #include "dynamic.h"
 #include "vraybase.h"
 #include "vrayinterface.h"
@@ -6,7 +9,9 @@
 
 #include "blinnbrdf.h"
 
-extern EVALFUNC EvalFunc;
+// EvalFunc gets loaded in vrayblinn.cpp when ui is initialized
+// and gets used for the the eval method of the MyBaseBSDF class.
+extern EVALFUNC EvalFunc; 
 
 using namespace VUtils;
 
@@ -77,6 +82,7 @@ Color MyBaseBSDF::getLightMult(Color &lightColor) {
 }
 
 Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction, Color &lightColor, Color &origLightColor, float probLight, int flags) {
+	//Vray specific. Use the dynamic function handle given by extern EvalFunc.
 #ifdef DYNAMIC
     if(EvalFunc){
         return EvalFunc(rc,direction,lightColor,origLightColor,probLight,flags,m_weave_parameters,nm);

@@ -579,6 +579,7 @@
   <ItemGroup>
     <ClInclude Include="blinnbrdf.h" />
     <ClInclude Include="dynamic.h" />
+    <ClInclude Include="helper.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="vrayblinnmtl.h" />
   </ItemGroup>
@@ -587,6 +588,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="vrayblinnmtl.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="logo.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

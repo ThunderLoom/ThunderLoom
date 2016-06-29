@@ -1,8 +1,11 @@
+//vrayblinnmtl.cpp
+// This file sets up the 3dsMax plugin.
+
 #include "dynamic.h"
 
 #include "max.h"
 
-#include "vrayinterface.h"
+#include "vrayinterface.h" //BSDFsampler amongst others..
 #include "vrender_unicode.h"
 
 #include "vrayblinnmtl.h"
@@ -10,10 +13,12 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include "helper.h"
+
 EVALFUNC EvalFunc = 0;
 
-
 // no param block script access for VRay free
+// TODO(Peter): VRay free? Demo?
 #ifdef _FREE_
 #define _FT(X) _T("")
 #define IS_PUBLIC 0
@@ -25,27 +30,41 @@ EVALFUNC EvalFunc = 0;
 /*===========================================================================*\
  |	Class Descriptor
 \*===========================================================================*/
+//The class descriptor registers plugin with 3dsMax. 
 
-class SkeletonMaterialClassDesc: public ClassDesc2
+class SkeletonMaterialClassDesc : public ClassDesc2 
 #if GET_MAX_RELEASE(VERSION_3DSMAX) >= 6000
 , public IMtlRender_Compatibility_MtlBase 
+	//This interface is used to determine whether
+	//a material/map flags itself as being compatible
+	//with a specific renderer plugin.
+	//The interface also provides a way of defining
+	//an icon that appears in the material browser
+	//- GetCustomMtlBrowserIcon. 
 #endif
 #if GET_MAX_RELEASE(VERSION_3DSMAX) >= 13900
 , public IMaterialBrowserEntryInfo
+//This interface allows materials and textures to customize their
+//appearance in the Material Browser
+//If implemented, the plug-in class should
+//return its instance of this interface in response to
+//ClassDesc::GetInterface(IMATERIAL_BROWSER_ENTRY_INFO_INTERFACE). 
+//The interface allows a plug-in to customize the default
+//appearance of its entries, as shown in the Material Browser.
+//This includes the display name, the thumbnail, and the location
+//(or category) of entries.
 #endif
 {
 	HIMAGELIST imageList;
 public:
-	int IsPublic() { return IS_PUBLIC; }
-	void* Create(BOOL loading) { return new SkeletonMaterial(loading); }
-	const TCHAR *	ClassName() { return STR_CLASSNAME; }
-	SClass_ID SuperClassID() { return MATERIAL_CLASS_ID; }
-	Class_ID ClassID() { return MTL_CLASSID; }
-	const TCHAR* Category() { return _T("");  }
-
-	// Hardwired name, used by MAX Script as unique identifier
-	const TCHAR* InternalName() { return STR_CLASSNAME; }
-	HINSTANCE HInstance() { return hInstance; }
+	virtual int IsPublic() 							{ return IS_PUBLIC; }
+	virtual void* Create(BOOL loading = FALSE)		{ return new SkeletonMaterial(loading); }
+	virtual const TCHAR *	ClassName() 			{ return STR_CLASSNAME; }
+	virtual SClass_ID SuperClassID() 				{ return MATERIAL_CLASS_ID; }
+	virtual Class_ID ClassID() 						{ return MTL_CLASSID; }
+	virtual const TCHAR* Category() 				{ return NULL; }
+	virtual const TCHAR* InternalName() 			{ return _T("thunderLoomMtl"); }	// returns fixed parsable name (scripter-visible name)
+	virtual HINSTANCE HInstance() 					{ return hInstance; }					// returns owning module handle
 
 	SkeletonMaterialClassDesc(void) {
 		imageList=NULL;
@@ -53,13 +72,12 @@ public:
 		IMtlRender_Compatibility_MtlBase::Init(*this);
 #endif
 	}
-
 	~SkeletonMaterialClassDesc(void) {
 		if (imageList) ImageList_Destroy(imageList);
 		imageList=NULL;
 	}
 
-#if GET_MAX_RELEASE(VERSION_3DSMAX) >= 6000
+#if GET_MAX_RELEASE(VERSION_3DSMAX) >= 6000 //NOTE(Peter): have a minimum version requirement? minimum VERSION_3DSMAX = 1490`0?
 	// From IMtlRender_Compatibility_MtlBase
 	bool IsCompatibleWithRenderer(ClassDesc& rendererClassDesc) {
 		if (rendererClassDesc.ClassID()!=VRENDER_CLASS_ID) return false;
@@ -82,7 +100,7 @@ public:
 		activeIndex=1;
 		disabledIndex=2;
 		return true;
-	}
+	} //TODO(Peter): Is this needed?
 #endif
 
 #if GET_MAX_RELEASE(VERSION_3DSMAX) >= 13900
@@ -92,14 +110,13 @@ public:
 		}
 		return ClassDesc2::GetInterface(id);
 	}
-
 	// From IMaterialBrowserEntryInfo
 	const MCHAR* GetEntryName() const { return NULL; }
 	const MCHAR* GetEntryCategory() const {
 #if GET_MAX_RELEASE(VERSION_3DSMAX) >= 14900
 		HINSTANCE hInst=GetModuleHandle(_T("sme.gup"));
 		if (hInst) {
-			static MSTR category(MaxSDK::GetResourceStringAsMSTR(hInst, IDS_3DSMAX_SME_MATERIALS_CATLABEL).Append(_T("\\V-Ray")));
+			static MSTR category(MaxSDK::GetResourceStringAsMSTR(hInst, IDS_3DSMAX_SME_MATERIALS_CATLABEL).Append(_T("\\V-Ray"))); //Extract a resource from the calling module's string table.
 			return category.data();
 		}
 #endif
@@ -109,6 +126,7 @@ public:
 #endif
 };
 
+//Make instance of Plugin ClassDescriptor
 static SkeletonMaterialClassDesc SkelMtlCD;
 ClassDesc* GetSkeletonMtlDesc() {return &SkelMtlCD;}
 
@@ -120,20 +138,70 @@ ClassDesc* GetSkeletonMtlDesc() {return &SkelMtlCD;}
  |	Paramblock2 Descriptor
 \*===========================================================================*/
 
-static int numID=100;
-int ctrlID(void) { return numID++; }
+// Used for vray auto ui
+//static int numID=100;
+//int ctrlID(void) { return numID++; }
 
 static ParamBlockDesc2 thunderLoom_param_blk (mtl_params, _T("Test mtl params"), 0, &SkelMtlCD, P_AUTO_CONSTRUCT + P_AUTO_UI, 0,
-											  //rollout
-											  IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, NULL, 
-											  //params
-												mtl_testparam, _FT("testparam"), TYPE_BOOL, 0, 0,
-													p_default, FALSE,
-													p_ui, TYPE_SINGLECHEKBOX, IDC_CHECK1,
-											PB_END,
-										PB_END
-										);
+	//rollout
+	IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, NULL, 
+	//params
+    mtl_wiffile, _FT("wifFile"), TYPE_FILENAME, P_ANIMATABLE, 0,
+        p_default, _FT(""),
+		p_ui, TYPE_FILEOPENBUTTON, IDC_WIFFILE_BUTTON,
+	PB_END,
+	// pattern an geometry
+    mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 1.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_USCALE_EDIT, IDC_USCALE_SPIN, 0.1f,
+	PB_END,
+    mtl_vscale, _FT("vscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 1.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
+	PB_END,
+	mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
+		p_default, FALSE,
+		p_ui, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
+	PB_END,
+    mtl_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 0.5,
+		p_range, 0.0f, 1.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
+	PB_END,
+    mtl_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 0.5,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
+	PB_END,
+	//Lighting params
+	mtl_specular, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default,		1.f,
+		p_range,		0.0f, 1.f,
+		p_ui,			TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
+	p_end,
+    mtl_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 0.5f,
+        p_range, 0.0f, 1.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
+	PB_END,
+    mtl_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 0.05,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
+	PB_END,
+    mtl_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
+		p_default, 4.f,
+		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
+	PB_END,
+PB_END
+);
 											  
+
+/*
+	distortion_str,	_T("distortionStr"),		 TYPE_FLOAT,	P_ANIMATABLE,	IDS_DISTORTION_STRENGTH,
+		p_default,		0.1f,
+		p_range,		0.0f, 1000.0f,
+		p_ui, 			TYPE_SPINNER, EDITTYPE_FLOAT, IDC_DISTORTION_EDIT, IDC_DISTORTION_SPIN, 0.001f, 
+		p_end,
+*/
 
 /*
 static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial parameters"),  0, &SkelMtlCD, P_AUTO_CONSTRUCT + P_AUTO_UI, 0, 
@@ -147,7 +215,7 @@ static ParamBlockDesc2 smtl_param_blk ( mtl_params, _T("SkeletonMaterial paramet
     mtl_specular, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
 		p_default, 1.f,
 		p_range, 0.0f, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, ctrlID(), ctrlID(), 0.1f,
+		
 	PB_END,
     mtl_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
 		p_default, 0.5,
@@ -222,6 +290,8 @@ PB_END
  |	UI stuff
 \*===========================================================================*/
 
+//callbacks for messages.
+//TODO(Peter): better reason for keeping!
 class SkelMtlDlgProc : public ParamMap2UserDlgProc {
 public:
 	IParamMap *pmap;
@@ -232,7 +302,10 @@ public:
 		int id = LOWORD(wParam);
 		switch (msg) 
 		{
-			case WM_INITDIALOG:{
+			case WM_INITDIALOG:{ 
+				DebugPrint(L"INIT DIALOG\n");
+				//intercept message that dialog is being init
+				//and use this signal to reload the dynamic dll
 #ifdef DYNAMIC
                 unload_dlls();
 
@@ -254,8 +327,11 @@ public:
 };
 
 static SkelMtlDlgProc dlgProc;
-static Pb2TemplateGenerator templateGenerator;
+//static Pb2TemplateGenerator templateGenerator;
 
+//TODO(Peter): make own ParamDlg?
+
+/*
 class SkelMtlParamDlg: public ParamDlg {
 public:
 	SkeletonMaterial *mtl;
@@ -267,9 +343,9 @@ public:
 		ip=i;
 
 		
-		DLGTEMPLATE* tmp=templateGenerator.GenerateTemplate(mtl->pblock, STR_DLGTITLE, 217);
-		pmap=CreateMParamMap2(mtl->pblock, ip, hInstance, hWnd, NULL, NULL, tmp, STR_DLGTITLE, 0, &dlgProc);
-		templateGenerator.ReleaseDlgTemplate(tmp);
+		//DLGTEMPLATE* tmp=templateGenerator.GenerateTemplate(mtl->pblock, STR_DLGTITLE, 217);
+		//pmap=CreateMParamMap2(mtl->pblock, ip, hInstance, hWnd, NULL, NULL, tmp, STR_DLGTITLE, 0, &dlgProc);
+		//templateGenerator.ReleaseDlgTemplate(tmp);
 	}
 
 	void DeleteThis(void) {
@@ -285,7 +361,7 @@ public:
 	void ReloadDialog(void) {}
 	void ActivateDlg(BOOL onOff) {}
 };
-
+*/
 /*===========================================================================*\
  |	Constructor and Reset systems
  |  Ask the ClassDesc2 to make the AUTO_CONSTRUCT paramblocks and wire them in
@@ -300,13 +376,15 @@ SkeletonMaterial::SkeletonMaterial(BOOL loading) {
 	pblock=NULL;
 	ivalid.SetEmpty();
 	SkelMtlCD.MakeAutoParamBlocks(this);	// make and intialize paramblock2
+	Reset();
 }
 
 ParamDlg* SkeletonMaterial::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
 	//return new SkelMtlParamDlg(this, hwMtlEdit, imp);
 	
 	IAutoMParamDlg* masterDlg = SkelMtlCD.CreateParamDlgs(hwMtlEdit, imp, this);
-	//smtl_param_blk.SetUserDlgProc(new SkelMtlDlgProc(this));
+	//thunderLoom_param_blk.SetUserDlgProc(new SkelMtlDlgProc(this));
+	thunderLoom_param_blk.SetUserDlgProc(new SkelMtlDlgProc());
 	return masterDlg;
 	
 }
@@ -408,26 +486,27 @@ void SkeletonMaterial::NotifyChanged() {
 void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
 	if (!ivalid.InInterval(t)) {
 		ivalid.SetInfinite();
-		pblock->GetValue(mtl_testparam,t, testparam,ivalid);
-		/*
-		pblock->GetValue(mtl_diffuse, t, diffuse, ivalid);
 
-        pblock->GetValue(mtl_umax,t, umax,ivalid);
-		pblock->GetValue(mtl_realworld,t, realworld,ivalid);
-        pblock->GetValue(mtl_uscale,t, uscale,ivalid);
+		pblock->GetValue(mtl_uscale,t, uscale,ivalid);
         pblock->GetValue(mtl_vscale,t, vscale,ivalid);
-        pblock->GetValue(mtl_psi,t, psi,ivalid);
-        pblock->GetValue(mtl_delta_x,t, delta_x,ivalid);
+		pblock->GetValue(mtl_realworld,t, realworld,ivalid);
+		pblock->GetValue(mtl_umax,t, umax,ivalid);
+		pblock->GetValue(mtl_psi,t, psi,ivalid);
+		
+		pblock->GetValue(mtl_specular, t, specular, ivalid);
+		pblock->GetValue(mtl_delta_x,t, delta_x,ivalid);
         pblock->GetValue(mtl_alpha,t, alpha,ivalid);
         pblock->GetValue(mtl_beta,t, beta,ivalid);
-        pblock->GetValue(mtl_specular,t, specular,ivalid);
-        pblock->GetValue(mtl_intensity_fineness,t, intensity_fineness,ivalid);
-		pblock->GetValue(mtl_yarnvar_amplitude,t, yarnvar_amplitude,ivalid);
-		pblock->GetValue(mtl_yarnvar_xscale,t, yarnvar_xscale,ivalid);
-		pblock->GetValue(mtl_yarnvar_yscale,t, yarnvar_yscale,ivalid);
-		pblock->GetValue(mtl_yarnvar_persistance,t, yarnvar_persistance,ivalid);
-		pblock->GetValue(mtl_yarnvar_octaves,t, yarnvar_octaves,ivalid);
-		*/
+
+		DBOUT( "Updating params, uscale: " << uscale );
+		DBOUT( "Updating params, vscale: " << vscale );
+		DBOUT( "Updating params, realworld: " << realworld );
+		DBOUT( "Updating params, umax: " << umax );
+		DBOUT( "Updating params, psi: " << psi );
+		DBOUT( "Updating params, specular: " << specular );
+		DBOUT( "Updating params, delta_x: " << delta_x );
+		DBOUT( "Updating params, alpha: " << alpha );
+		DBOUT( "Updating params, beta: " << beta );
 	}
 
 	valid &= ivalid;
@@ -435,27 +514,42 @@ void SkeletonMaterial::Update(TimeValue t, Interval& valid) {
 
 void SkeletonMaterial::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	//m_weave_parameters.realworld_uv = realworld;
-	/*
-	m_weave_parameters.realworld_uv = realworld;
-    m_weave_parameters.uscale = uscale;
+
+	m_weave_parameters.uscale = uscale;
     m_weave_parameters.vscale = vscale;
+	m_weave_parameters.realworld_uv = realworld;
     m_weave_parameters.umax   = umax;
     m_weave_parameters.psi    = psi;
+
+	m_weave_parameters.specular_strength = specular;
+    m_weave_parameters.delta_x = delta_x;
     m_weave_parameters.alpha  = alpha;
     m_weave_parameters.beta   = beta;
-    m_weave_parameters.delta_x = delta_x;
-    m_weave_parameters.specular_strength = specular;
-    m_weave_parameters.specular_normalization = 1.f;
-	m_weave_parameters.intensity_fineness = intensity_fineness;
-	m_weave_parameters.yarnvar_amplitude = yarnvar_amplitude;
-	m_weave_parameters.yarnvar_xscale = yarnvar_xscale;
-	m_weave_parameters.yarnvar_yscale = yarnvar_yscale;
-	m_weave_parameters.yarnvar_persistance = yarnvar_persistance;
-	m_weave_parameters.yarnvar_octaves = (int)yarnvar_octaves;
 
+	//DBOUT( "Set params before render, specular: " << specular );
+
+	//TODO(Peter): What to do about diffuse?
+	//set default to white for now.
+	diffuse.White();
+
+	//default values for the time being.
+	//these paramters will be removed later, is the plan
+	m_weave_parameters.specular_normalization = 1.f;
+	m_weave_parameters.intensity_fineness = 1.f;
+	m_weave_parameters.yarnvar_amplitude = 0.f;
+	m_weave_parameters.yarnvar_xscale = 1.f;
+	m_weave_parameters.yarnvar_yscale = 1.f;
+	m_weave_parameters.yarnvar_persistance = 1.f;
+	m_weave_parameters.yarnvar_octaves = 1;
+
+	//Load wif file.
+	//TODO(Peter): Move loading from renderBegin to Update.
+	//Will need to load file, and update ui based on content.
     MSTR filename = pblock->GetStr(mtl_wiffile,t);
     wcWeavePatternFromFile_wchar(&m_weave_parameters,filename);
-	*/
+
+	DBOUT( "begin render params, specular: " << specular );
+	DBOUT( "begin render params, filename: " << filename );
 
 	const VR::VRaySequenceData &sdata=vray->getSequenceData();
 	bsdfPool.init(sdata.maxRenderThreads);
