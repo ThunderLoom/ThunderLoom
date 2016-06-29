@@ -9,36 +9,25 @@
 
 #include "blinnbrdf.h"
 
-// EvalFunc gets loaded in vrayblinn.cpp when ui is initialized
+#ifdef DYNAMIC
+// These eval functions are loaded in vrayblinn.cpp when ui is initialized
 // and gets used for the the eval method of the MyBaseBSDF class.
-extern EVALFUNC EvalFunc; 
+extern EVALSPECULARFUNC EvalSpecularFunc;
+extern EVALDIFFUSEFUNC  EvalDiffuseFunc;
+#endif
 
 using namespace VUtils;
 
-void MyBaseBSDF::init(const VRayContext &rc, const Color &reflectionColor, real reflectionGlossiness,
-                      int subdivs, const Color &transp, int dblSided, const Color &diffuse,
-                      wcWeaveParameters *weave_parameters) {
-    
-
-	reflect_filter=reflectionColor;
-	diffuse_color=diffuse;
-	transparency=transp;
-	doubleSided=dblSided;
-	origBackside=rc.rayresult.realBack;
-
+//NOTE(Vidar): This function is called for each intersection with the material
+// From this point, several rays can be fired in different directions, each
+// one calling eval(). In this function we can do all the work that is common
+// throughout all directions, such as computing the diffuse color.
+void
+MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters) {
     m_weave_parameters = weave_parameters;
+    EvalDiffuseFunc(rc,weave_parameters,&diffuse_color);
 
-	// Dim the diffuse color by the reflection
-	if (nsamples>0) {
-		diffuse_color*=reflect_filter.whiteComplement();
-	}
-
-	// Dim the diffuse/reflection colors by the transparency
-	Color invTransp=transp.whiteComplement();
-	diffuse_color*=invTransp;
-	reflect_filter*=invTransp;
-
-	const VR::VRaySequenceData &sdata=rc.vray->getSequenceData();
+    orig_backside = rc.rayresult.realBack;
 
 	// Set the normals to use for lighting
 	normal=rc.rayresult.normal;
@@ -47,72 +36,99 @@ void MyBaseBSDF::init(const VRayContext &rc, const Color &reflectionColor, real 
 		normal=-normal;
 		gnormal=-gnormal;
 	}
-
-	// Check if we need to trace the reflection
-	dontTrace=p_or(
-		p_or(rc.rayparams.totalLevel>=sdata.params.options.mtl_maxDepth, 0==sdata.params.options.mtl_reflectionRefraction),
-		p_and(0!=(rc.rayparams.rayType & RT_INDIRECT), !sdata.params.gi.reflectCaustics)
-	);
-
-	if (dontTrace) {
-		reflect_filter.makeZero();
-	} else {
-		glossiness=remapGlossiness(reflectionGlossiness);
-		nsamples=subdivs*subdivs;
-
-		// Compute the normal matrix
-		if (rc.rayparams.viewDir*normal>0.0f) computeNormalMatrix(rc, gnormal, nm);
-		else computeNormalMatrix(rc, normal, nm);
-
-		inm=inverse(nm);
-	}
+    // Compute the normal matrix
+    if (rc.rayparams.viewDir*normal>0.0f){
+		makeNormalMatrix(gnormal, nm);
+    } else {
+		makeNormalMatrix( normal, nm);
+    }
+    inm=inverse(nm);
 }
 
 // From BRDFSampler
-Color MyBaseBSDF::getDiffuseColor(Color &lightColor) {
-	Color res=diffuse_color*lightColor;
-	lightColor*=transparency;
-	return res;
+
+//NOTE(Vidar): Return the normal used for diffuse shading. If we do bump mapping
+// on the diffuse color, we will have to return the modified normal here...
+VUtils::Vector MyBaseBSDF::getDiffuseNormal(const VR::VRayContext &rc)
+{
+    return rc.rayresult.origNormal;
+}
+VUtils::Color MyBaseBSDF::getDiffuseColor(VUtils::Color &lightColor) {
+    VUtils::Color ret = diffuse_color*lightColor;
+	lightColor.makeZero();
+    return ret;
+}
+VUtils::Color MyBaseBSDF::getLightMult(VUtils::Color &lightColor) {
+    float s = m_weave_parameters->specular_strength;
+    VUtils::Color ret = (diffuse_color + VUtils::Color(s,s,s)) * lightColor;
+    lightColor.makeZero();
+    return ret;
+}
+VUtils::Color MyBaseBSDF::getTransparency(const VRayContext &rc) {
+	return VUtils::Color(0.f,0.f,0.f);
 }
 
-Color MyBaseBSDF::getLightMult(Color &lightColor) {
-	Color res=(diffuse_color+reflect_filter)*lightColor;
-	lightColor*=transparency;
-	return res;
-}
+VUtils::Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction,
+    VUtils::Color &lightColor, VUtils::Color &origLightColor, float probLight,
+    int flags) {
 
-Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction, Color &lightColor, Color &origLightColor, float probLight, int flags) {
-	//Vray specific. Use the dynamic function handle given by extern EvalFunc.
-#ifdef DYNAMIC
-    if(EvalFunc){
-        return EvalFunc(rc,direction,lightColor,origLightColor,probLight,flags,m_weave_parameters,nm);
-    } else {
-        return Color(1.f,0.f,1.f);
+    VUtils::Color ret(0.f,0.f,0.f);
+
+    float cs = direction * rc.rayresult.normal;
+    cs = cs < 0.0f ? 0.0f : cs;
+
+    if(flags & FBRDF_DIFFUSE){
+        float k = cs;
+        // Apply combined sampling ONLY if GI is on which will pick up the rest
+        // of the result
+        if (rc.rayparams.localRayType & RT_IS_GATHERING_POINT){
+            float probReflection=k;
+            //NOTE(Vidar): Multiple importance sampling factor
+            k = getReflectionWeight(probLight, probReflection);
+        }
+        ret += diffuse_color * k;
     }
-#else
-    float cs=(float) (direction*normal);
-	if (cs<0.0f) cs=0.0f;
-    return cs*dynamic_eval(rc,direction,lightColor,origLightColor,probLight,flags,m_weave_parameters,nm);
-#endif
+    if((flags & FBRDF_SPECULAR) && ((rc.rayparams.rayType & RT_NOSPECULAR) == 0)){
+        VUtils::Color reflect_color;
+        //TODO(Vidar):Better importance sampling... Cosine weighted for now
+        float probReflection=cs;
+        EvalSpecularFunc(rc,direction,m_weave_parameters,nm,&reflect_color);
+        //NOTE(Vidar): Multiple importance sampling factor
+        float weight = getReflectionWeight(probLight,probReflection);
+        ret += cs*reflect_color*weight;
+    }
+
+    ret *= lightColor;
+
+    lightColor.makeZero();
+    origLightColor.makeZero();
+
+    return ret;
 }
 
+//NOTE(Vidar): Called whenever a reflection ray is to be calculated
 void MyBaseBSDF::traceForward(VRayContext &rc, int doDiffuse) {
 	BRDFSampler::traceForward(rc, doDiffuse);
 	if (doDiffuse) rc.mtlresult.color+=rc.evalDiffuse()*diffuse_color;
 }
 
 int MyBaseBSDF::getNumSamples(const VRayContext &rc, int doDiffuse) {
-	return p_or(rc.rayparams.currentPass==RPASS_GI, (rc.rayparams.rayType & RT_LIGHT)!=0, glossiness<0.0f)? 0 : nsamples;
-}
-
-Color MyBaseBSDF::getTransparency(const VRayContext &rc) {
-	return transparency;
+    if(rc.rayparams.currentPass==RPASS_GI ||
+        (rc.rayparams.rayType & RT_LIGHT)!=0) {
+        return 0;
+    }
+    //TODO(Vidar):Select using DMC sampler?
+    return 8;
 }
 
 VRayContext* MyBaseBSDF::getNewContext(const VRayContext &rc, int &samplerID, int doDiffuse) {
-	if (2==doDiffuse || dontTrace || nsamples==0) return NULL;
+    //doDiffuse == 0 => only specular
+    //doDiffuse == 1 => specular & diffuse
+    //doDiffuse == 2 => only diffuse
+	if (2==doDiffuse) return NULL;
 
-	// Create a new context
+    float s = m_weave_parameters->specular_strength;
+    VUtils::Color reflect_filter = VUtils::Color(s,s,s);
 	VRayContext &nrc=rc.newSpawnContext(2, reflect_filter, RT_REFLECT | RT_GLOSSY | RT_ENVIRONMENT, normal);
 
 	// Set up the new context
@@ -125,58 +141,23 @@ VRayContext* MyBaseBSDF::getNewContext(const VRayContext &rc, int &samplerID, in
 }
 
 ValidType MyBaseBSDF::setupContext(const VRayContext &rc, VRayContext &nrc, float uc, int doDiffuse) {
-	if (glossiness<0.0f) {
-		// Pure reflection
-		Vector dir=getReflectDir(rc.rayparams.viewDir, rc.rayresult.normal);
-
-		// If the reflection direction is below the surface, use the geometric normal
-		real r0=-(real) (rc.rayparams.viewDir*rc.rayresult.gnormal);
-		real r1=(real) (dir*rc.rayresult.gnormal);
-		if (r0*r1<0.0f) dir=getReflectDir(rc.rayparams.viewDir, rc.rayresult.gnormal);
-
-		// Set ray derivatives
-		VR::getReflectDerivs(rc.rayparams.viewDir, dir, rc.rayparams.dDdx, rc.rayparams.dDdy, nrc.rayparams.dDdx, nrc.rayparams.dDdy);
-
-		// Set the direction into the ray context
-		nrc.rayparams.tracedRay.dir=nrc.rayparams.viewDir=dir;
-		nrc.rayparams.tracedRay.p=rc.rayresult.wpoint; // Set the new ray origin to be the surface hit point
-		nrc.rayparams.mint=0.0f; // Set the ray extents
-		nrc.rayparams.maxt=1e18f;
-	} else {
-		// Compute a Blinn reflection direction
-		Vector dir=getGlossyReflectionDir(uc, BRDFSampler::getDMCParam(nrc, 1), rc.rayparams.viewDir, nrc.rayparams.rayProbability);
-
-
-		// If this is below the surface, ignore
-		if (dir*gnormal<0.0f) return false;
-
-		// Set ray derivatives
-		VR::getReflectDerivs(rc.rayparams.viewDir, dir, rc.rayparams.dDdx, rc.rayparams.dDdy, nrc.rayparams.dDdx, nrc.rayparams.dDdy);
-
-		// Set the direction into the ray context
-		nrc.rayparams.tracedRay.dir=nrc.rayparams.viewDir=dir;
-	}
-
-	return true;
+    //TODO(Vidar):Better importance sampling... Cosine weighted for now
+    Vector dir = getDiffuseDir(uc, BRDFSampler::getDMCParam(nrc,1),nrc.rayparams.rayProbability);
+    if (dir*gnormal<0.0f) return false;
+    VR::getReflectDerivs(rc.rayparams.viewDir, dir, rc.rayparams.dDdx, rc.rayparams.dDdy, nrc.rayparams.dDdx, nrc.rayparams.dDdy);
+    nrc.rayparams.tracedRay.dir=nrc.rayparams.viewDir=dir;
+    return true;
 }
 
 RenderChannelsInfo* MyBaseBSDF::getRenderChannels(void) { return &RenderChannelsInfo::reflectChannels; }
 
-void MyBaseBSDF::computeNormalMatrix(const VR::VRayContext &rc, const VR::Vector &normal, VR::Matrix &nm) {
-		makeNormalMatrix(normal, nm);
-}
-
-// From BSDFSampler
+//NOTE(Vidar):Return the correct BRDF depending on which side of the surface
+// was hit...
 BRDFSampler* MyBaseBSDF::getBRDF(BSDFSide side) {
-	if (!doubleSided) {
-		if (side==bsdfSide_back) return NULL; // There is nothing on the back side
-		return static_cast<VR::BRDFSampler*>(this);
-	} else {
-		if (side==bsdfSide_front) {
-			if (origBackside) return NULL;
-		} else {
-			if (!origBackside) return NULL;
-		}
-		return static_cast<BRDFSampler*>(this);
-	}
+    if (side==bsdfSide_front) {
+        if (orig_backside) return NULL;
+    } else {
+        if (!orig_backside) return NULL;
+    }
+    return static_cast<BRDFSampler*>(this);
 }

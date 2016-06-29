@@ -15,7 +15,10 @@
 
 #include "helper.h"
 
-EVALFUNC EvalFunc = 0;
+#ifdef DYNAMIC
+EVALSPECULARFUNC EvalSpecularFunc = 0;
+EVALDIFFUSEFUNC EvalDiffuseFunc = 0;
+#endif
 
 // no param block script access for VRay free
 // TODO(Peter): VRay free? Demo?
@@ -308,10 +311,7 @@ public:
 				//and use this signal to reload the dynamic dll
 #ifdef DYNAMIC
                 unload_dlls();
-
-                DebugPrint(L"Unloaded dll\n");
-    
-                EvalFunc = (EVALFUNC)get_dynamic_func("dynamic_eval");
+                DebugPrint(L"Unloaded dll\n"); //Dlls are loaded in renderBegin
 #endif
 				break;
             }
@@ -482,32 +482,12 @@ void ThunderLoomMtl::NotifyChanged() {
 }
 
 void ThunderLoomMtl::Update(TimeValue t, Interval& valid) {
-	if (!ivalid.InInterval(t)) {
-		ivalid.SetInfinite();
+	//if (!ivalid.InInterval(t)) {
+	//	ivalid.SetInfinite();
+	// ...
+	//}
 
-		pblock->GetValue(mtl_uscale,t, uscale,ivalid);
-        pblock->GetValue(mtl_vscale,t, vscale,ivalid);
-		pblock->GetValue(mtl_realworld,t, realworld,ivalid);
-		pblock->GetValue(mtl_umax,t, umax,ivalid);
-		pblock->GetValue(mtl_psi,t, psi,ivalid);
-		
-		pblock->GetValue(mtl_specular, t, specular, ivalid);
-		pblock->GetValue(mtl_delta_x,t, delta_x,ivalid);
-        pblock->GetValue(mtl_alpha,t, alpha,ivalid);
-        pblock->GetValue(mtl_beta,t, beta,ivalid);
-
-		DBOUT( "Updating params, uscale: " << uscale );
-		DBOUT( "Updating params, vscale: " << vscale );
-		DBOUT( "Updating params, realworld: " << realworld );
-		DBOUT( "Updating params, umax: " << umax );
-		DBOUT( "Updating params, psi: " << psi );
-		DBOUT( "Updating params, specular: " << specular );
-		DBOUT( "Updating params, delta_x: " << delta_x );
-		DBOUT( "Updating params, alpha: " << alpha );
-		DBOUT( "Updating params, beta: " << beta );
-	}
-
-	valid &= ivalid;
+	//valid &= ivalid;
 }
 
 /*===========================================================================*\
@@ -524,7 +504,7 @@ Color ThunderLoomMtl::GetAmbient(int mtlNum, BOOL backFace) {
 }
 
 Color ThunderLoomMtl::GetDiffuse(int mtlNum, BOOL backFace) {
-	return Color(0.5f, 0.5f, 0.5f);
+	return Color(0.8f, 0.8f, 0.8f);
 }
 
 Color ThunderLoomMtl::GetSpecular(int mtlNum, BOOL backFace) {
@@ -550,24 +530,39 @@ float ThunderLoomMtl::WireSize(int mtlNum, BOOL backFace) {
 // Render intialization and deinitialization
 
 void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
-	//m_weave_parameters.realworld_uv = realworld;
+	ivalid.SetInfinite();
 
-	m_weave_parameters.uscale = uscale;
-    m_weave_parameters.vscale = vscale;
+#ifdef DYNAMIC
+	unload_dlls();
+	EvalDiffuseFunc  = (EVALDIFFUSEFUNC) get_dynamic_func("eval_diffuse" );
+	EvalSpecularFunc = (EVALSPECULARFUNC)get_dynamic_func("eval_specular");
+#endif
+
+	pblock->GetValue(mtl_uscale,t, m_weave_parameters.uscale,ivalid);
+    pblock->GetValue(mtl_vscale,t, m_weave_parameters.vscale,ivalid);
+	int realworld; 
+	pblock->GetValue(mtl_realworld,t, realworld ,ivalid);
 	m_weave_parameters.realworld_uv = realworld;
-    m_weave_parameters.umax   = umax;
-    m_weave_parameters.psi    = psi;
+	pblock->GetValue(mtl_umax,t, m_weave_parameters.umax,ivalid);
+	pblock->GetValue(mtl_psi,t, m_weave_parameters.psi,ivalid);
+	pblock->GetValue(mtl_specular, t, m_weave_parameters.specular_strength, ivalid);
+	pblock->GetValue(mtl_delta_x,t, m_weave_parameters.delta_x,ivalid);
+    pblock->GetValue(mtl_alpha,t, m_weave_parameters.alpha,ivalid);
+    pblock->GetValue(mtl_beta,t, m_weave_parameters.beta,ivalid);
 
-	m_weave_parameters.specular_strength = specular;
-    m_weave_parameters.delta_x = delta_x;
-    m_weave_parameters.alpha  = alpha;
-    m_weave_parameters.beta   = beta;
-
-	//DBOUT( "Set params before render, specular: " << specular );
+	DBOUT( "Updating params, uscale: " << uscale );
+	DBOUT( "Updating params, vscale: " << vscale );
+	DBOUT( "Updating params, realworld: " << realworld );
+	DBOUT( "Updating params, umax: " << umax );
+	DBOUT( "Updating params, psi: " << psi );
+	DBOUT( "Updating params, specular: " << specular );
+	DBOUT( "Updating params, delta_x: " << delta_x );
+	DBOUT( "Updating params, alpha: " << alpha );
+	DBOUT( "Updating params, beta: " << beta );
 
 	//TODO(Peter): What to do about diffuse?
 	//set default to white for now.
-	diffuse.White();
+	//diffuse.White();
 
 	//default values for the time being.
 	//these paramters will be removed later, is the plan
@@ -593,7 +588,9 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 }
 
 void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
-    //TODO(Vidar): Free pattern
+    //Free pattern
+	wcFreeWeavePattern(&m_weave_parameters);
+
 	bsdfPool.freeMem();
 	renderChannels.freeMem();
 }

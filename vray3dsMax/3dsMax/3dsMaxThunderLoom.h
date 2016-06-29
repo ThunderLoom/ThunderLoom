@@ -27,9 +27,9 @@
 // The ClassID must be changed whenever a new project
 // is created using this skeleton
 #define	MTL_CLASSID	Class_ID(0x1456441a, 0x58760c4)
-#define STR_CLASSNAME _T("WovenCloth")
-#define STR_LIBDESC _T("WovenCloth material")
-#define STR_DLGTITLE _T("WovenCloth Parameters")
+#define STR_CLASSNAME _T("ThunderLoom")
+#define STR_LIBDESC _T("ThunderLoom woven cloth material")
+#define STR_DLGTITLE _T("ThunderLoom Parameters")
 
 extern ClassDesc* GetSkeletonMtlDesc();
 
@@ -78,9 +78,6 @@ enum {
 //together to form a BSDF (bi-directional scattering distribution function). 
 class MyBlinnBSDF: public VR::MyBaseBSDF {
 public:
-	VR::Vector getGlossyReflectionDir(float uc, float vc, const VR::Vector &viewDir, float &rayProbability);
-	VR::real getGlossyProbability(const VR::Vector &direction, const VR::Vector &viewDir);
-	float remapGlossiness(float nk);
 };
 
 /*===========================================================================*\

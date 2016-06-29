@@ -9,10 +9,16 @@
 #include "dbgprint.h"
 #include "woven_cloth.h"
 
-typedef VUtils::Color (*EVALFUNC)(const VUtils::VRayContext &rc, const VUtils::Vector &direction,
-                                  VUtils::Color &lightColor,VUtils:: Color &origLightColor, 
-                                  float probLight, int flags, wcWeaveParameters *weave_parameters,
-                                  VUtils::Matrix inm);
+typedef void (*EVALDIFFUSEFUNC)(const VUtils::VRayContext &rc,
+    wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color);
+
+typedef void (*EVALSPECULARFUNC)( const VUtils::VRayContext &rc, const VUtils::Vector &direction,
+    wcWeaveParameters *weave_parameters, VUtils::Matrix nm,
+    VUtils::Color *reflection_color);
+
+/*typedef void (*EVALFUNC)(const VUtils::VRayContext &rc, const Vector &direction,
+    wcWeaveParameters *weave_parameters, Matrix nm, VUtils::Color *diffuse_color,
+    VUtils::Color *reflection_color)*/
 
 
 static void *get_dynamic_func(const char *fname)
@@ -68,7 +74,17 @@ static void unload_dlls()
     delete[] oldDir;
 }
 
-VUtils::Color dynamic_eval(const VUtils::VRayContext &rc, const VUtils::Vector &direction,
-                           VUtils::Color &lightColor, VUtils::Color &origLightColor,
-                           float probLight, int flags, wcWeaveParameters *weave_parameters,
-                           VUtils::Matrix nm);
+#ifndef DYNAMIC
+void
+EvalDiffuseFunc
+(const VUtils::VRayContext &rc,
+    wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color);
+#endif
+
+#ifndef DYNAMIC
+void
+EvalSpecularFunc
+( const VUtils::VRayContext &rc, const VUtils::Vector &direction,
+    wcWeaveParameters *weave_parameters, VUtils::Matrix nm,
+    VUtils::Color *reflection_color);
+#endif
