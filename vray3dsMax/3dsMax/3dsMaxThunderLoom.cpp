@@ -149,7 +149,6 @@ static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
 	if (pblock) {
 		pblock->SetValue(mtl_color, t, Point3(yarn_type.color[0],
 			yarn_type.color[1], yarn_type.color[2]));
-		pblock->SetValue(mtl_specular, t, 0.2f);
 	}
 }
 
