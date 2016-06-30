@@ -7,7 +7,7 @@
 #include "vraycore.h"
 #include "vrayrenderer.h"
 
-#include "blinnbrdf.h"
+#include "VrayThunderLoomBRDF.h"
 
 #ifdef DYNAMIC
 // These eval functions are loaded in vrayblinn.cpp when ui is initialized

@@ -18,7 +18,7 @@
 #include "brdfs.h"
 #include "vraygeom.h"
 #include "brdfpool.h"
-#include "blinnbrdf.h"
+#include "VrayThunderLoomBRDF.h"
 #include "pb2template_generator.h"
 
 #include "woven_cloth.h"
@@ -44,6 +44,7 @@ enum {
 
 
 enum {
+	mtl_color,
 	mtl_diffuse,
     mtl_umax,
 	mtl_realworld,
@@ -92,18 +93,7 @@ public:
 	// various variables
 	Interval ivalid;
     wcWeaveParameters m_weave_parameters;
-
-	// Cached parameters
-	//float glossiness;
-	//Color reflect, diffuse;
-	//Color opacity;
-
-    //float umax, uscale, vscale;
-    //float psi, delta_x, specular;
-    //float alpha, beta, intensity_fineness;
-	//float yarnvar_amplitude, yarnvar_xscale, yarnvar_yscale, yarnvar_persistance, yarnvar_octaves;
-	//int realworld;
-	//int testparam;
+	ParamBlockDesc2  *m_param_blocks;
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	//ref 0
@@ -174,7 +164,7 @@ public:
 	RefResult NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS);
 
 	// Direct Paramblock2 access
-	int	NumParamBlocks() { return 1; }
+	int	NumParamBlocks() { return 2; }
 	IParamBlock2* GetParamBlock(int i) { return pblock; }
 	IParamBlock2* GetParamBlockByID(BlockID id) { return (pblock->ID() == id) ? pblock : NULL; } 
 

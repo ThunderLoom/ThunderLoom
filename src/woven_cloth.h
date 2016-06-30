@@ -133,3 +133,8 @@ void wcWeavePatternFromWeaveFile(wcWeaveParameters *params, const char *filename
 WC_PREFIX
 void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
     const wchar_t *filename);
+
+/* This function needs to be called before rendering if any parameters have been
+changed since reading the pattern*/
+WC_PREFIX
+void wcFinalizeWeaveParameters(wcWeaveParameters *params);

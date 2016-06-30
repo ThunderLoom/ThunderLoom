@@ -184,64 +184,66 @@ void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
 
 
 WC_PREFIX
-static void finalize_weave_parmeters(wcWeaveParameters *params)
+void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 {
     //Calculate normalization factor for the specular reflection
+	if (params->pattern) {
+		size_t nLocationSamples = 100;
+		size_t nDirectionSamples = 1000;
+		params->specular_normalization = 1.f;
 
-    size_t nLocationSamples  = 100;
-    size_t nDirectionSamples = 1000;
-    params->specular_normalization = 1.f;
+		float highest_result = 0.f;
 
-    float highest_result = 0.f;
-    
-    // Temporarily disable intensity variation...
-    float tmp_intensity_fineness = params->intensity_fineness;
-    params->intensity_fineness = 0.f;
+		// Temporarily disable intensity variation...
+		float tmp_intensity_fineness = params->intensity_fineness;
+		params->intensity_fineness = 0.f;
 
-    // Normalize by the largest reflection across all uv coords and
-    // incident directions
-    for (size_t i=0; i<nLocationSamples; i++) {
-        float result = 0.0f;
-        float halton_point[4];
-        halton_4(i+50,halton_point);
-        wcPatternData pattern_data;
-        // Pick a random location on a segment rectangle...
-        pattern_data.x = -1.f + 2.f*halton_point[0];
-        pattern_data.y = -1.f + 2.f*halton_point[1];
-        pattern_data.length = 1.f;
-        pattern_data.width = 1.f;
-        pattern_data.warp_above = 0;
-        calculate_segment_uv_and_normal(&pattern_data, params);
-        pattern_data.total_index_x = 0;
-        pattern_data.total_index_y = 0;
+		// Normalize by the largest reflection across all uv coords and
+		// incident directions
+		for (size_t i = 0; i < nLocationSamples; i++) {
+			float result = 0.0f;
+			float halton_point[4];
+			halton_4(i + 50, halton_point);
+			wcPatternData pattern_data;
+			// Pick a random location on a segment rectangle...
+			pattern_data.x = -1.f + 2.f*halton_point[0];
+			pattern_data.y = -1.f + 2.f*halton_point[1];
+			pattern_data.length = 1.f;
+			pattern_data.width = 1.f;
+			pattern_data.warp_above = 0;
+			calculate_segment_uv_and_normal(&pattern_data, params);
+			pattern_data.total_index_x = 0;
+			pattern_data.total_index_y = 0;
 
-        wcIntersectionData intersection_data;
-        sample_uniform_hemisphere(halton_point[2], halton_point[3],
-            &intersection_data.wi_x, &intersection_data.wi_y,
-            &intersection_data.wi_z);
+			wcIntersectionData intersection_data;
+			sample_uniform_hemisphere(halton_point[2], halton_point[3],
+				&intersection_data.wi_x, &intersection_data.wi_y,
+				&intersection_data.wi_z);
 
-        for (size_t j=0; j<nDirectionSamples; j++) {
-            float halton_direction[4];
-            halton_4(j+50+nLocationSamples,halton_direction);
-            // Since we use cosine sampling here, we can ignore the cos term
-            // in the integral
-            sample_cosine_hemisphere(halton_direction[0], halton_direction[1],
-                &intersection_data.wo_x, &intersection_data.wo_y,
-                &intersection_data.wo_z);
-            result += wcEvalSpecular(intersection_data,pattern_data,params);
-        }
-        if(result > highest_result){
-            highest_result = result;
-        }
-    }
+			for (size_t j = 0; j < nDirectionSamples; j++) {
+				float halton_direction[4];
+				halton_4(j + 50 + nLocationSamples, halton_direction);
+				// Since we use cosine sampling here, we can ignore the cos term
+				// in the integral
+				sample_cosine_hemisphere(halton_direction[0], halton_direction[1],
+					&intersection_data.wo_x, &intersection_data.wo_y,
+					&intersection_data.wo_z);
+				result += wcEvalSpecular(intersection_data, pattern_data, params);
+			}
+			if (result > highest_result) {
+				highest_result = result;
+			}
+		}
 
-    if (highest_result <= 0.0001f){
-        params->specular_normalization = 0.f;
-    }else{
-        params->specular_normalization =
-            (float)nDirectionSamples /highest_result;
-    }
-    params->intensity_fineness = tmp_intensity_fineness;
+		if (highest_result <= 0.0001f) {
+			params->specular_normalization = 0.f;
+		}
+		else {
+			params->specular_normalization =
+				(float)nDirectionSamples / highest_result;
+		}
+		params->intensity_fineness = tmp_intensity_fineness;
+	}
 }
 
                                                                                                              
@@ -254,6 +256,7 @@ static Pattern *build_pattern_from_data(uint8_t *warp_above,
     Pattern *pattern;
     pattern = (Pattern*)calloc(1,sizeof(Pattern));
     pattern->yarn_types = (YarnType*)calloc(num_yarn_types,sizeof(YarnType));
+	pattern->num_yarn_types = num_yarn_types;
 	for (c = 0; c < num_yarn_types; c++) {
 		pattern->yarn_types[c] = yarn_types[c];
 	}
@@ -336,6 +339,7 @@ static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
     *pattern = (Pattern*)calloc(1,sizeof(Pattern));
     (*pattern)->entries = (PatternEntry*)calloc(num_chars,sizeof(PatternEntry));
     (*pattern)->yarn_types = (YarnType*)calloc(2,sizeof(YarnType));
+    (*pattern)->num_yarn_types = 2;
     memcpy((*pattern)->yarn_types[0].color, warp_color,3*sizeof(float));
     memcpy((*pattern)->yarn_types[1].color, weft_color,3*sizeof(float));
     
@@ -399,7 +403,7 @@ void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
         &params->pattern_width, &params->pattern_height,
         &params->pattern_realwidth, &params->pattern_realheight);
     wif_free_weavedata(data);
-    finalize_weave_parmeters(params);
+    wcFinalizeWeaveParameters(params);
 }
 
 WC_PREFIX
@@ -411,7 +415,7 @@ void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
         &params->pattern_width, &params->pattern_height,
         &params->pattern_realwidth, &params->pattern_realheight);
     wif_free_weavedata(data);
-    finalize_weave_parmeters(params);
+    wcFinalizeWeaveParameters(params);
 }
 
 WC_PREFIX
@@ -428,7 +432,7 @@ static void weave_pattern_from_weave_file(wcWeaveParameters *params,
             &params->pattern_width, &params->pattern_height,
             &params->pattern_realwidth, &params->pattern_realheight,
             &params->pattern);
-    finalize_weave_parmeters(params);
+    wcFinalizeWeaveParameters(params);
 }
 
 WC_PREFIX
@@ -470,7 +474,7 @@ void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *warp_above,
 	params->pattern_height = pattern_height;
 	params->pattern = build_pattern_from_data(warp_above,
 		yarn_type, yarn_types, num_yarn_types, pattern_width, pattern_height);
-	finalize_weave_parmeters(params);
+	wcFinalizeWeaveParameters(params);
 }
 
 WC_PREFIX

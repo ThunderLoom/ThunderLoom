@@ -31,11 +31,18 @@ typedef struct
 typedef struct
 {
     float color[3];
+    float uscale;
+    float vscale;
+    float umax;
+    float psi;
+    float alpha;
+    float beta;
+    float delta_x;
 }YarnType;
 
 typedef struct
 {
-    int num_entries, num_yarn_types;
+    int num_yarn_types;
     PatternEntry *entries;
     YarnType *yarn_types;
 }Pattern;

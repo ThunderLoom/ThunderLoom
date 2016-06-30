@@ -79,15 +79,20 @@
 #define cs_blend5                       1040
 #define IDC_WIFFILE_BUTTON              1040
 #define ed_texmap_blend_mult5           1041
+#define IDC_YARNTYPE_COMBO              1041
 #define cs_blend6                       1042
+#define IDC_YARNTYPE_LABEL              1042
 #define ed_texmap_blend_mult6           1043
 #define cs_blend7                       1044
+#define IDC_YARNCOLOR_SWATCH            1044
 #define ed_texmap_blend_mult7           1045
 #define cs_blend8                       1046
 #define IDD_SKELETON_MATERIAL           1047
 #define IDD_BLENDMTL                    1047
 #define ed_texmap_blend_mult8           1047
 #define cs_blend9                       1048
+#define IDD_BLENDMTL1                   1048
+#define IDD_PARAMS                      1048
 #define ed_texmap_blend_mult9           1049
 #define IDC_SIMPLE_SPIN                 1052
 #define sp_texmap_blend_mult1           1053
@@ -131,9 +136,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        108
+#define _APS_NEXT_RESOURCE_VALUE        109
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1033
+#define _APS_NEXT_CONTROL_VALUE         1045
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

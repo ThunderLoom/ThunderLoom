@@ -143,61 +143,21 @@ ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
 \*===========================================================================*/
 
 //Set upp paramblock to handle storing values and managing ui elements for us
-static ParamBlockDesc2 thunderLoom_param_blk (mtl_params, _T("Test mtl params"), 0, &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI, 0,
-	//rollout
-	IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, NULL, 
-	//params
-    mtl_wiffile, _FT("wifFile"), TYPE_FILENAME, P_ANIMATABLE, 0,
-        p_default, _FT(""),
-		p_ui, TYPE_FILEOPENBUTTON, IDC_WIFFILE_BUTTON,
-	PB_END,
-	// pattern an geometry
-    mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_USCALE_EDIT, IDC_USCALE_SPIN, 0.1f,
-	PB_END,
-    mtl_vscale, _FT("vscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
-	PB_END,
-	mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
-		p_default, FALSE,
-		p_ui, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
-	PB_END,
-    mtl_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0.5,
-		p_range, 0.0f, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
-	PB_END,
-    mtl_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0.5,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
-	PB_END,
-	//Lighting params
-	mtl_specular, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default,		1.f,
-		p_range,		0.0f, 1.f,
-		p_ui,			TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
-	p_end,
-    mtl_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0.5f,
-        p_range, 0.0f, 1.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
-	PB_END,
-    mtl_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 0.05,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
-	PB_END,
-    mtl_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
-		p_default, 4.f,
-		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
-	PB_END,
-PB_END
-);									 
 
 /*===========================================================================*\
  |	UI stuff
 \*===========================================================================*/
+
+static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
+	wcWeaveParameters *weave_params, TimeValue t)
+{
+	YarnType yarn_type = weave_params->pattern->yarn_types[yarn_type_id];
+	if (pblock) {
+		pblock->SetValue(mtl_color, t, Point3(yarn_type.color[0],
+			yarn_type.color[1], yarn_type.color[2]));
+		pblock->SetValue(mtl_specular, t, 0.2f);
+	}
+}
 
 //Here there is the option to add custom behaviour to certain messages.
 //For the time being only initdiolog is intercepted and triggers a dll unload.
@@ -205,26 +165,111 @@ class ThunderLoomMtlDlgProc : public ParamMap2UserDlgProc {
 public:
 	IParamMap *pmap;
 	ThunderLoomMtl *sm;
+	ICustButton  *m_load_wif_button;
+	IColorSwatch *m_yarn_color;
+	wchar_t directory[512];
 
 	ThunderLoomMtlDlgProc(void) { sm = NULL; }
-	INT_PTR DlgProc(TimeValue t, IParamMap2 *map, HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	INT_PTR DlgProc(TimeValue t, IParamMap2 *map, HWND hWnd, UINT msg,
+			WPARAM wParam, LPARAM lParam) {
 		int id = LOWORD(wParam);
 		switch (msg) 
 		{
 			case WM_INITDIALOG:{ 
-				DebugPrint(L"INIT DIALOG\n");
-				//intercept message that dialog is being init
-				//and use this signal to reload the dynamic dll
-#ifdef DYNAMIC
-                unload_dlls();
-                DebugPrint(L"Unloaded dll\n"); //Dlls are loaded in renderBegin
-#endif
+				directory[0] = 0;
+				m_load_wif_button = GetICustButton(
+					GetDlgItem(hWnd, IDC_WIFFILE_BUTTON));
+				m_yarn_color = GetIColorSwatch(
+					GetDlgItem(hWnd, IDC_YARNCOLOR_SWATCH));
 				break;
             }
 			case WM_DESTROY:
 				break;
-			case WM_COMMAND: 
-                break;
+			case WM_COMMAND:
+			{
+				switch (LOWORD(wParam)) {
+				case IDC_YARNTYPE_COMBO: {
+					HWND yarn_type_hwnd = (HWND)lParam;
+					switch (HIWORD(wParam)) {
+					case CBN_SELCHANGE: {
+						int sel = ComboBox_GetCurSel(yarn_type_hwnd);
+						DBOUT(L"Selection changed!" << sel);
+						IParamBlock2 *params = map->GetParamBlock();
+						UpdateYarnTypeParameters(sel, params,
+								&(sm->m_weave_parameters),t);
+						break;
+					}
+					}
+					break;
+				}
+				case IDC_WIFFILE_BUTTON: {
+					switch (HIWORD(wParam)) {
+					case BN_CLICKED: {
+						wchar_t *filters =
+							L"Weave Files | *.WIF\0*.WIF\0"
+							L"All Files | *.*\0*.*\0"
+						;
+						wchar_t buffer[512] = { 0 };
+						OPENFILENAME openfilename = { 0 };
+						openfilename.lStructSize = sizeof(OPENFILENAME);
+						openfilename.hwndOwner = hWnd;
+						openfilename.lpstrFilter = filters;
+						openfilename.lpstrFile = buffer;
+						openfilename.nMaxFile = 512;
+						openfilename.lpstrInitialDir = directory;
+						openfilename.lpstrTitle = L"Open weaving draft";
+						if (GetOpenFileName(&openfilename)) {
+							wcFreeWeavePattern(&(sm->m_weave_parameters));
+							wcWeavePatternFromFile_wchar(
+								&(sm->m_weave_parameters), buffer);
+							SetWindowText(m_load_wif_button->GetHwnd(),buffer +
+								openfilename.nFileOffset);
+							IParamBlock2 *params = map->GetParamBlock();
+							HWND yarn_type_combo_hwnd = GetDlgItem(hWnd,
+								IDC_YARNTYPE_COMBO);
+							ComboBox_ResetContent(yarn_type_combo_hwnd);
+							for (int i = 0; i <
+								sm->m_weave_parameters.pattern->num_yarn_types;
+								i++)
+							{
+								wchar_t buffer[128];
+								swprintf(buffer, L"Yarn type %d", i);
+								ComboBox_AddString(yarn_type_combo_hwnd,buffer);
+								DBOUT(L"Yarn type " << i);
+							}
+							UpdateYarnTypeParameters(0, params,
+								&(sm->m_weave_parameters),t);
+							ComboBox_SetCurSel(yarn_type_combo_hwnd, 0);
+							map->Invalidate();
+						}
+						break;
+					}
+					}
+					break;
+				}
+				case IDC_YARNCOLOR_SWATCH: {
+					DBOUT(L"TEST!");
+					switch (HIWORD(wParam)) {
+					case CC_COLOR_CHANGE: {
+						HWND yarn_type_hwnd = (HWND)lParam;
+						int sel = ComboBox_GetCurSel(yarn_type_hwnd);
+						YarnType *yarn_type =
+							&(sm->m_weave_parameters.pattern->yarn_types[sel]);
+						COLORREF col= m_yarn_color->GetColor();
+						int r = (int)GetRValue(col);
+						int g = (int)GetGValue(col);
+						int b = (int)GetBValue(col);
+						yarn_type->color[0] = (float)r / 255.f;
+						yarn_type->color[1] = (float)g / 255.f;
+						yarn_type->color[2] = (float)b / 255.f;
+						break;
+					}
+					}
+					break;
+				}
+				}
+				break;
+			}
 		}
 		return FALSE;
 	}
@@ -239,6 +284,7 @@ static ThunderLoomMtlDlgProc dlgProc;
 \*===========================================================================*/
 
 void ThunderLoomMtl::Reset() {
+	m_weave_parameters.pattern = 0;
 	ivalid.SetEmpty();
 	thunderLoomDesc.Reset(this);
 }
@@ -246,13 +292,77 @@ void ThunderLoomMtl::Reset() {
 ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
 	pblock=NULL;
 	ivalid.SetEmpty();
-	thunderLoomDesc.MakeAutoParamBlocks(this);	// make and intialize paramblock2
+	m_param_blocks = new ParamBlockDesc2(mtl_params, _T("Test mtl params"), 0,
+		&thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI, 0,
+		//rollout
+		IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, new ThunderLoomMtlDlgProc(), 
+		// pattern and geometry
+		mtl_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
+			p_default, Point3(0.3f,0.3f,0.3f),
+			p_ui, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
+		PB_END,
+		mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
+			p_default, 1.f,
+			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_USCALE_EDIT, IDC_USCALE_SPIN, 0.1f,
+		PB_END,
+		mtl_vscale, _FT("vscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
+			p_default, 1.f,
+			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
+		PB_END,
+		mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
+			p_default, FALSE,
+			p_ui, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
+		PB_END,
+		mtl_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
+			p_default, 0.5,
+			p_range, 0.0f, 1.f,
+			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
+		PB_END,
+		mtl_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
+			p_default, 0.5,
+			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
+		PB_END,
+		//Lighting params
+		mtl_specular, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
+			p_default,		1.f,
+			p_range,		0.0f, 1.f,
+			p_ui,			TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
+		p_end,
+		mtl_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
+			p_default, 0.5f,
+			p_range, 0.0f, 1.f,
+			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
+		PB_END,
+		mtl_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
+			p_default, 0.05,
+			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
+		PB_END,
+		mtl_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
+			p_default, 4.f,
+			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
+		PB_END,
+	PB_END
+);									 
+	/*ParamBlockDesc2 *test = new ParamBlockDesc2(mtl_params + 1, _T("Test mtl params"), 0,
+		&thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI, 1,
+		//rollout
+		IDD_PARAMS, IDS_PARAMETERS, 0, 0, new ThunderLoomMtlDlgProc(), 
+		// pattern and geometry
+		mtl_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
+			p_default, Point3(0.3f,0.3f,0.3f),
+			p_ui, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
+		PB_END,
+	PB_END
+	);									*/
+
+	thunderLoomDesc.MakeAutoParamBlocks(this);
 	Reset();
 }
 
 ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
-	IAutoMParamDlg* masterDlg = thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
-	thunderLoom_param_blk.SetUserDlgProc(new ThunderLoomMtlDlgProc());
+	IAutoMParamDlg* masterDlg
+		= thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
+	DBOUT(masterDlg->NumDlgs());
 	return masterDlg;
 }
 
@@ -295,8 +405,7 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 			ivalid.SetEmpty();
 			if (hTarget==pblock) {
 				ParamID changing_param = pblock->LastNotifyParamID();
-				//smtl_param_blk.InvalidateUI(changing_param);
-				thunderLoom_param_blk.InvalidateUI(changing_param);
+				m_param_blocks[0].InvalidateUI(changing_param);
 			}
 			break;
 	}
@@ -315,6 +424,7 @@ IOResult ThunderLoomMtl::Save(ISave *isave) {
 	res = MtlBase::Save(isave);
 	if (res!=IO_OK) return res;
 	isave->EndChunk();
+	//TODO(Vidar):Save m_weave_parameters
 	return IO_OK;
 }	
 
@@ -326,6 +436,7 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 			case MTL_HDR_CHUNK:
 				res = MtlBase::Load(iload);
 				break;
+		//TODO(Vidar):Load m_weave_parameters
 		}
 		iload->CloseChunk();
 		if (res!=IO_OK) return res;
@@ -420,19 +531,8 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
     pblock->GetValue(mtl_alpha,t, m_weave_parameters.alpha,ivalid);
     pblock->GetValue(mtl_beta,t, m_weave_parameters.beta,ivalid);
 
-	DBOUT( "Updating params, uscale: " << m_weave_parameters.uscale );
-	DBOUT( "Updating params, vscale: " << m_weave_parameters.vscale );
-	DBOUT( "Updating params, realworld: " << m_weave_parameters.realworld_uv );
-	DBOUT( "Updating params, umax: " << m_weave_parameters.umax );
-	DBOUT( "Updating params, psi: " << m_weave_parameters.psi );
-	DBOUT( "Updating params, specular: " << m_weave_parameters.specular_strength );
-	DBOUT( "Updating params, delta_x: " << m_weave_parameters.delta_x );
-	DBOUT( "Updating params, alpha: " << m_weave_parameters.alpha );
-	DBOUT( "Updating params, beta: " << m_weave_parameters.beta );
-
 	//default values for the time being.
 	//these paramters will be removed later, is the plan
-	m_weave_parameters.specular_normalization = 1.f;
 	m_weave_parameters.intensity_fineness = 1.f;
 	m_weave_parameters.yarnvar_amplitude = 0.f;
 	m_weave_parameters.yarnvar_xscale = 1.f;
@@ -441,10 +541,8 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	m_weave_parameters.yarnvar_octaves = 1;
 
 	//Load wif file.
-	//TODO(Peter): Move loading from renderBegin to Update.
-	//Will need to load file, and update ui based on content.
     MSTR filename = pblock->GetStr(mtl_wiffile,t);
-    wcWeavePatternFromFile_wchar(&m_weave_parameters,filename);
+	wcFinalizeWeaveParameters(&m_weave_parameters);
 	DBOUT( "begin render params, filename: " << filename );
 
 	const VR::VRaySequenceData &sdata=vray->getSequenceData();
@@ -452,8 +550,6 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 }
 
 void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
-    //Free pattern
-	wcFreeWeavePattern(&m_weave_parameters);
 
 	bsdfPool.freeMem();
 	renderChannels.freeMem();

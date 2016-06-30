@@ -481,6 +481,7 @@ Pattern *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h,
         }
 		pattern = (Pattern*)calloc(1, sizeof(Pattern));
         pattern->entries = entries;
+		pattern->num_yarn_types = data->num_colors;
         pattern->yarn_types = yarn_types;
     }
     return pattern;

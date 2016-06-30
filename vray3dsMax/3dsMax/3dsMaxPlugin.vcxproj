@@ -656,7 +656,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\woven_cloth.cpp" />
     <ClCompile Include="..\3dsMax_dynamic\Dynamic.cpp" />
-    <ClCompile Include="blinnbrdf.cpp">
+    <ClCompile Include="VrayThunderLoomBRDF.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
@@ -706,7 +706,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="blinnbrdf.h" />
+    <ClInclude Include="VrayThunderLoomBRDF.h" />
     <ClInclude Include="dynamic.h" />
     <ClInclude Include="helper.h" />
     <ClInclude Include="resource.h" />
