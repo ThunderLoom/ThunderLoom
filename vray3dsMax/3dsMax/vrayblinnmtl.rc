@@ -108,7 +108,7 @@ BEGIN
     LTEXT           "specular",IDC_STATIC,14,222,28,8
     CONTROL         "Custom2",IDC_SPECULAR_EDIT,"CustEdit",WS_TABSTOP,140,220,50,10
     CONTROL         "Custom3",IDC_SPECULAR_SPIN,"SpinnerControl",0x0,192,220,7,10
-    CONTROL         IDB_LOGO,IDB_LOGO,"Static",SS_BITMAP,4,4,212,34
+    CONTROL         107,IDB_LOGO,"Static",SS_BITMAP,4,4,212,34
     LTEXT           "Thunder Loom version xx",IDC_VERSION,4,39,119,8
     GROUPBOX        "Pattern and Geometry",IDC_PATTERN_GROUP,4,115,210,90
     LTEXT           "uscale",IDC_USCALE_LABEL,19,128,22,8
@@ -142,13 +142,6 @@ BEGIN
     CONTROL         "Custom1",IDC_YARNCOLOR_SWATCH,"ColorSwatch",0x0,147,102,50,13
 END
 
-IDD_PARAMS DIALOGEX 0, 0, 220, 36
-STYLE DS_SETFONT | WS_CHILD | WS_VISIBLE
-FONT 8, "MS Sans Serif", 0, 0, 0x0
-BEGIN
-    CONTROL         "Custom1",IDC_YARNCOLOR_SWATCH,"ColorSwatch",0x0,71,12,50,13
-END
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -169,18 +162,6 @@ BEGIN
         TOPMARGIN, 4
         BOTTOMMARGIN, 287
     END
-
-    IDD_PARAMS, DIALOG
-    BEGIN
-        LEFTMARGIN, 4
-        RIGHTMARGIN, 216
-        VERTGUIDE, 13
-        VERTGUIDE, 147
-        VERTGUIDE, 190
-        VERTGUIDE, 197
-        TOPMARGIN, 4
-        BOTTOMMARGIN, 32
-    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -192,20 +173,19 @@ END
 
 IDB_LOGO                BITMAP                  "logo.bmp"
 
-
 /////////////////////////////////////////////////////////////////////////////
 //
 // AFX_DIALOG_LAYOUT
 //
 
-IDD_BLENDMTL AFX_DIALOG_LAYOUT
+IDD_BLENDMTL AFX_DIALOG_LAYOUT 
 BEGIN
-    0
+    0x0000
 END
 
-IDD_PARAMS AFX_DIALOG_LAYOUT
+IDD_PARAMS AFX_DIALOG_LAYOUT 
 BEGIN
-    0
+    0x0000
 END
 
 

@@ -45,6 +45,7 @@ enum {
 
 enum {
 	mtl_color,
+	mtl_yarn_type,
 	mtl_diffuse,
     mtl_umax,
 	mtl_realworld,
@@ -93,7 +94,7 @@ public:
 	// various variables
 	Interval ivalid;
     wcWeaveParameters m_weave_parameters;
-	ParamBlockDesc2  *m_param_blocks;
+    uint32_t m_current_yarn_type;
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	//ref 0
@@ -164,7 +165,7 @@ public:
 	RefResult NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS);
 
 	// Direct Paramblock2 access
-	int	NumParamBlocks() { return 2; }
+	int	NumParamBlocks() { return 1; }
 	IParamBlock2* GetParamBlock(int i) { return pblock; }
 	IParamBlock2* GetParamBlockByID(BlockID id) { return (pblock->ID() == id) ? pblock : NULL; } 
 

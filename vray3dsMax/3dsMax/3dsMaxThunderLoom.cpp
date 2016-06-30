@@ -139,12 +139,6 @@ ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
 \*===========================================================================*/
 
 /*===========================================================================*\
- |	Paramblock2 Descriptor
-\*===========================================================================*/
-
-//Set upp paramblock to handle storing values and managing ui elements for us
-
-/*===========================================================================*\
  |	UI stuff
 \*===========================================================================*/
 
@@ -188,20 +182,7 @@ public:
 			case WM_COMMAND:
 			{
 				switch (LOWORD(wParam)) {
-				case IDC_YARNTYPE_COMBO: {
-					HWND yarn_type_hwnd = (HWND)lParam;
-					switch (HIWORD(wParam)) {
-					case CBN_SELCHANGE: {
-						int sel = ComboBox_GetCurSel(yarn_type_hwnd);
-						DBOUT(L"Selection changed!" << sel);
-						IParamBlock2 *params = map->GetParamBlock();
-						UpdateYarnTypeParameters(sel, params,
-								&(sm->m_weave_parameters),t);
-						break;
-					}
-					}
-					break;
-				}
+                //TODO(Vidar): Move this to NotifyRefChanged too...
 				case IDC_WIFFILE_BUTTON: {
 					switch (HIWORD(wParam)) {
 					case BN_CLICKED: {
@@ -237,31 +218,12 @@ public:
 								ComboBox_AddString(yarn_type_combo_hwnd,buffer);
 								DBOUT(L"Yarn type " << i);
 							}
+                            sm->m_current_yarn_type = 0;
 							UpdateYarnTypeParameters(0, params,
 								&(sm->m_weave_parameters),t);
 							ComboBox_SetCurSel(yarn_type_combo_hwnd, 0);
 							map->Invalidate();
 						}
-						break;
-					}
-					}
-					break;
-				}
-				case IDC_YARNCOLOR_SWATCH: {
-					DBOUT(L"TEST!");
-					switch (HIWORD(wParam)) {
-					case CC_COLOR_CHANGE: {
-						HWND yarn_type_hwnd = (HWND)lParam;
-						int sel = ComboBox_GetCurSel(yarn_type_hwnd);
-						YarnType *yarn_type =
-							&(sm->m_weave_parameters.pattern->yarn_types[sel]);
-						COLORREF col= m_yarn_color->GetColor();
-						int r = (int)GetRValue(col);
-						int g = (int)GetGValue(col);
-						int b = (int)GetBValue(col);
-						yarn_type->color[0] = (float)r / 255.f;
-						yarn_type->color[1] = (float)g / 255.f;
-						yarn_type->color[2] = (float)b / 255.f;
 						break;
 					}
 					}
@@ -279,6 +241,69 @@ public:
 static ThunderLoomMtlDlgProc dlgProc;
 
 /*===========================================================================*\
+ |	Paramblock2 Descriptor
+\*===========================================================================*/
+
+//Set up paramblock to handle storing values and managing ui elements for us
+static ParamBlockDesc2 thunder_loom_param_blk_desc(
+    mtl_params, _T("Test mtl params"), 0,
+    &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI, 0,
+    //rollout
+    IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, new ThunderLoomMtlDlgProc(), 
+    // pattern and geometry
+    mtl_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
+        p_default, Point3(0.3f,0.3f,0.3f),
+        p_ui, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
+    PB_END,
+    mtl_yarn_type, _FT("yarn_type"), TYPE_INT, P_ANIMATABLE, 0,
+        p_default, 0,
+        p_ui, TYPE_INT_COMBOBOX, IDC_YARNTYPE_COMBO, 0,
+    PB_END,
+    mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 1.f,
+        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_USCALE_EDIT, IDC_USCALE_SPIN, 0.1f,
+    PB_END,
+    mtl_vscale, _FT("vscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 1.f,
+        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
+    PB_END,
+    mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
+        p_default, FALSE,
+        p_ui, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
+    PB_END,
+    mtl_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 0.5,
+        p_range, 0.0f, 1.f,
+        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
+    PB_END,
+    mtl_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 0.5,
+        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
+    PB_END,
+    //Lighting params
+    mtl_specular, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default,		1.f,
+        p_range,		0.0f, 1.f,
+        p_ui,			TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
+    p_end,
+    mtl_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 0.5f,
+        p_range, 0.0f, 1.f,
+        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
+    PB_END,
+    mtl_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 0.05,
+        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
+    PB_END,
+    mtl_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 4.f,
+        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
+    PB_END,
+PB_END
+);									 
+
+
+/*===========================================================================*\
  |	Constructor and Reset systems
  |  Ask the ClassDesc2 to make the AUTO_CONSTRUCT paramblocks and wire them in
 \*===========================================================================*/
@@ -292,69 +317,6 @@ void ThunderLoomMtl::Reset() {
 ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
 	pblock=NULL;
 	ivalid.SetEmpty();
-	m_param_blocks = new ParamBlockDesc2(mtl_params, _T("Test mtl params"), 0,
-		&thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI, 0,
-		//rollout
-		IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, new ThunderLoomMtlDlgProc(), 
-		// pattern and geometry
-		mtl_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
-			p_default, Point3(0.3f,0.3f,0.3f),
-			p_ui, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
-		PB_END,
-		mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-			p_default, 1.f,
-			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_USCALE_EDIT, IDC_USCALE_SPIN, 0.1f,
-		PB_END,
-		mtl_vscale, _FT("vscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-			p_default, 1.f,
-			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
-		PB_END,
-		mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
-			p_default, FALSE,
-			p_ui, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
-		PB_END,
-		mtl_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
-			p_default, 0.5,
-			p_range, 0.0f, 1.f,
-			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
-		PB_END,
-		mtl_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
-			p_default, 0.5,
-			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
-		PB_END,
-		//Lighting params
-		mtl_specular, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
-			p_default,		1.f,
-			p_range,		0.0f, 1.f,
-			p_ui,			TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
-		p_end,
-		mtl_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
-			p_default, 0.5f,
-			p_range, 0.0f, 1.f,
-			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
-		PB_END,
-		mtl_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
-			p_default, 0.05,
-			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
-		PB_END,
-		mtl_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
-			p_default, 4.f,
-			p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
-		PB_END,
-	PB_END
-);									 
-	/*ParamBlockDesc2 *test = new ParamBlockDesc2(mtl_params + 1, _T("Test mtl params"), 0,
-		&thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI, 1,
-		//rollout
-		IDD_PARAMS, IDS_PARAMETERS, 0, 0, new ThunderLoomMtlDlgProc(), 
-		// pattern and geometry
-		mtl_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
-			p_default, Point3(0.3f,0.3f,0.3f),
-			p_ui, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
-		PB_END,
-	PB_END
-	);									*/
-
 	thunderLoomDesc.MakeAutoParamBlocks(this);
 	Reset();
 }
@@ -405,7 +367,31 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 			ivalid.SetEmpty();
 			if (hTarget==pblock) {
 				ParamID changing_param = pblock->LastNotifyParamID();
-				m_param_blocks[0].InvalidateUI(changing_param);
+                thunder_loom_param_blk_desc.InvalidateUI(changing_param);
+                switch(changing_param){
+                //TODO(Vidar): Not sure about the TimeValue...
+                case mtl_yarn_type:
+                    {
+                        int sel;
+                        pblock->GetValue(mtl_yarn_type,0,sel,ivalid);
+                        m_current_yarn_type = sel;
+                        UpdateYarnTypeParameters(sel, pblock,
+                                &m_weave_parameters,0);
+                        break;
+                    }
+                case mtl_color:
+                    {
+                        Color c;
+                        pblock->GetValue(mtl_color,0,c,
+                            ivalid);
+                        float * col = m_weave_parameters.pattern->
+                            yarn_types[m_current_yarn_type].color;
+                        col[0] = c.r;
+                        col[1] = c.g;
+                        col[2] = c.b;
+                        break;
+                    }
+                }
 			}
 			break;
 	}
@@ -417,6 +403,7 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 \*===========================================================================*/
 
 #define MTL_HDR_CHUNK 0x4000
+#define YARN_TYPE_CHUNK 0x0200
 
 IOResult ThunderLoomMtl::Save(ISave *isave) { 
 	IOResult res;
@@ -424,19 +411,24 @@ IOResult ThunderLoomMtl::Save(ISave *isave) {
 	res = MtlBase::Save(isave);
 	if (res!=IO_OK) return res;
 	isave->EndChunk();
-	//TODO(Vidar):Save m_weave_parameters
+	isave->BeginChunk(YARN_TYPE_CHUNK);
+	//TODO(Vidar):Save yarn types
+    isave->EndChunk();
 	return IO_OK;
 }	
 
 IOResult ThunderLoomMtl::Load(ILoad *iload) { 
 	IOResult res;
 	int id;
+    unsigned long n_read = 0;
 	while (IO_OK==(res=iload->OpenChunk())) {
 		switch(id = iload->CurChunkID())  {
 			case MTL_HDR_CHUNK:
 				res = MtlBase::Load(iload);
 				break;
-		//TODO(Vidar):Load m_weave_parameters
+            case YARN_TYPE_CHUNK:
+                //TODO(Vidar):Load m_weave_parameters
+                break;
 		}
 		iload->CloseChunk();
 		if (res!=IO_OK) return res;
