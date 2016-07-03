@@ -79,9 +79,14 @@
 #define cs_blend5                       1040
 #define IDC_WIFFILE_BUTTON              1040
 #define ed_texmap_blend_mult5           1041
+#define IDC_NOISE_GROUP                 1041
 #define cs_blend6                       1042
+#define IDC_LIGHTING_GROUP              1042
 #define ed_texmap_blend_mult6           1043
+#define IDC_TEX_WARP_VAR_LABEL          1043
 #define cs_blend7                       1044
+#define IDC_TEX_WARP_VAR                1044
+#define IDC_TEX_WARP_VAR_BUTTON         1044
 #define ed_texmap_blend_mult7           1045
 #define cs_blend8                       1046
 #define IDD_SKELETON_MATERIAL           1047
@@ -133,7 +138,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        108
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1033
+#define _APS_NEXT_CONTROL_VALUE         1044
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

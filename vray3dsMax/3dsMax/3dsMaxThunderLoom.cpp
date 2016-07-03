@@ -192,6 +192,11 @@ static ParamBlockDesc2 thunderLoom_param_blk (mtl_params, _T("Test mtl params"),
 		p_default, 4.f,
 		p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
 	PB_END,
+    mtl_warpvar, _T("warpvar"), TYPE_TEXMAP, 0, 0,
+        p_ui, TYPE_TEXMAPBUTTON, IDC_TEX_WARP_VAR_BUTTON,
+        p_subtexno, 0,
+		p_prompt, _T("test prompt"),
+    PB_END,
 PB_END
 );									 
 
@@ -262,8 +267,12 @@ BOOL ThunderLoomMtl::SetDlgThing(ParamDlg* dlg) {
 
 Interval ThunderLoomMtl::Validity(TimeValue t) {
 	Interval temp=FOREVER;
-	Update(t, temp);
-	return ivalid;
+	pblock->GetValidity(t, temp);
+	//Update(t, temp);
+
+	if( pblock->GetTexmap(mtl_warpvar) )
+		temp &= pblock->GetTexmap(mtl_warpvar)->Validity(t);
+    return temp;
 }
 
 /*===========================================================================*\
@@ -301,6 +310,37 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 			break;
 	}
 	return(REF_SUCCEED);
+}
+
+//texmaps
+
+Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
+	DBOUT( "GetSubtex i: " << i );
+	if (i == 0) {
+		return pblock->GetTexmap(mtl_warpvar);
+	}
+
+	return NULL;
+}
+
+void ThunderLoomMtl::SetSubTexmap(int i, Texmap* m) {
+	//currently only 1 texmap. id == 0
+	DBOUT( "SetSubtex i: " << i );
+	if (i == 0) {
+		pblock->SetValue(mtl_warpvar, 0, m);
+	}
+}
+
+TSTR ThunderLoomMtl::GetSubTexmapSlotName(int i) {
+	if (i == 0) {
+		return L"Base";
+	}
+
+	return L"";
+}
+
+TSTR ThunderLoomMtl::GetSubTexmapTVName(int i) {
+	return GetSubTexmapTVName(i);
 }
 
 /*===========================================================================*\
@@ -351,11 +391,14 @@ void ThunderLoomMtl::NotifyChanged() {
 }
 
 void ThunderLoomMtl::Update(TimeValue t, Interval& valid) {
-	//if (!ivalid.InInterval(t)) {
-	//	ivalid.SetInfinite();
-	// ...
-	//}
-	//valid &= ivalid;
+	//TODO(Peter): Verify this!
+	if (!ivalid.InInterval(t)) {
+		ivalid.SetInfinite();
+		if( pblock->GetTexmap(mtl_warpvar) )
+			pblock->GetTexmap(mtl_warpvar)->Update(t, ivalid);
+
+	}
+	valid &= ivalid;
 }
 
 /*===========================================================================*\

@@ -61,7 +61,7 @@ enum {
     mtl_yarnvar_yscale,
     mtl_yarnvar_persistance,
     mtl_yarnvar_octaves,
-    mtl_texture,
+    mtl_warpvar,
 };
 
 /*===========================================================================*\
@@ -152,15 +152,16 @@ public:
 	TSTR GetSubMtlTVName(int i) { return _T(""); }
 
 	// SubTexmap access methods
-	// We have no sub Texmaps
-	int NumSubTexmaps() { return 0; }
-	Texmap* GetSubTexmap(int i) { return NULL; }
-	void SetSubTexmap(int i, Texmap *m) {}
-	TSTR GetSubTexmapSlotName(int i) { return _T(""); }
-	TSTR GetSubTexmapTVName(int i) { return _T(""); }
+	int NumSubTexmaps() { return 1; }
+	Texmap* GetSubTexmap(int i);
+	void SetSubTexmap(int i, Texmap *m);
+	TSTR GetSubTexmapSlotName(int i);
+	TSTR GetSubTexmapTVName(int i);
 
-	// Number of subanims
-	//TODO(Peter): What is this?
+	//SubAnims
+	// Allows us to update dependent objects
+	// which may be animatable. 
+	// Such as submtls or SubTexmapsmaterials or texmaps
 	int NumSubs() { return 1; } 
 	Animatable* SubAnim(int i);
 	TSTR SubAnimName(int i);
