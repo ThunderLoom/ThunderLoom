@@ -503,9 +503,15 @@ void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
 }
 
 VR::BSDFSampler* ThunderLoomMtl::newBSDF(const VR::VRayContext &rc, VR::VRenderMtlFlags flags) {
+		//TODO(Peter): Have mapping stuff here or in the BRDF?
+		//it is 3dsmax specific
+		//This is just a test!	
+		float variation = 1.f;
+		Texmap *tex = pblock->GetTexmap(mtl_warpvar);
+
 	MyBlinnBSDF *bsdf=bsdfPool.newBRDF(rc);
 	if (!bsdf) return NULL;
-    bsdf->init(rc, &m_weave_parameters);
+    bsdf->init(rc, &m_weave_parameters, tex);
 	return bsdf;
 }
 
@@ -528,12 +534,14 @@ VR::VRayVolume* ThunderLoomMtl::getVolume(const VR::VRayContext &rc) {
 \*===========================================================================*/
 
 void ThunderLoomMtl::Shade(ShadeContext &sc) {
-	if (sc.ClassID()==VRAYCONTEXT_CLASS_ID)
+	if (sc.ClassID()==VRAYCONTEXT_CLASS_ID) {
+
 		//shade() creates brdf, shades and deletes the brdf
 		//it does this using the corresponding methods that have
 		//been implemented from VUtils::VRenderMtl
 		//newsBSDF, getVolume and deleteBSDF
 		shade(static_cast<VR::VRayInterface&>(sc), gbufID);
+	} 
 	else {
 		if (gbufID) sc.SetGBufferID(gbufID);
 		sc.out.c.Black(); sc.out.t.Black();

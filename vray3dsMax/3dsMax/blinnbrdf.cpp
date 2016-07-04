@@ -6,6 +6,7 @@
 #include "vrayinterface.h"
 #include "vraycore.h"
 #include "vrayrenderer.h"
+#include "imtl.h"
 
 #include "blinnbrdf.h"
 
@@ -23,10 +24,11 @@ using namespace VUtils;
 // one calling eval(). In this function we can do all the work that is common
 // throughout all directions, such as computing the diffuse color.
 void
-MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters) {
+MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters, Texmap *tex) {
     m_weave_parameters = weave_parameters;
-    EvalDiffuseFunc(rc,weave_parameters,&diffuse_color);
-
+	m_tex = tex;
+    EvalDiffuseFunc(rc,weave_parameters,tex,&diffuse_color);
+	
     orig_backside = rc.rayresult.realBack;
 
 	// Set the normals to use for lighting
