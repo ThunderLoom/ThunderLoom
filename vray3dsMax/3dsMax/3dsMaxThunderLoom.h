@@ -18,7 +18,7 @@
 #include "brdfs.h"
 #include "vraygeom.h"
 #include "brdfpool.h"
-#include "blinnbrdf.h"
+#include "VrayThunderLoomBRDF.h"
 #include "pb2template_generator.h"
 
 #include "woven_cloth.h"
@@ -44,6 +44,8 @@ enum {
 
 
 enum {
+	mtl_color,
+	mtl_yarn_type,
 	mtl_diffuse,
     mtl_umax,
 	mtl_realworld,
@@ -92,18 +94,7 @@ public:
 	// various variables
 	Interval ivalid;
     wcWeaveParameters m_weave_parameters;
-
-	// Cached parameters
-	//float glossiness;
-	//Color reflect, diffuse;
-	//Color opacity;
-
-    //float umax, uscale, vscale;
-    //float psi, delta_x, specular;
-    //float alpha, beta, intensity_fineness;
-	//float yarnvar_amplitude, yarnvar_xscale, yarnvar_yscale, yarnvar_persistance, yarnvar_octaves;
-	//int realworld;
-	//int testparam;
+    uint32_t m_current_yarn_type;
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	//ref 0

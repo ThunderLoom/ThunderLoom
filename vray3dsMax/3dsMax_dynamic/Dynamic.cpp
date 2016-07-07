@@ -25,7 +25,7 @@ EvalDiffuseFunc
 (const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters, Texmap *tex, VUtils::Color *diffuse_color)
 {
-    if(weave_parameters->pattern_entry == 0){ //Invalid pattern
+    if(weave_parameters->pattern == 0){ //Invalid pattern
         *diffuse_color = VUtils::Color(1.f,1.f,0.f);
         return;
     }
@@ -66,7 +66,7 @@ EvalSpecularFunc
     wcWeaveParameters *weave_parameters, VUtils::Matrix nm,
     VUtils::Color *reflection_color)
 {
-    if(weave_parameters->pattern_entry == 0){ //Invalid pattern
+    if(weave_parameters->pattern == 0){ //Invalid pattern
         *reflection_color = VUtils::Color(0.f,0.f,1.f);
     }
     wcIntersectionData intersection_data;

@@ -8,7 +8,6 @@ typedef struct{
     uint32_t *colors;
 }WarpOrWeftData;
 
- //TODO(VIdar): A lot of this could probably be 8-bit instead...
 typedef struct
 {
     WarpOrWeftData warp, weft;
@@ -25,8 +24,28 @@ typedef struct
 typedef struct
 {
     uint8_t warp_above;
-    float color[3];
+    uint8_t yarn_type; //NOTE(Vidar): We're limited to 256 yarn types now,
+                       //should be ok, right?
 }PatternEntry;
+
+typedef struct
+{
+    float color[3];
+    float uscale;
+    float vscale;
+    float umax;
+    float psi;
+    float alpha;
+    float beta;
+    float delta_x;
+}YarnType;
+
+typedef struct
+{
+    int num_yarn_types;
+    PatternEntry *entries;
+    YarnType *yarn_types;
+}Pattern;
 
 // Read a WIF file from disk
 WeaveData *wif_read(const char *filename);
@@ -34,7 +53,7 @@ WeaveData *wif_read_wchar(const wchar_t *filename);
 // Free the WeaveData data structure
 void wif_free_weavedata(WeaveData *data);
 // Allocate and return the pattern from a WIF file
-PatternEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h, 
+Pattern *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h, 
         float *rw, float *rh);
 void wif_free_pattern(PatternEntry *pattern);
 

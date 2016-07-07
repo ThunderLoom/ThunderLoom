@@ -84,6 +84,8 @@ static const char *get_section_name(uint32_t section)
             return "WARP_COLORS";
         case DATA_WEFT_COLORS_SECTION:
             return "WEFT_COLORS";
+        default:
+            return "";
     }
 }
 
@@ -425,11 +427,13 @@ void wif_free_weavedata(WeaveData *data)
 }
 
 
-PatternEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h, 
+//NOTE(Vidar): This function takes the data which was read from the WIF file
+// and converts it to the data used by the shader
+Pattern *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h, 
         float *rw, float *rh)
 {
     uint32_t x,y;
-    PatternEntry *pattern = 0;
+    Pattern *pattern = 0;
     if(data == 0){
         //NOTE(Vidar): The file was invalid...
         *w = 0;
@@ -437,35 +441,51 @@ PatternEntry *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h,
         return 0;
     }
 
-    //Pattern width/height in num of elements
-    //TODO(Peter) should these not be reversed? :/
-    *w = data->warp.num_threads;
-    *h = data->weft.num_threads;
+	//Pattern width/height in num of elements
+	//TODO(Peter) should these not be reversed? :/
+	*w = data->warp.num_threads;
+	*h = data->weft.num_threads;
 
-    //Real width/height in meters
-    //TODO(Peter): Assuming unit in wif is centimeters for thickness and spacing. Make it more general.
-    *rw = REALWORLD_UV_WIF_TO_MM*(*w * (data->warp.thickness) + (*w - 1) * (data->warp.spacing)); 
-    *rh = REALWORLD_UV_WIF_TO_MM*(*h * (data->weft.thickness) + (*h - 1) * (data->weft.spacing)); 
+	//Real width/height in meters
+	//TODO(Peter): Assuming unit in wif is centimeters for thickness and
+	// spacing. Make it more general.
+	*rw = REALWORLD_UV_WIF_TO_MM*(*w * (data->warp.thickness)
+			+ (*w - 1) * (data->warp.spacing)); 
+	*rh = REALWORLD_UV_WIF_TO_MM*(*h * (data->weft.thickness)
+			+ (*h - 1) * (data->weft.spacing)); 
 
     if(*w > 0 && *h >0){
-        pattern = (PatternEntry*)calloc((*w)*(*h),sizeof(PatternEntry));
+        uint32_t c;
+        PatternEntry *entries =
+            (PatternEntry*)calloc((*w)*(*h),sizeof(PatternEntry));
+        YarnType *yarn_types =
+            (YarnType*)calloc(data->num_colors,sizeof(YarnType));
+
+        for(c=0;c<data->num_colors;c++){
+            yarn_types[c].color[0] = data->colors[c*3+0];
+            yarn_types[c].color[1] = data->colors[c*3+1];
+            yarn_types[c].color[2] = data->colors[c*3+2];
+        }
         for(y=0;y<*h;y++){
             for(x=0;x<*w;x++){
                 uint32_t v = data->threading[x];
                 uint32_t u = data->treadling[y];
-                uint8_t  warp_above = data->tieup[u+v*data->num_treadles];
-                float *col = data->colors + (warp_above ? data->warp.colors[x]
-                    : data->weft.colors[y])*3;
-                pattern[x+y*(*w)].warp_above = warp_above;
-                pattern[x+y*(*w)].color[0] = col[0];
-                pattern[x+y*(*w)].color[1] = col[1];
-                pattern[x+y*(*w)].color[2] = col[2];
+                uint8_t warp_above = data->tieup[u+v*data->num_treadles];
+                uint32_t yarn_type = warp_above ? data->warp.colors[x]
+                    : data->weft.colors[y];
+                float *col = data->colors + yarn_type*3;
+                uint32_t index = x+y*(*w);
+                entries[index].warp_above = warp_above;
+                entries[index].yarn_type = yarn_type;
             }
         }
+		pattern = (Pattern*)calloc(1, sizeof(Pattern));
+        pattern->entries = entries;
+		pattern->num_yarn_types = data->num_colors;
+        pattern->yarn_types = yarn_types;
     }
     return pattern;
 }
-
 
 void wif_free_pattern(PatternEntry *pattern)
 {

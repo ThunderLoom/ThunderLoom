@@ -55,7 +55,7 @@ typedef struct
 // after all parameters above have been defined
     uint32_t pattern_height;
     uint32_t pattern_width;
-    PatternEntry * pattern_entry;
+    Pattern * pattern;
     float specular_normalization;
     float pattern_realheight;
     float pattern_realwidth;
@@ -98,7 +98,7 @@ wcColor wcShade(wcIntersectionData intersection_data,
 
 typedef struct
 {
-    float color_r, color_g, color_b;
+    uint32_t yarn_type;
     float normal_x, normal_y, normal_z; //(not yarn local coordinates)
     float u, v; //Segment uv coordinates (in angles)
     float length, width; //Segment length and width
@@ -133,3 +133,8 @@ void wcWeavePatternFromWeaveFile(wcWeaveParameters *params, const char *filename
 WC_PREFIX
 void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
     const wchar_t *filename);
+
+/* This function needs to be called before rendering if any parameters have been
+changed since reading the pattern*/
+WC_PREFIX
+void wcFinalizeWeaveParameters(wcWeaveParameters *params);
