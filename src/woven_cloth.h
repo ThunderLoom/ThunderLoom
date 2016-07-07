@@ -37,12 +37,6 @@ typedef struct
 // These are the parameters to the model
     float uscale;
     float vscale;
-    float umax;
-    float psi;
-    float alpha;
-    float beta;
-    float delta_x;
-    float specular_strength;
     float intensity_fineness;
     float yarnvar_amplitude;
     float yarnvar_xscale;

@@ -26,9 +26,7 @@ using namespace VUtils;
 void
 MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters, Texmap *tex) {
     m_weave_parameters = weave_parameters;
-	m_tex = tex;
-    EvalDiffuseFunc(rc,weave_parameters,tex,&diffuse_color);
-	
+    EvalDiffuseFunc(rc,weave_parameters,tex,&diffuse_color,&m_yarn_type);
     orig_backside = rc.rayresult.realBack;
 
 	// Set the normals to use for lighting
@@ -61,7 +59,7 @@ VUtils::Color MyBaseBSDF::getDiffuseColor(VUtils::Color &lightColor) {
     return ret;
 }
 VUtils::Color MyBaseBSDF::getLightMult(VUtils::Color &lightColor) {
-    float s = m_weave_parameters->specular_strength;
+    float s = m_yarn_type.specular_strength;
     VUtils::Color ret = (diffuse_color + VUtils::Color(s,s,s)) * lightColor;
     lightColor.makeZero();
     return ret;
@@ -129,7 +127,7 @@ VRayContext* MyBaseBSDF::getNewContext(const VRayContext &rc, int &samplerID, in
     //doDiffuse == 2 => only diffuse
 	if (2==doDiffuse) return NULL;
 
-    float s = m_weave_parameters->specular_strength;
+    float s = m_yarn_type.specular_strength;
     VUtils::Color reflect_filter = VUtils::Color(s,s,s);
 	VRayContext &nrc=rc.newSpawnContext(2, reflect_filter, RT_REFLECT | RT_GLOSSY | RT_ENVIRONMENT, normal);
 

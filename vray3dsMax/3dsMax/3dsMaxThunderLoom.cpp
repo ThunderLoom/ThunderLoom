@@ -147,8 +147,14 @@ static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
 {
 	YarnType yarn_type = weave_params->pattern->yarn_types[yarn_type_id];
 	if (pblock) {
-		pblock->SetValue(mtl_color, t, Point3(yarn_type.color[0],
+		pblock->SetValue(yrn_color, t, Point3(yarn_type.color[0],
 			yarn_type.color[1], yarn_type.color[2]));
+		
+#define YARN_TYPE_PARAM(param) pblock->SetValue(yrn_##param, t,yarn_type.param);
+		YARN_TYPE_PARAMETERS
+
+		pblock->SetValue(mtl_uscale, t, weave_params->uscale);
+		pblock->SetValue(mtl_vscale, t, weave_params->vscale);
 	}
 }
 
@@ -195,7 +201,6 @@ public:
 			case WM_COMMAND:
 			{
 				switch (LOWORD(wParam)) {
-                //TODO(Vidar): Move this to NotifyRefChanged too...
 				case IDC_WIFFILE_BUTTON: {
 					switch (HIWORD(wParam)) {
 					case BN_CLICKED: {
@@ -214,10 +219,20 @@ public:
 						openfilename.lpstrTitle = L"Open weaving draft";
 						if (GetOpenFileName(&openfilename)) {
 							wcFreeWeavePattern(&(sm->m_weave_parameters));
+							//NOTE(Vidar):Set default parameters...
+							sm->m_weave_parameters.uscale = 1.0f;
+							sm->m_weave_parameters.vscale = 1.0f;
+							sm->m_weave_parameters.realworld_uv = 0;
 							wcWeavePatternFromFile_wchar(
 								&(sm->m_weave_parameters), buffer);
-							/*SetWindowText(m_load_wif_button->GetHwnd(),buffer +
-								openfilename.nFileOffset);*/
+							Pattern *pattern = sm->m_weave_parameters.pattern;
+							if(pattern) {
+								for(int i=0;i<pattern->num_yarn_types;i++) {
+									YarnType *yarn_type = pattern->yarn_types+i;
+#define YARN_TYPE_PARAM(param) yarn_type->param = default_yarn_type.param;
+									YARN_TYPE_PARAMETERS
+								}
+							}
 							IParamBlock2 *params = map->GetParamBlock();
                             sm->m_current_yarn_type = 0;
 							update_yarn_type_combo();
@@ -256,7 +271,7 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
     //rollout
     IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, new ThunderLoomMtlDlgProc(), 
     // pattern and geometry
-    mtl_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
+    yrn_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
         p_default, Point3(0.3f,0.3f,0.3f),
         p_ui, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
     PB_END,
@@ -276,31 +291,31 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
         p_default, FALSE,
         p_ui, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
     PB_END,
-    mtl_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
+    yrn_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.5,
         p_range, 0.0f, 1.f,
         p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
     PB_END,
-    mtl_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
+    yrn_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.5,
         p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
     PB_END,
     //Lighting params
-    mtl_specular, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
+    yrn_specular_strength, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default,		1.f,
         p_range,		0.0f, 1.f,
         p_ui,			TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
     p_end,
-    mtl_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
+    yrn_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.5f,
         p_range, 0.0f, 1.f,
         p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
     PB_END,
-    mtl_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
+    yrn_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.05,
         p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
     PB_END,
-    mtl_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
+    yrn_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 4.f,
         p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
     PB_END,
@@ -378,37 +393,65 @@ Animatable* ThunderLoomMtl::SubAnim(int i) {
 
 RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 	switch (message) {
-		case REFMSG_CHANGE:
-			ivalid.SetEmpty();
-			if (hTarget==pblock) {
+	case REFMSG_CHANGE:
+		ivalid.SetEmpty();
+		if (hTarget == pblock) {
+			if (m_weave_parameters.pattern) {
 				ParamID changing_param = pblock->LastNotifyParamID();
-                thunder_loom_param_blk_desc.InvalidateUI(changing_param);
-                switch(changing_param){
-                //TODO(Vidar): Not sure about the TimeValue...
-                case mtl_yarn_type:
-                    {
-                        int sel;
-                        pblock->GetValue(mtl_yarn_type,0,sel,ivalid);
-                        m_current_yarn_type = sel;
-                        UpdateYarnTypeParameters(sel, pblock,
-                                &m_weave_parameters,0);
-                        break;
-                    }
-                case mtl_color:
-                    {
-                        Color c;
-                        pblock->GetValue(mtl_color,0,c,
-                            ivalid);
-                        float * col = m_weave_parameters.pattern->
-                            yarn_types[m_current_yarn_type].color;
-                        col[0] = c.r;
-                        col[1] = c.g;
-                        col[2] = c.b;
-                        break;
-                    }
-                }
+				thunder_loom_param_blk_desc.InvalidateUI(changing_param);
+				YarnType *yarn_type = m_weave_parameters.pattern->yarn_types +
+					m_current_yarn_type;
+
+				switch (changing_param) {
+					//TODO(Vidar): Not sure about the TimeValue...
+				case mtl_yarn_type:
+				{
+					int sel;
+					pblock->GetValue(mtl_yarn_type, 0, sel, ivalid);
+					m_current_yarn_type = sel;
+					UpdateYarnTypeParameters(sel, pblock,
+						&m_weave_parameters, 0);
+					break;
+				}
+				case yrn_color:
+				{
+					Color c;
+					pblock->GetValue(yrn_color, 0, c,
+						ivalid);
+					float * col = m_weave_parameters.pattern->
+						yarn_types[m_current_yarn_type].color;
+					col[0] = c.r;
+					col[1] = c.g;
+					col[2] = c.b;
+					break;
+				}
+				case mtl_realworld:
+				{
+					int realworld;
+					pblock->GetValue(mtl_realworld, 0, realworld, ivalid);
+					m_weave_parameters.realworld_uv = realworld;
+					break;
+				}
+				case mtl_uscale:
+				{
+					pblock->GetValue(mtl_uscale, 0, m_weave_parameters.uscale,
+						ivalid);
+					break;
+				}
+				case mtl_vscale:
+				{
+					pblock->GetValue(mtl_vscale, 0, m_weave_parameters.vscale,
+						ivalid);
+					break;
+				}
+
+#define YARN_TYPE_PARAM(param) case yrn_##param: pblock->GetValue(yrn_##param,0,\
+					yarn_type->param,ivalid); break;
+				YARN_TYPE_PARAMETERS
+				}
 			}
 			break;
+		}
 	}
 	return(REF_SUCCEED);
 }
@@ -458,7 +501,7 @@ IOResult ThunderLoomMtl::Save(ISave *isave) {
 	if (res!=IO_OK) return res;
 	isave->EndChunk();
 	isave->BeginChunk(YARN_TYPE_CHUNK);
-	//TODO(Vidar):Save yarn types
+	//NOTE(Vidar):Save yarn types
 	ULONG nb;
 	isave->Write((unsigned char*)&m_weave_parameters,
 		sizeof(wcWeaveParameters), &nb);
@@ -485,7 +528,7 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 				break;
             case YARN_TYPE_CHUNK:
 			{
-				//TODO(Vidar):Load m_weave_parameters
+				//NOTE(Vidar):Load m_weave_parameters
 				int num_yarn_types;
 				wcWeaveParameters params;
 				iload->Read((unsigned char*)&params,
@@ -591,31 +634,16 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	EvalSpecularFunc = (EVALSPECULARFUNC)get_dynamic_func("eval_specular");
 #endif
 
-	pblock->GetValue(mtl_uscale,t, m_weave_parameters.uscale,ivalid);
-    pblock->GetValue(mtl_vscale,t, m_weave_parameters.vscale,ivalid);
-	int realworld; 
-	pblock->GetValue(mtl_realworld,t, realworld ,ivalid);
-	m_weave_parameters.realworld_uv = realworld;
-	pblock->GetValue(mtl_umax,t, m_weave_parameters.umax,ivalid);
-	pblock->GetValue(mtl_psi,t, m_weave_parameters.psi,ivalid);
-	pblock->GetValue(mtl_specular, t, m_weave_parameters.specular_strength, ivalid);
-	pblock->GetValue(mtl_delta_x,t, m_weave_parameters.delta_x,ivalid);
-    pblock->GetValue(mtl_alpha,t, m_weave_parameters.alpha,ivalid);
-    pblock->GetValue(mtl_beta,t, m_weave_parameters.beta,ivalid);
-
 	//default values for the time being.
 	//these paramters will be removed later, is the plan
-	m_weave_parameters.intensity_fineness = 1.f;
+	m_weave_parameters.intensity_fineness = 0.f;
 	m_weave_parameters.yarnvar_amplitude = 0.f;
 	m_weave_parameters.yarnvar_xscale = 1.f;
 	m_weave_parameters.yarnvar_yscale = 1.f;
 	m_weave_parameters.yarnvar_persistance = 1.f;
 	m_weave_parameters.yarnvar_octaves = 1;
 
-	//Load wif file.
-    MSTR filename = pblock->GetStr(mtl_wiffile,t);
 	wcFinalizeWeaveParameters(&m_weave_parameters);
-	DBOUT( "begin render params, filename: " << filename );
 
 	const VR::VRaySequenceData &sdata=vray->getSequenceData();
 	bsdfPool.init(sdata.maxRenderThreads);

@@ -23,10 +23,12 @@ eval_diffuse
 EvalDiffuseFunc
 #endif
 (const VUtils::VRayContext &rc,
-    wcWeaveParameters *weave_parameters, Texmap *tex, VUtils::Color *diffuse_color)
+    wcWeaveParameters *weave_parameters, Texmap *tex,
+	VUtils::Color *diffuse_color, YarnType* yarn_type)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
         *diffuse_color = VUtils::Color(1.f,1.f,0.f);
+		*yarn_type = default_yarn_type;
         return;
     }
     wcIntersectionData intersection_data;
@@ -43,6 +45,8 @@ EvalDiffuseFunc
 
     wcPatternData pattern_data = wcGetPatternData(intersection_data,
         weave_parameters);
+	*yarn_type = weave_parameters->pattern->yarn_types[pattern_data.yarn_type];
+	float specular_strength = yarn_type->specular_strength;
     wcColor d = 
         wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
 
@@ -50,7 +54,7 @@ EvalDiffuseFunc
 	if (tex)
 		variation = tex->EvalMono(sc);
 
-    float factor = (1.f - weave_parameters->specular_strength)*variation;
+	float factor = (1.f - specular_strength)*variation;
     diffuse_color->r = factor*d.r;
     diffuse_color->g = factor*d.g;
     diffuse_color->b = factor*d.b;
@@ -67,7 +71,11 @@ EvalSpecularFunc
     VUtils::Color *reflection_color)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
-        *reflection_color = VUtils::Color(0.f,0.f,1.f);
+		float s = 0.1f;
+		reflection_color->r = s;
+		reflection_color->g = s;
+		reflection_color->b = s;
+		return;
     }
     wcIntersectionData intersection_data;
    
@@ -114,7 +122,9 @@ EvalSpecularFunc
 
     wcPatternData pattern_data = wcGetPatternData(intersection_data,
         weave_parameters);
-    float s = weave_parameters->specular_strength *
+	float specular_strength = weave_parameters->pattern->
+		yarn_types[pattern_data.yarn_type].specular_strength;
+    float s = specular_strength *
         wcEvalSpecular(intersection_data, pattern_data, weave_parameters);
     reflection_color->r = s;
     reflection_color->g = s;

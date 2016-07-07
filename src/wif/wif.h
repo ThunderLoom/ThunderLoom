@@ -28,17 +28,33 @@ typedef struct
                        //should be ok, right?
 }PatternEntry;
 
+//NOTE(Vidar):These are the yarn type parameters (except color)
+#define YARN_TYPE_PARAMETERS\
+	YARN_TYPE_PARAM(umax)\
+	YARN_TYPE_PARAM(psi)\
+	YARN_TYPE_PARAM(alpha)\
+	YARN_TYPE_PARAM(beta)\
+	YARN_TYPE_PARAM(delta_x)\
+	YARN_TYPE_PARAM(specular_strength)
+
 typedef struct
 {
+#define YARN_TYPE_PARAM(param) float param;
+	YARN_TYPE_PARAMETERS
     float color[3];
-    float uscale;
-    float vscale;
-    float umax;
-    float psi;
-    float alpha;
-    float beta;
-    float delta_x;
 }YarnType;
+
+static const
+YarnType default_yarn_type =
+{
+	0.5f,  //umax
+	0.5f,  //psi
+	0.05f, //alpha
+	4.f,   //beta
+	0.3f,  //delta_x
+	0.4f,  //specular_strength
+	0.3f, 0.3f, 0.3f,  //color
+};
 
 typedef struct
 {
