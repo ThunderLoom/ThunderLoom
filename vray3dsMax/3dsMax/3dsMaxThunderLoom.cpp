@@ -158,9 +158,26 @@ class ThunderLoomMtlDlgProc : public ParamMap2UserDlgProc {
 public:
 	IParamMap *pmap;
 	ThunderLoomMtl *sm;
-	ICustButton  *m_load_wif_button;
-	IColorSwatch *m_yarn_color;
+	HWND m_hWnd;
 	wchar_t directory[512];
+
+	void update_yarn_type_combo()
+	{
+		HWND yarn_type_combo_hwnd = GetDlgItem(m_hWnd,
+			IDC_YARNTYPE_COMBO);
+		ComboBox_ResetContent(yarn_type_combo_hwnd);
+		if (sm && sm->m_weave_parameters.pattern) {
+			for (int i = 0; i <
+				sm->m_weave_parameters.pattern->num_yarn_types;
+				i++)
+			{
+				wchar_t buffer[128];
+				swprintf(buffer, L"Yarn type %d", i);
+				ComboBox_AddString(yarn_type_combo_hwnd, buffer);
+			}
+			ComboBox_SetCurSel(yarn_type_combo_hwnd, sm->m_current_yarn_type);
+		}
+	}
 
 	ThunderLoomMtlDlgProc(void) { sm = NULL; }
 	INT_PTR DlgProc(TimeValue t, IParamMap2 *map, HWND hWnd, UINT msg,
@@ -169,11 +186,9 @@ public:
 		switch (msg) 
 		{
 			case WM_INITDIALOG:{ 
+				m_hWnd = hWnd;
 				directory[0] = 0;
-				m_load_wif_button = GetICustButton(
-					GetDlgItem(hWnd, IDC_WIFFILE_BUTTON));
-				m_yarn_color = GetIColorSwatch(
-					GetDlgItem(hWnd, IDC_YARNCOLOR_SWATCH));
+				update_yarn_type_combo();
 				break;
             }
 			case WM_DESTROY:
@@ -202,25 +217,13 @@ public:
 							wcFreeWeavePattern(&(sm->m_weave_parameters));
 							wcWeavePatternFromFile_wchar(
 								&(sm->m_weave_parameters), buffer);
-							SetWindowText(m_load_wif_button->GetHwnd(),buffer +
-								openfilename.nFileOffset);
+							/*SetWindowText(m_load_wif_button->GetHwnd(),buffer +
+								openfilename.nFileOffset);*/
 							IParamBlock2 *params = map->GetParamBlock();
-							HWND yarn_type_combo_hwnd = GetDlgItem(hWnd,
-								IDC_YARNTYPE_COMBO);
-							ComboBox_ResetContent(yarn_type_combo_hwnd);
-							for (int i = 0; i <
-								sm->m_weave_parameters.pattern->num_yarn_types;
-								i++)
-							{
-								wchar_t buffer[128];
-								swprintf(buffer, L"Yarn type %d", i);
-								ComboBox_AddString(yarn_type_combo_hwnd,buffer);
-								DBOUT(L"Yarn type " << i);
-							}
                             sm->m_current_yarn_type = 0;
+							update_yarn_type_combo();
 							UpdateYarnTypeParameters(0, params,
 								&(sm->m_weave_parameters),t);
-							ComboBox_SetCurSel(yarn_type_combo_hwnd, 0);
 							map->Invalidate();
 						}
 						break;
@@ -235,7 +238,11 @@ public:
 		return FALSE;
 	}
 	void DeleteThis() {}
-	void SetThing(ReferenceTarget *m) { sm = (ThunderLoomMtl*)m; }
+	void SetThing(ReferenceTarget *m)
+	{
+		sm = (ThunderLoomMtl*)m;
+		update_yarn_type_combo();
+	}
 };
 static ThunderLoomMtlDlgProc dlgProc;
 
@@ -412,6 +419,16 @@ IOResult ThunderLoomMtl::Save(ISave *isave) {
 	isave->EndChunk();
 	isave->BeginChunk(YARN_TYPE_CHUNK);
 	//TODO(Vidar):Save yarn types
+	ULONG nb;
+	isave->Write((unsigned char*)&m_weave_parameters,
+		sizeof(wcWeaveParameters), &nb);
+	Pattern *pattern = m_weave_parameters.pattern;
+	isave->Write((unsigned char*)pattern, sizeof(Pattern), &nb);
+	isave->Write((unsigned char*)pattern->yarn_types,
+		sizeof(YarnType)*pattern->num_yarn_types, &nb);
+	isave->Write((unsigned char*)pattern->entries,
+		sizeof(PatternEntry)*m_weave_parameters.pattern_width
+		*m_weave_parameters.pattern_height, &nb);
     isave->EndChunk();
 	return IO_OK;
 }	
@@ -420,14 +437,35 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 	IOResult res;
 	int id;
     unsigned long n_read = 0;
+	ULONG nb;
 	while (IO_OK==(res=iload->OpenChunk())) {
 		switch(id = iload->CurChunkID())  {
 			case MTL_HDR_CHUNK:
 				res = MtlBase::Load(iload);
 				break;
             case YARN_TYPE_CHUNK:
-                //TODO(Vidar):Load m_weave_parameters
-                break;
+			{
+				//TODO(Vidar):Load m_weave_parameters
+				int num_yarn_types;
+				wcWeaveParameters params;
+				iload->Read((unsigned char*)&params,
+					sizeof(wcWeaveParameters), &nb);
+				Pattern *pattern = (Pattern*)calloc(1, sizeof(Pattern));
+				iload->Read((unsigned char*)pattern,
+					sizeof(Pattern), &nb);
+				pattern->yarn_types = (YarnType*)calloc(pattern->num_yarn_types,
+					sizeof(YarnType));
+				iload->Read((unsigned char*)pattern->yarn_types,
+					pattern->num_yarn_types * sizeof(YarnType), &nb);
+				int num_entries = params.pattern_width * params.pattern_height;
+				pattern->entries = (PatternEntry*)calloc(num_entries,
+					sizeof(PatternEntry));
+				iload->Read((unsigned char*)pattern->entries,
+					num_entries * sizeof(PatternEntry), &nb);
+				params.pattern = pattern;
+				m_weave_parameters = params;
+				break;
+			}
 		}
 		iload->CloseChunk();
 		if (res!=IO_OK) return res;
