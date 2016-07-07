@@ -10,11 +10,15 @@
 #define ids_baseMtl                     5
 #define IDS_MTL1ON                      6
 #define ids_baseMtl_on                  6
+#define IDS_YARN                        6
 #define ids_giMtl                       7
 #define ids_coatMtl                     7
 #define ids_giMtl_on                    8
+#define IDS_PATTERN                     8
 #define ids_reflectMtl                  9
+#define IDS_LOAD_PATTERN_FILE           9
 #define ids_reflectMtl_on               10
+#define IDS_LOAD_PATTERN_FILE_TYPES     10
 #define ids_refractMtl                  11
 #define ids_refractMtl_on               12
 #define ids_blend                       13
@@ -76,6 +80,7 @@
 #define ed_texmap_blend_mult4           1039
 #define IDC_USCALE_LABEL2               1039
 #define IDC_WIFFILE_LABEL               1039
+#define IDC_PATTERN_GROUP2              1039
 #define cs_blend5                       1040
 #define IDC_WIFFILE_BUTTON              1040
 #define ed_texmap_blend_mult5           1041
@@ -93,7 +98,9 @@
 #define cs_blend9                       1048
 #define IDD_BLENDMTL1                   1048
 #define IDD_PARAMS                      1048
+#define IDD_YARN                        1048
 #define ed_texmap_blend_mult9           1049
+#define IDD_BLENDMTL2                   1049
 #define IDC_SIMPLE_SPIN                 1052
 #define sp_texmap_blend_mult1           1053
 #define sp_texmap_blend_mult2           1054

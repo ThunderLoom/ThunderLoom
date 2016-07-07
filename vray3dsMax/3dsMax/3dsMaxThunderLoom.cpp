@@ -120,7 +120,9 @@ public:
 #if GET_MAX_RELEASE(VERSION_3DSMAX) >= 14900
 		HINSTANCE hInst=GetModuleHandle(_T("sme.gup"));
 		if (hInst) {
-			static MSTR category(MaxSDK::GetResourceStringAsMSTR(hInst, IDS_3DSMAX_SME_MATERIALS_CATLABEL).Append(_T("\\V-Ray"))); //Extract a resource from the calling module's string table.
+			//Extract a resource from the calling module's string table.
+			static MSTR category(MaxSDK::GetResourceStringAsMSTR(hInst,
+				IDS_3DSMAX_SME_MATERIALS_CATLABEL).Append(_T("\\V-Ray")));
 			return category.data();
 		}
 #endif
@@ -158,42 +160,23 @@ static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
 	}
 }
 
-//Here there is the option to add custom behaviour to certain messages.
-class ThunderLoomMtlDlgProc : public ParamMap2UserDlgProc {
+class PatternRolloutDlgProc : public ParamMap2UserDlgProc {
 public:
 	IParamMap *pmap;
 	ThunderLoomMtl *sm;
-	HWND m_hWnd;
 	wchar_t directory[512];
 
-	void update_yarn_type_combo()
+	PatternRolloutDlgProc(void)
 	{
-		HWND yarn_type_combo_hwnd = GetDlgItem(m_hWnd,
-			IDC_YARNTYPE_COMBO);
-		ComboBox_ResetContent(yarn_type_combo_hwnd);
-		if (sm && sm->m_weave_parameters.pattern) {
-			for (int i = 0; i <
-				sm->m_weave_parameters.pattern->num_yarn_types;
-				i++)
-			{
-				wchar_t buffer[128];
-				swprintf(buffer, L"Yarn type %d", i);
-				ComboBox_AddString(yarn_type_combo_hwnd, buffer);
-			}
-			ComboBox_SetCurSel(yarn_type_combo_hwnd, sm->m_current_yarn_type);
-		}
+		sm = NULL;
+		directory[0] = 0;
 	}
-
-	ThunderLoomMtlDlgProc(void) { sm = NULL; }
 	INT_PTR DlgProc(TimeValue t, IParamMap2 *map, HWND hWnd, UINT msg,
 			WPARAM wParam, LPARAM lParam) {
 		int id = LOWORD(wParam);
 		switch (msg) 
 		{
 			case WM_INITDIALOG:{ 
-				m_hWnd = hWnd;
-				directory[0] = 0;
-				update_yarn_type_combo();
 				break;
             }
 			case WM_DESTROY:
@@ -218,6 +201,7 @@ public:
 						openfilename.lpstrInitialDir = directory;
 						openfilename.lpstrTitle = L"Open weaving draft";
 						if (GetOpenFileName(&openfilename)) {
+							IParamBlock2 *params = map->GetParamBlock();
 							wcFreeWeavePattern(&(sm->m_weave_parameters));
 							//NOTE(Vidar):Set default parameters...
 							sm->m_weave_parameters.uscale = 1.0f;
@@ -233,11 +217,13 @@ public:
 									YARN_TYPE_PARAMETERS
 								}
 							}
-							IParamBlock2 *params = map->GetParamBlock();
                             sm->m_current_yarn_type = 0;
-							update_yarn_type_combo();
 							UpdateYarnTypeParameters(0, params,
 								&(sm->m_weave_parameters),t);
+							//NOTE(Vidar):Update the yarn rollout too...
+							ParamDlg *yarn_dlg =
+								params->GetMParamDlg()->GetDlg(0);
+							yarn_dlg->SetThing(sm);
 							map->Invalidate();
 						}
 						break;
@@ -255,69 +241,134 @@ public:
 	void SetThing(ReferenceTarget *m)
 	{
 		sm = (ThunderLoomMtl*)m;
+	}
+};
+
+
+//Here there is the option to add custom behaviour to certain messages.
+class YarnRolloutDlgProc : public ParamMap2UserDlgProc {
+public:
+	IParamMap *pmap;
+	ThunderLoomMtl *sm;
+	HWND m_hWnd;
+
+	void update_yarn_type_combo()
+	{
+		HWND yarn_type_combo_hwnd = GetDlgItem(m_hWnd,
+			IDC_YARNTYPE_COMBO);
+		ComboBox_ResetContent(yarn_type_combo_hwnd);
+		if (sm && sm->m_weave_parameters.pattern) {
+			for (int i = 0; i <
+				sm->m_weave_parameters.pattern->num_yarn_types;
+				i++)
+			{
+				wchar_t buffer[128];
+				swprintf(buffer, L"Yarn type %d", i);
+				ComboBox_AddString(yarn_type_combo_hwnd, buffer);
+			}
+			ComboBox_SetCurSel(yarn_type_combo_hwnd, sm->m_current_yarn_type);
+		}
+	}
+
+	YarnRolloutDlgProc(void) { sm = NULL; }
+	INT_PTR DlgProc(TimeValue t, IParamMap2 *map, HWND hWnd, UINT msg,
+			WPARAM wParam, LPARAM lParam) {
+		int id = LOWORD(wParam);
+		switch (msg) 
+		{
+			case WM_INITDIALOG:{ 
+				m_hWnd = hWnd;
+				update_yarn_type_combo();
+				break;
+            }
+			case WM_DESTROY:
+				break;
+			case WM_COMMAND:
+			{
+			}
+		}
+		return FALSE;
+	}
+	void DeleteThis() {}
+	void SetThing(ReferenceTarget *m)
+	{
+		sm = (ThunderLoomMtl*)m;
 		update_yarn_type_combo();
 	}
 };
-static ThunderLoomMtlDlgProc dlgProc;
 
 /*===========================================================================*\
  |	Paramblock2 Descriptor
 \*===========================================================================*/
 
+enum {rollout_pattern, rollout_yarn_type};
+
 //Set up paramblock to handle storing values and managing ui elements for us
 static ParamBlockDesc2 thunder_loom_param_blk_desc(
     mtl_params, _T("Test mtl params"), 0,
-    &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI, 0,
-    //rollout
-    IDD_BLENDMTL, IDS_PARAMETERS, 0, 0, new ThunderLoomMtlDlgProc(), 
+    &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI + P_MULTIMAP, 0,
+    //rollouts
+	2,
+    rollout_pattern,   IDD_BLENDMTL, IDS_PATTERN, 0, 0,
+		new PatternRolloutDlgProc(), 
+    rollout_yarn_type, IDD_YARN,     IDS_YARN, 0, 0,
+		new YarnRolloutDlgProc(), 
     // pattern and geometry
     yrn_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
         p_default, Point3(0.3f,0.3f,0.3f),
-        p_ui, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
+        p_ui, rollout_yarn_type, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
     PB_END,
     mtl_yarn_type, _FT("yarn_type"), TYPE_INT, P_ANIMATABLE, 0,
         p_default, 0,
-        p_ui, TYPE_INT_COMBOBOX, IDC_YARNTYPE_COMBO, 0,
+        p_ui, rollout_yarn_type, TYPE_INT_COMBOBOX, IDC_YARNTYPE_COMBO, 0,
     PB_END,
     mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 1.f,
-        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_USCALE_EDIT, IDC_USCALE_SPIN, 0.1f,
+        p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_USCALE_EDIT, IDC_USCALE_SPIN, 0.1f,
     PB_END,
     mtl_vscale, _FT("vscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 1.f,
-        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
+        p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
     PB_END,
     mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
         p_default, FALSE,
-        p_ui, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
+        p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
     PB_END,
     yrn_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.5,
         p_range, 0.0f, 1.f,
-        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
+        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
     PB_END,
     yrn_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.5,
-        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
+        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
     PB_END,
     //Lighting params
     yrn_specular_strength, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default,		1.f,
         p_range,		0.0f, 1.f,
-        p_ui,			TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
+        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
     p_end,
     yrn_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.5f,
         p_range, 0.0f, 1.f,
-        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
+        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
     PB_END,
     yrn_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.05,
-        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
+        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
     PB_END,
     yrn_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 4.f,
-        p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
+        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
     PB_END,
 PB_END
 );									 
@@ -344,7 +395,6 @@ ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
 ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
 	IAutoMParamDlg* masterDlg
 		= thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
-	DBOUT(masterDlg->NumDlgs());
 	masterDlg->SetThing(this);
 	return masterDlg;
 }
@@ -393,8 +443,8 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 				YarnType *yarn_type = m_weave_parameters.pattern->yarn_types +
 					m_current_yarn_type;
 
+				//TODO(Vidar): Not sure about the TimeValue... using 0 for now
 				switch (changing_param) {
-					//TODO(Vidar): Not sure about the TimeValue...
 				case mtl_yarn_type:
 				{
 					int sel;
