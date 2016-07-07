@@ -44,26 +44,20 @@ enum {
 
 
 enum {
-	mtl_color,
-	mtl_yarn_type,
 	mtl_diffuse,
-    mtl_umax,
 	mtl_realworld,
     mtl_uscale,
     mtl_vscale,
-    mtl_psi,
-    mtl_delta_x,
-    mtl_alpha,
-    mtl_beta,
-    mtl_wiffile,
-    mtl_specular,
+	mtl_yarn_type,
     mtl_intensity_fineness,
 	mtl_yarnvar_amplitude,
     mtl_yarnvar_xscale,
     mtl_yarnvar_yscale,
     mtl_yarnvar_persistance,
     mtl_yarnvar_octaves,
-    mtl_texture,
+	yrn_color,
+#define YARN_TYPE_PARAM(param) yrn_##param,
+	YARN_TYPE_PARAMETERS
 };
 
 /*===========================================================================*\

@@ -15,6 +15,7 @@ protected:
 	Matrix nm, inm; // A matrix with the normal as the z-axis; can be used for anisotropy
 
     wcWeaveParameters *m_weave_parameters;
+	YarnType m_yarn_type;
 
 public:
 

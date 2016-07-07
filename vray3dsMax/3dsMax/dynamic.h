@@ -78,7 +78,8 @@ static void unload_dlls()
 void
 EvalDiffuseFunc
 (const VUtils::VRayContext &rc,
-    wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color);
+    wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
+	YarnType *yarn_type);
 #endif
 
 #ifndef DYNAMIC
