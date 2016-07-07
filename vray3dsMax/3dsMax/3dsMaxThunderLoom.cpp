@@ -153,7 +153,6 @@ static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
 }
 
 //Here there is the option to add custom behaviour to certain messages.
-//For the time being only initdiolog is intercepted and triggers a dll unload.
 class ThunderLoomMtlDlgProc : public ParamMap2UserDlgProc {
 public:
 	IParamMap *pmap;
@@ -331,6 +330,7 @@ ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
 	IAutoMParamDlg* masterDlg
 		= thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
 	DBOUT(masterDlg->NumDlgs());
+	masterDlg->SetThing(this);
 	return masterDlg;
 }
 
