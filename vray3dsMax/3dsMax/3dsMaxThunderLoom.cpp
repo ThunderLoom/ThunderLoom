@@ -392,10 +392,46 @@ ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
 	Reset();
 }
 
+class TestDlg: public ParamDlg {
+	Class_ID ClassID() { return Class_ID(0x474474f1, 0x9127b25); }
+	void SetThing(ReferenceTarget *a) {}
+	ReferenceTarget *GetThing() { return 0; }
+	void SetTime(TimeValue 	t) {}
+	void ReloadDialog() {}
+	void DeleteThis() {}
+	void ActivateDlg(BOOL 	onOff) {}
+};
+
+INT_PTR TestDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+		int id = LOWORD(wParam);
+		switch (msg) 
+		{
+			case WM_INITDIALOG:{ 
+#define SETUP_SPINNER(name,type,min,max,scale,val)\
+	{ISpinnerControl * s = GetISpinner(GetDlgItem(hWnd, IDC_##name##_SPIN));\
+	s->LinkToEdit(GetDlgItem(hWnd, IDC_##name##_EDIT), type);\
+	s->SetLimits(min, max, FALSE); s->SetScale(scale);\
+	s->SetValue(val, TRUE); ReleaseISpinner(s); }
+
+				SETUP_SPINNER(ALPHA,EDITTYPE_FLOAT, 0.f, 1.f, 0.01f, 0.32f)
+				SETUP_SPINNER(BETA,EDITTYPE_FLOAT, 0.f, 1.f, 0.01f, 0.8f)
+				break;
+            }
+			case WM_DESTROY:
+				break;
+			case WM_COMMAND:
+			{
+			}
+		}
+		return FALSE;
+	}
+
 ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
 	IAutoMParamDlg* masterDlg
 		= thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
 	masterDlg->SetThing(this);
+	imp->AddRollupPage(hInstance, MAKEINTRESOURCE(IDD_YARN),
+		TestDlgProc, _T("Test"));
 	return masterDlg;
 }
 

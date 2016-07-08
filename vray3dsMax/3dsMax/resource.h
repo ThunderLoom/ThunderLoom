@@ -80,7 +80,6 @@
 #define ed_texmap_blend_mult4           1039
 #define IDC_USCALE_LABEL2               1039
 #define IDC_WIFFILE_LABEL               1039
-#define IDC_PATTERN_GROUP2              1039
 #define cs_blend5                       1040
 #define IDC_WIFFILE_BUTTON              1040
 #define ed_texmap_blend_mult5           1041
@@ -91,6 +90,7 @@
 #define cs_blend7                       1044
 #define IDC_YARNCOLOR_SWATCH            1044
 #define ed_texmap_blend_mult7           1045
+#define IDC_CUSTOM1                     1045
 #define cs_blend8                       1046
 #define IDD_SKELETON_MATERIAL           1047
 #define IDD_BLENDMTL                    1047
@@ -145,7 +145,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        109
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1045
+#define _APS_NEXT_CONTROL_VALUE         1046
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

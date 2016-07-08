@@ -101,52 +101,48 @@ END
 // Dialog
 //
 
-IDD_BLENDMTL DIALOGEX 0, 0, 220, 146
+IDD_BLENDMTL DIALOGEX 0, 0, 220, 46
 STYLE DS_SETFONT | WS_CHILD | WS_VISIBLE
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    CONTROL         IDB_LOGO,IDB_LOGO,"Static",SS_BITMAP,4,4,212,34
-    LTEXT           "Thunder Loom version xx",IDC_VERSION,4,39,119,8
-    LTEXT           "uscale",IDC_USCALE_LABEL,19,88,22,8
-    CONTROL         "Custom2",IDC_USCALE_EDIT,"CustEdit",0x0,145,85,44,10
-    CONTROL         "Custom3",IDC_USCALE_SPIN,"SpinnerControl",WS_TABSTOP,190,85,7,10
-    LTEXT           "vscale",IDC_VSCALE_LABEL,19,102,22,8
-    CONTROL         "Custom2",IDC_VSCALE_EDIT,"CustEdit",WS_TABSTOP,145,100,44,10
-    CONTROL         "Custom3",IDC_VSCALE_SPIN,"SpinnerControl",0x0,190,100,7,10
-    CONTROL         "Load WIF file",IDC_WIFFILE_BUTTON,"CustButton",WS_TABSTOP,56,74,81,10
-    GROUPBOX        "Pattern",IDC_PATTERN_GROUP2,4,55,210,83
-    LTEXT           "realworld",IDC_REALWORLD_LABEL,13,121,29,8
-    CONTROL         "",IDC_REALWORLD_CHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,184,119,16,10
+    LTEXT           "Thunder Loom version xx",IDC_VERSION,4,4,119,8
+    LTEXT           "uscale",IDC_USCALE_LABEL,21,28,22,8
+    CONTROL         "Custom2",IDC_USCALE_EDIT,"CustEdit",0x0,47,28,27,10
+    CONTROL         "Custom3",IDC_USCALE_SPIN,"SpinnerControl",WS_TABSTOP,75,28,7,10
+    LTEXT           "vscale",IDC_VSCALE_LABEL,89,28,22,8
+    CONTROL         "Custom2",IDC_VSCALE_EDIT,"CustEdit",WS_TABSTOP,113,28,25,10
+    CONTROL         "Custom3",IDC_VSCALE_SPIN,"SpinnerControl",0x0,140,28,7,10
+    CONTROL         "Load WIF file",IDC_WIFFILE_BUTTON,"CustButton",WS_TABSTOP,64,14,83,11
+    LTEXT           "realworld",IDC_REALWORLD_LABEL,153,28,29,8
+    CONTROL         "",IDC_REALWORLD_CHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,28,16,10
 END
 
-IDD_YARN DIALOGEX 0, 0, 220, 196
+IDD_YARN DIALOGEX 0, 0, 220, 110
 STYLE DS_SETFONT | WS_CHILD | WS_VISIBLE
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    LTEXT           "specular",IDC_STATIC,21,118,28,8
-    CONTROL         "Custom2",IDC_SPECULAR_EDIT,"CustEdit",WS_TABSTOP,147,116,50,10
-    CONTROL         "Custom3",IDC_SPECULAR_SPIN,"SpinnerControl",0x0,199,116,7,10
-    GROUPBOX        "Shape",IDC_PATTERN_GROUP,6,41,210,45
-    LTEXT           "bend",IDC_UMAX_LABEL,19,58,17,8
-    CONTROL         "Custom2",IDC_UMAX_EDIT,"CustEdit",WS_TABSTOP,145,56,44,10
-    CONTROL         "Custom3",IDC_UMAX_SPIN,"SpinnerControl",0x0,190,56,7,10
-    LTEXT           "twist",IDC_PSI_LABEL,19,73,15,8
-    CONTROL         "Custom2",IDC_PSI_EDIT,"CustEdit",WS_TABSTOP,145,71,44,10
-    CONTROL         "Custom3",IDC_PSI_SPIN,"SpinnerControl",0x0,190,71,7,10
-    GROUPBOX        "Reflection",IDC_STATIC,4,90,210,87
-    LTEXT           "highlight width",IDC_DELTAX_LABEL,21,133,46,8
-    CONTROL         "Custom2",IDC_DELTAX_EDIT,"CustEdit",WS_TABSTOP,147,131,50,10
-    CONTROL         "Custom3",IDC_DELTAX_SPIN,"SpinnerControl",0x0,199,131,7,10
-    LTEXT           "alpha",IDC_ALPHA_LABEL,21,149,18,8
-    CONTROL         "Custom2",IDC_ALPHA_EDIT,"CustEdit",WS_TABSTOP,147,146,50,10
-    CONTROL         "Custom3",IDC_ALPHA_SPIN,"SpinnerControl",0x0,199,146,7,10
-    LTEXT           "beta",IDC_ALPHA_LABEL2,21,164,15,8
-    CONTROL         "Custom2",IDC_BETA_EDIT,"CustEdit",WS_TABSTOP,147,161,50,10
-    CONTROL         "Custom3",IDC_BETA_SPIN,"SpinnerControl",0x0,199,161,7,10
-    COMBOBOX        IDC_YARNTYPE_COMBO,88,13,59,30,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Yarn type",IDC_YARNTYPE_LABEL,27,15,49,8
-    CONTROL         "Custom1",IDC_YARNCOLOR_SWATCH,"ColorSwatch",0x0,147,100,50,13
-    LTEXT           "color",IDC_STATIC,21,105,16,8
+    LTEXT           "specular",IDC_STATIC,15,71,28,8
+    CONTROL         "Custom2",IDC_SPECULAR_EDIT,"CustEdit",WS_TABSTOP,47,70,22,10
+    CONTROL         "Custom3",IDC_SPECULAR_SPIN,"SpinnerControl",0x0,71,70,7,10
+    GROUPBOX        "Shape",IDC_PATTERN_GROUP,6,30,210,24
+    LTEXT           "bend",IDC_UMAX_LABEL,13,40,17,8
+    CONTROL         "Custom2",IDC_UMAX_EDIT,"CustEdit",WS_TABSTOP,32,38,26,10
+    CONTROL         "Custom3",IDC_UMAX_SPIN,"SpinnerControl",0x0,59,38,7,10
+    LTEXT           "twist",IDC_PSI_LABEL,70,39,15,8
+    CONTROL         "Custom2",IDC_PSI_EDIT,"CustEdit",WS_TABSTOP,87,38,26,10
+    CONTROL         "Custom3",IDC_PSI_SPIN,"SpinnerControl",0x0,113,38,7,10
+    GROUPBOX        "Reflection",IDC_STATIC,6,57,210,44
+    LTEXT           "highlight width",IDC_DELTAX_LABEL,85,70,46,8
+    CONTROL         "Custom2",IDC_DELTAX_EDIT,"CustEdit",WS_TABSTOP,135,70,21,10
+    CONTROL         "Custom3",IDC_DELTAX_SPIN,"SpinnerControl",0x0,159,70,7,10
+    LTEXT           "alpha",IDC_ALPHA_LABEL,15,84,18,8
+    CONTROL         "Custom2",IDC_ALPHA_EDIT,"CustEdit",WS_TABSTOP,45,86,23,10
+    CONTROL         "Custom3",IDC_ALPHA_SPIN,"SpinnerControl",0x0,71,86,7,10
+    LTEXT           "beta",IDC_ALPHA_LABEL2,85,86,15,8
+    CONTROL         "Custom2",IDC_BETA_EDIT,"CustEdit",WS_TABSTOP,135,84,22,10
+    CONTROL         "Custom3",IDC_BETA_SPIN,"SpinnerControl",0x0,159,84,7,10
+    COMBOBOX        IDC_YARNTYPE_COMBO,21,12,59,30,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Custom1",IDC_YARNCOLOR_SWATCH,"ColorSwatch",0x0,87,14,16,12
 END
 
 
@@ -163,11 +159,8 @@ BEGIN
         LEFTMARGIN, 4
         RIGHTMARGIN, 216
         VERTGUIDE, 13
-        VERTGUIDE, 147
-        VERTGUIDE, 190
-        VERTGUIDE, 197
         TOPMARGIN, 4
-        BOTTOMMARGIN, 142
+        BOTTOMMARGIN, 40
     END
 
     IDD_YARN, DIALOG
@@ -175,11 +168,10 @@ BEGIN
         LEFTMARGIN, 4
         RIGHTMARGIN, 216
         VERTGUIDE, 13
-        VERTGUIDE, 147
         VERTGUIDE, 190
         VERTGUIDE, 197
         TOPMARGIN, 4
-        BOTTOMMARGIN, 192
+        BOTTOMMARGIN, 106
     END
 END
 #endif    // APSTUDIO_INVOKED

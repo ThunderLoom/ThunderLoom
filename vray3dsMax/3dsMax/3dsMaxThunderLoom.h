@@ -49,12 +49,6 @@ enum {
     mtl_uscale,
     mtl_vscale,
 	mtl_yarn_type,
-    mtl_intensity_fineness,
-	mtl_yarnvar_amplitude,
-    mtl_yarnvar_xscale,
-    mtl_yarnvar_yscale,
-    mtl_yarnvar_persistance,
-    mtl_yarnvar_octaves,
 	yrn_color,
 #define YARN_TYPE_PARAM(param) yrn_##param,
 	YARN_TYPE_PARAMETERS
