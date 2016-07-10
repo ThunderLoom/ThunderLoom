@@ -55,7 +55,8 @@ enum {
     mtl_yarnvar_yscale,
     mtl_yarnvar_persistance,
     mtl_yarnvar_octaves,
-    mtl_warpvar,
+	mtl_texmap_diffuse,
+    texmaps_diffuse,
 	yrn_color,
 #define YARN_TYPE_PARAM(param) yrn_##param,
 	YARN_TYPE_PARAMETERS
@@ -87,6 +88,9 @@ class ThunderLoomMtl : public Mtl, public VR::VRenderMtl {
 	VR::Color getBlend(ShadeContext &sc, int i);
 public:
 	// various variables
+	HWND m_hwMtlEdit;
+	IMtlParams *m_imp;
+
 	Interval ivalid;
     wcWeaveParameters m_weave_parameters;
     uint32_t m_current_yarn_type;

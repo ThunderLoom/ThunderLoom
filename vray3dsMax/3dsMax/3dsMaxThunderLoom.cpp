@@ -147,6 +147,8 @@ static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
 {
 	YarnType yarn_type = weave_params->pattern->yarn_types[yarn_type_id];
 	if (pblock) {
+		DBOUT("tex pointer: " << pblock->GetTexmap(texmaps_diffuse,t,yarn_type_id));
+
 		pblock->SetValue(yrn_color, t, Point3(yarn_type.color[0],
 			yarn_type.color[1], yarn_type.color[2]));
 		
@@ -155,6 +157,16 @@ static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
 
 		pblock->SetValue(mtl_uscale, t, weave_params->uscale);
 		pblock->SetValue(mtl_vscale, t, weave_params->vscale);
+
+		//texmaps
+		Texmap *tex;
+		if(tex = pblock->GetTexmap(texmaps_diffuse,t,yarn_type_id)) {
+			DBOUT("tex*: " << pblock->GetTexmap(texmaps_diffuse,t,yarn_type_id));
+			pblock->SetValue(mtl_texmap_diffuse, t, tex);
+		} else {
+			pblock->SetValue(mtl_texmap_diffuse, t, NULL);
+		}
+			
 	}
 }
 
@@ -232,6 +244,9 @@ public:
 #define YARN_TYPE_PARAM(param) yarn_type->param = default_yarn_type.param;
 									YARN_TYPE_PARAMETERS
 								}
+								for(int i=0;i<10;i++) {
+									sm->pblock->SetValue(texmaps_diffuse, 0, NULL, i);
+								}
 							}
 							IParamBlock2 *params = map->GetParamBlock();
                             sm->m_current_yarn_type = 0;
@@ -245,9 +260,44 @@ public:
 					}
 					break;
 				}
+
+				case IDC_TEX_DIFFUSE_BUTTON: {
+					switch (HIWORD(wParam)) {
+					case BN_CLICKED: {
+#define BROWSE_MAPSONLY		(1<<1)
+						//open material browser and ask for map
+						BOOL newMat, cancel;
+						MtlBase *mtlBase = GetCOREInterface()->DoMaterialBrowseDlg(m_hWnd, BROWSE_MAPSONLY, newMat, cancel);
+						DBOUT("newMat: " << newMat << "cancel: " << cancel);
+					
+						if(!cancel) {
+							DbgAssert((mtlBase == NULL) || ((mtlBase->SuperClassID() == TEXMAP_CLASS_ID)));
+							Texmap* texmap = static_cast<Texmap*>(mtlBase);
+
+							//TODO: set and update button
+							MSTR s;
+							texmap->GetClassName(s);
+							HWND hCtrl = GetDlgItem( hWnd, IDC_TEX_DIFFUSE_BUTTON );
+							ICustButton *button = GetICustButton(hCtrl);
+							std::wostringstream str;
+							str << "Map (" << s << ")";
+							button->SetText(str.str().c_str());
+
+							texmap->CreateParamDlg(sm->m_hwMtlEdit, sm->m_imp);
+
+							//SetShader(texmap);
+							//Update();
+						}
+
+						break;
+					}
+					}
+					break;
+				}
 				}
 				break;
-			}
+		}
+
 		}
 		return FALSE;
 	}
@@ -319,10 +369,13 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
         p_default, 4.f,
         p_ui, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
     PB_END,
-    mtl_warpvar, _T("warpvar"), TYPE_TEXMAP, 0, 0,
-		p_ui, TYPE_TEXMAPBUTTON, IDC_TEX_DIFFUSE_BUTTON,
-        p_subtexno, 0,
-		p_prompt, _T("test prompt"),
+	//Let paramblocks handle ui for texmaps, this gets updated with the texmap for the current yarn type
+  // mtl_texmap_diffuse, _T("diffuseMap"), TYPE_TEXMAP, 0, 0, 
+  //      p_ui, TYPE_TEXMAPBUTTON, IDC_TEX_DIFFUSE_BUTTON,
+  //      p_subtexno, 0,
+  //  PB_END,
+    texmaps_diffuse, _T("diffuseMapList"), TYPE_TEXMAP_TAB, 10, P_VARIABLE_SIZE, 0, //Should we use P_OWNERS_REF and P_VARIABLE_SIZE?
+		//no ui, for the array
     PB_END,
 PB_END
 );									 
@@ -347,6 +400,8 @@ ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
 }
 
 ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
+	m_hwMtlEdit = hwMtlEdit;
+	m_imp = imp;
 	IAutoMParamDlg* masterDlg
 		= thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
 	DBOUT(masterDlg->NumDlgs());
@@ -363,8 +418,8 @@ Interval ThunderLoomMtl::Validity(TimeValue t) {
 	pblock->GetValidity(t, temp);
 	//Update(t, temp);
 
-	if( pblock->GetTexmap(mtl_warpvar) )
-		temp &= pblock->GetTexmap(mtl_warpvar)->Validity(t);
+	//TODO(Peter): is validity okay? 
+	// do we need to loop through each texmap and check fro validity there to?
     return temp;
 }
 
@@ -445,10 +500,22 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 					break;
 				}
 
+				//texmaps
+				case mtl_texmap_diffuse:
+				{
+					Texmap *tex;
+					pblock->GetValue(mtl_texmap_diffuse, 0, tex, ivalid);
+					pblock->SetValue(texmaps_diffuse, 0, tex, m_current_yarn_type);
+					thunder_loom_param_blk_desc.InvalidateUI(mtl_texmap_diffuse);
+					break;
+				}
+
+				//yarn params
 #define YARN_TYPE_PARAM(param) case yrn_##param: pblock->GetValue(yrn_##param,0,\
 					yarn_type->param,ivalid); break;
 				YARN_TYPE_PARAMETERS
 				}
+
 			}
 			break;
 		}
@@ -459,19 +526,21 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 //texmaps
 
 Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
+	//TODO(Peter): Update this!
 	DBOUT( "GetSubtex i: " << i );
 	if (i == 0) {
-		return pblock->GetTexmap(mtl_warpvar);
+		return pblock->GetTexmap(mtl_texmap_diffuse);
 	}
 
 	return NULL;
 }
 
 void ThunderLoomMtl::SetSubTexmap(int i, Texmap* m) {
+	//TODO(Peter): Update this!
 	//currently only 1 texmap. id == 0
 	DBOUT( "SetSubtex i: " << i );
 	if (i == 0) {
-		pblock->SetValue(mtl_warpvar, 0, m);
+		pblock->SetValue(mtl_texmap_diffuse, 0, m);
 	}
 }
 
@@ -484,7 +553,7 @@ TSTR ThunderLoomMtl::GetSubTexmapSlotName(int i) {
 }
 
 TSTR ThunderLoomMtl::GetSubTexmapTVName(int i) {
-	return GetSubTexmapTVName(i);
+	return GetSubTexmapSlotName(i);
 }
 
 /*===========================================================================*\
@@ -574,12 +643,11 @@ void ThunderLoomMtl::NotifyChanged() {
 }
 
 void ThunderLoomMtl::Update(TimeValue t, Interval& valid) {
-	//TODO(Peter): Verify this!
+	//TODO(Peter): Verify this!, call update on textures
+	//if( pblock->GetTexmap(mtl_warpvar) )
+		//	pblock->GetTexmap(mtl_warpvar)->Update(t, ivalid);
 	if (!ivalid.InInterval(t)) {
 		ivalid.SetInfinite();
-		if( pblock->GetTexmap(mtl_warpvar) )
-			pblock->GetTexmap(mtl_warpvar)->Update(t, ivalid);
-
 	}
 	valid &= ivalid;
 }
@@ -660,7 +728,7 @@ VR::BSDFSampler* ThunderLoomMtl::newBSDF(const VR::VRayContext &rc, VR::VRenderM
 		//it is 3dsmax specific
 		//This is just a test!	
 		float variation = 1.f;
-		Texmap *tex = pblock->GetTexmap(mtl_warpvar);
+		Texmap *tex = pblock->GetTexmap(mtl_texmap_diffuse);
 
 	MyBlinnBSDF *bsdf=bsdfPool.newBRDF(rc);
 	if (!bsdf) return NULL;
