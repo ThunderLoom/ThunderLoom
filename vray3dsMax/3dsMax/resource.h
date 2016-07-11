@@ -85,14 +85,23 @@
 #define ed_texmap_blend_mult6           1043
 #define IDC_TEX_DIFFUSE_LABEL           1043
 #define cs_blend7                       1044
-#define IDC_TEX_DIFFUSE_BUTTON         1044
+#define IDC_TEX_DIFFUSE_BUTTON          1044
 #define ed_texmap_blend_mult7           1045
+#define IDC_YRN_TEX_DIFFUSE_LABEL       1045
 #define cs_blend8                       1046
+#define IDC_YRN_TEX_DIFFUSE_BUTTON      1046
 #define IDD_BLENDMTL                    1047
 #define ed_texmap_blend_mult8           1047
+#define IDC_YARNTYPE_LABEL              1047
 #define cs_blend9                       1048
+#define IDC_YARNCOLOR_SWATCH            1048
 #define ed_texmap_blend_mult9           1049
+#define IDC_YRN_TEX_SPECULAR_LABEL      1049
+#define IDC_YRN_TEX_SPECULAR_BUTTON     1050
+#define IDC_YRN_TEX_SIZE_LABEL          1051
 #define IDC_SIMPLE_SPIN                 1052
+#define IDC_YRN_TEX_SPECULAR_BUTTON2    1052
+#define IDC_YRN_TEX_SIZE_BUTTON         1052
 #define sp_texmap_blend_mult1           1053
 #define sp_texmap_blend_mult2           1054
 #define sp_texmap_blend_mult3           1055
@@ -130,8 +139,6 @@
 #define cb_reflectMtl                   1644
 #define cb_refractMtl                   1645
 #define IDC_YARNTYPE_COMBO              1646
-#define IDC_YARNTYPE_LABEL              1047
-#define IDC_YARNCOLOR_SWATCH            1048
 
 // Next default values for new objects
 // 

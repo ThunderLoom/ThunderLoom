@@ -36,13 +36,6 @@ extern ClassDesc* GetSkeletonMtlDesc();
 // Paramblock2 name
 enum { mtl_params, }; 
 
-// Paramblock2 parameter list
-/*
-enum {
-	mtl_testparam,
-};*/
-
-
 enum {
 	mtl_diffuse,
 	mtl_realworld,
@@ -56,10 +49,28 @@ enum {
     mtl_yarnvar_persistance,
     mtl_yarnvar_octaves,
 	mtl_texmap_diffuse,
-    texmaps_diffuse,
+    texmaps, //stores texmaps for each yarntype in a TEXMAPS_TAB pblock
 	yrn_color,
 #define YARN_TYPE_PARAM(param) yrn_##param,
 	YARN_TYPE_PARAMETERS
+};
+
+//Set SubTexMap ids for ALL yarntype specific texmaps
+//These ids will be offsetted with number of
+//texmaps times the the current yarn_type id.
+enum {
+#define YARN_TYPE_TEXMAP(param) yrn_texmaps_##param,
+	YARN_TYPE_TEXMAP_PARAMETERS
+	NUMBER_OF_YRN_TEXMAPS
+};
+
+//NOTE(Peter): update this array when YARN_TYPE_TEXMAP_PARAMETERS changes!
+//needs to be the same order! See wif.h
+static int texmapBtnIDCs[NUMBER_OF_YRN_TEXMAPS] = 
+{
+	IDC_YRN_TEX_DIFFUSE_BUTTON,
+	IDC_YRN_TEX_SPECULAR_BUTTON,
+	IDC_YRN_TEX_SIZE_BUTTON
 };
 
 /*===========================================================================*\
@@ -142,7 +153,7 @@ public:
 	TSTR GetSubMtlTVName(int i) { return _T(""); }
 
 	// SubTexmap access methods
-	int NumSubTexmaps() { return 1; }
+	int NumSubTexmaps();
 	Texmap* GetSubTexmap(int i);
 	void SetSubTexmap(int i, Texmap *m);
 	TSTR GetSubTexmapSlotName(int i);
