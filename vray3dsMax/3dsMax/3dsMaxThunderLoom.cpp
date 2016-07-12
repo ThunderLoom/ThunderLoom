@@ -138,7 +138,7 @@ ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
 
 /*===========================================================================*\
  |	Basic implimentation of a dialog handler
-\*===========================================================================*/
+\*===========================================================================*/								 
 
 /*===========================================================================*\
  |	UI stuff
@@ -157,6 +157,40 @@ static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
 
 		pblock->SetValue(mtl_uscale, t, weave_params->uscale);
 		pblock->SetValue(mtl_vscale, t, weave_params->vscale);
+
+
+			
+	}
+}
+
+static void UpdateYarnTexmaps(int yarn_type_id, IParamBlock2 *pblock, HWND hWnd, TimeValue t)
+{
+	//NOTE(peter): skip hWnd as argument? Just use dlgProc.m_hWnd
+
+	DBOUT("yarn_type_id:" << yarn_type_id)
+	DBOUT("hWnd:" << hWnd)
+
+	//Update yrntexmap buttons for current yarn_type!
+	for (int i = yarn_type_id*NUMBER_OF_YRN_TEXMAPS;
+		i < (yarn_type_id+1)*NUMBER_OF_YRN_TEXMAPS; i++) {
+		int texmap_id = i % NUMBER_OF_YRN_TEXMAPS;
+		Texmap *texmap = pblock->GetTexmap(texmaps, 0, i); //0 is main diffuse
+		std::wostringstream str;
+
+		if (texmap) {
+			MSTR s; texmap->GetClassName(s);
+			str << "Map (" << s << ")";
+		} else {
+			str << "None";
+		}
+
+		DBOUT("texmapid:" << texmap_id)
+		HWND hCtrl = GetDlgItem( hWnd, texmapBtnIDCs[texmap_id]);
+		DBOUT("hCtrl:" << hCtrl)
+		ICustButton *button = GetICustButton(hCtrl);
+		DBOUT("button:" << button)
+		DBOUT("str:" << str)
+		button->SetText(str.str().c_str());
 	}
 }
 
@@ -220,6 +254,7 @@ public:
                             sm->m_current_yarn_type = 0;
 							UpdateYarnTypeParameters(0, params,
 								&(sm->m_weave_parameters),t);
+
 							//NOTE(Vidar):Update the yarn rollout too...
 							ParamDlg *yarn_dlg =
 								params->GetMParamDlg()->GetDlg(0);
@@ -233,7 +268,8 @@ public:
 				}
 				}
 				break;
-			}
+		}
+
 		}
 		return FALSE;
 	}
@@ -285,6 +321,26 @@ public:
 				break;
 			case WM_COMMAND:
 			{
+				/*
+				switch (LOWORD(wParam)) {
+					case IDC_WIFFILE_BUTTON: {
+						//do something
+						break;
+					}
+				}*/
+
+				default: {
+					for(int i = 0; i < NUMBER_OF_YRN_TEXMAPS; i++) {
+						if (LOWORD(wParam) == texmapBtnIDCs[i] && HIWORD(wParam) == BN_CLICKED){
+							//set mtl!
+							int subtexmap_id = sm->m_current_yarn_type*NUMBER_OF_YRN_TEXMAPS + i + 1;
+							//User pressed Texmap button for ith submap
+							PostMessage(sm->m_hwMtlEdit, WM_TEXMAP_BUTTON, subtexmap_id,(LPARAM)sm);
+							DBOUT("Posted WM_TEXMAP_BUTTON, with texmap id " << subtexmap_id);
+						}
+					}
+				}
+
 			}
 		}
 		return FALSE;
@@ -294,6 +350,11 @@ public:
 	{
 		sm = (ThunderLoomMtl*)m;
 		update_yarn_type_combo();
+		if (sm->m_weave_parameters.pattern){
+			UpdateYarnTexmaps(sm->m_current_yarn_type, sm->pblock, m_hWnd, 0);
+			//Update yarn texmaps here so that buttons have correct text
+			//when returning from editing subtexmap.
+		}
 	}
 };
 
@@ -370,6 +431,15 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
         p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
     PB_END,
+	mtl_texmap_diffuse, _T("diffuseMap"), TYPE_TEXMAP, 0, 0, 
+		p_subtexno, 0,
+		p_ui, rollout_pattern, TYPE_TEXMAPBUTTON, IDC_TEX_DIFFUSE_BUTTON,
+    PB_END,
+    texmaps, _T("diffuseMapList"), TYPE_TEXMAP_TAB, 10, P_VARIABLE_SIZE, 0,
+		//TODO(Peter): Dynamically handle more than 10 subtexmaps.
+		//no ui, for the array
+		//handled through Proc
+    PB_END,
 PB_END
 );									 
 
@@ -393,6 +463,8 @@ ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
 }
 
 ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
+	m_hwMtlEdit = hwMtlEdit;
+	m_imp = imp;
 	IAutoMParamDlg* masterDlg
 		= thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
 	masterDlg->SetThing(this);
@@ -405,8 +477,12 @@ BOOL ThunderLoomMtl::SetDlgThing(ParamDlg* dlg) {
 
 Interval ThunderLoomMtl::Validity(TimeValue t) {
 	Interval temp=FOREVER;
-	Update(t, temp);
-	return ivalid;
+	pblock->GetValidity(t, temp);
+	//Update(t, temp);
+
+	//TODO(Peter): is validity okay? 
+	// do we need to loop through each texmap and check fro validity there to?
+    return temp;
 }
 
 /*===========================================================================*\
@@ -450,6 +526,10 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 					int sel;
 					pblock->GetValue(mtl_yarn_type, 0, sel, ivalid);
 					m_current_yarn_type = sel;
+					//Select has changed.
+					pblock->GetMParamDlg()->GetDlg(0)->SetThing(this);
+					//map->Invalidate();
+					// TODO(Peter): move UpdateYarnTypeParameters into setThing?
 					UpdateYarnTypeParameters(sel, pblock,
 						&m_weave_parameters, 0);
 					break;
@@ -486,15 +566,73 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 					break;
 				}
 
+				//yarn params
 #define YARN_TYPE_PARAM(param) case yrn_##param: pblock->GetValue(yrn_##param,0,\
 					yarn_type->param,ivalid); break;
 				YARN_TYPE_PARAMETERS
+
+				//TODO(Peter): something for the yarn specific texmaps here? not sure
+
 				}
+
+
+
 			}
 			break;
 		}
 	}
 	return(REF_SUCCEED);
+}
+
+//texmaps
+
+int ThunderLoomMtl::NumSubTexmaps() {
+	if (this->m_weave_parameters.pattern) {
+		return 1 + this->m_weave_parameters.pattern->num_yarn_types*NUMBER_OF_YRN_TEXMAPS;
+	} else {
+		return 1; //master diffusemap
+	}
+}
+
+Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
+	//DBOUT( "GetSubtex i: " << i );
+	if (i == 0) {
+		return pblock->GetTexmap(mtl_texmap_diffuse);
+	} else if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
+		return pblock->GetTexmap(texmaps, 0, i-NUMBER_OF_FIXED_TEXMAPS);
+	} else {
+		return NULL;
+	}
+}
+
+void ThunderLoomMtl::SetSubTexmap(int i, Texmap* m) {
+	DBOUT( "SetSubtex i: " << i );
+	if (i == 0) {
+		pblock->SetValue(mtl_texmap_diffuse, 0, m);
+	} else if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
+		pblock->SetValue(texmaps, 0, m, i-NUMBER_OF_FIXED_TEXMAPS);
+	}
+}
+
+TSTR ThunderLoomMtl::GetSubTexmapSlotName(int i) {
+	DBOUT( "GetSubtexname i: " << i );
+	switch(i) {
+		case 0: return L"Main Diffuse Map";
+	}
+
+	//if not main texmap, then yarntexmap
+	int yrntexmap_id = i - NUMBER_OF_FIXED_TEXMAPS;
+	switch(yrntexmap_id % NUMBER_OF_YRN_TEXMAPS) {
+#define YARN_TYPE_TEXMAP(param) case yrn_texmaps_##param: return L"##param"; //TODO(peter): Fix this!
+		YARN_TYPE_TEXMAP_PARAMETERS
+		
+		default:
+			return L"";
+	}
+}
+
+TSTR ThunderLoomMtl::GetSubTexmapTVName(int i) {
+	return GetSubTexmapSlotName(i);
 }
 
 /*===========================================================================*\
@@ -584,11 +722,13 @@ void ThunderLoomMtl::NotifyChanged() {
 }
 
 void ThunderLoomMtl::Update(TimeValue t, Interval& valid) {
-	//if (!ivalid.InInterval(t)) {
-	//	ivalid.SetInfinite();
-	// ...
-	//}
-	//valid &= ivalid;
+	//TODO(Peter): Verify this!, call update on textures
+	//if( pblock->GetTexmap(mtl_warpvar) )
+		//	pblock->GetTexmap(mtl_warpvar)->Update(t, ivalid);
+	if (!ivalid.InInterval(t)) {
+		ivalid.SetInfinite();
+	}
+	valid &= ivalid;
 }
 
 /*===========================================================================*\
@@ -663,9 +803,15 @@ void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
 }
 
 VR::BSDFSampler* ThunderLoomMtl::newBSDF(const VR::VRayContext &rc, VR::VRenderMtlFlags flags) {
+		//TODO(Peter): Have mapping stuff here or in the BRDF?
+		//it is 3dsmax specific
+		//This is just a test!	
+		float variation = 1.f;
+		Texmap *tex = pblock->GetTexmap(mtl_texmap_diffuse);
+
 	MyBlinnBSDF *bsdf=bsdfPool.newBRDF(rc);
 	if (!bsdf) return NULL;
-    bsdf->init(rc, &m_weave_parameters);
+    bsdf->init(rc, &m_weave_parameters, tex);
 	return bsdf;
 }
 
@@ -688,12 +834,14 @@ VR::VRayVolume* ThunderLoomMtl::getVolume(const VR::VRayContext &rc) {
 \*===========================================================================*/
 
 void ThunderLoomMtl::Shade(ShadeContext &sc) {
-	if (sc.ClassID()==VRAYCONTEXT_CLASS_ID)
+	if (sc.ClassID()==VRAYCONTEXT_CLASS_ID) {
+
 		//shade() creates brdf, shades and deletes the brdf
 		//it does this using the corresponding methods that have
 		//been implemented from VUtils::VRenderMtl
 		//newsBSDF, getVolume and deleteBSDF
 		shade(static_cast<VR::VRayInterface&>(sc), gbufID);
+	} 
 	else {
 		if (gbufID) sc.SetGBufferID(gbufID);
 		sc.out.c.Black(); sc.out.t.Black();

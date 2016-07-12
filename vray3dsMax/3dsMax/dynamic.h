@@ -8,6 +8,7 @@
 #include "vrayrenderer.h"
 #include "dbgprint.h"
 #include "woven_cloth.h"
+#include "imtl.h"
 
 typedef void (*EVALDIFFUSEFUNC)(const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color);
@@ -78,8 +79,8 @@ static void unload_dlls()
 void
 EvalDiffuseFunc
 (const VUtils::VRayContext &rc,
-    wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
-	YarnType *yarn_type);
+    wcWeaveParameters *weave_parameters, Texmap *tex,
+	VUtils::Color *diffuse_color, YarnType *yarn_type);
 #endif
 
 #ifndef DYNAMIC

@@ -28,6 +28,18 @@ typedef struct
                        //should be ok, right?
 }PatternEntry;
 
+//NOTE(Peter):These are parameters for each yarn type that can be varied  
+//for each uv position. These paramters are good to vary using texture maps
+#define YARN_TYPE_TEXMAP_PARAMETERS\
+	YARN_TYPE_TEXMAP(diffuse)\
+	YARN_TYPE_TEXMAP(specular)\
+	YARN_TYPE_TEXMAP(yarnsize)
+typedef struct 
+{
+#define YARN_TYPE_TEXMAP(param) float param;
+	YARN_TYPE_TEXMAP_PARAMETERS
+}YarnVariationParams;
+
 //NOTE(Vidar):These are the yarn type parameters (except color)
 #define YARN_TYPE_PARAMETERS\
 	YARN_TYPE_PARAM(umax)\

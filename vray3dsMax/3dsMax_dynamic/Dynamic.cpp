@@ -23,8 +23,8 @@ eval_diffuse
 EvalDiffuseFunc
 #endif
 (const VUtils::VRayContext &rc,
-    wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
-	YarnType* yarn_type)
+    wcWeaveParameters *weave_parameters, Texmap *tex,
+	VUtils::Color *diffuse_color, YarnType* yarn_type)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
         *diffuse_color = VUtils::Color(1.f,1.f,0.f);
@@ -49,7 +49,12 @@ EvalDiffuseFunc
 	float specular_strength = yarn_type->specular_strength;
     wcColor d = 
         wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
-    float factor = (1.f - specular_strength);
+
+	float variation = 1.f;
+	if (tex)
+		variation = tex->EvalMono(sc);
+
+	float factor = (1.f - specular_strength)*variation;
     diffuse_color->r = factor*d.r;
     diffuse_color->g = factor*d.g;
     diffuse_color->b = factor*d.b;

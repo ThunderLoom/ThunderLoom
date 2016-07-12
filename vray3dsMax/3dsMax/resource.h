@@ -49,6 +49,7 @@
 #define IDC_VSCALE_EDIT                 1016
 #define IDC_VSCALE_SPIN                 1017
 #define IDC_UMAX_EDIT                   1018
+#define IDC_VSCALE_EDIT2                1018
 #define IDC_UMAX_SPIN                   1019
 #define IDC_VERSION                     1020
 #define IDC_PATTERN_GROUP               1021
@@ -57,6 +58,7 @@
 #define IDC_REALWORLD_LABEL             1024
 #define IDC_REALWORLD_CHECK             1025
 #define IDC_UMAX_LABEL                  1026
+#define IDC_VSCALE_LABEL2               1026
 #define IDC_PSI_LABEL                   1027
 #define IDC_PSI_EDIT                    1028
 #define IDC_PSI_SPIN                    1029
@@ -83,24 +85,31 @@
 #define IDC_PATTERN_GROUP2              1039
 #define cs_blend5                       1040
 #define IDC_WIFFILE_BUTTON              1040
+#define IDC_YRN_TEX_SPECULAR_BUTTON     1040
 #define ed_texmap_blend_mult5           1041
 #define IDC_YARNTYPE_COMBO              1041
 #define cs_blend6                       1042
 #define IDC_YARNTYPE_LABEL              1042
 #define ed_texmap_blend_mult6           1043
+#define IDC_YRN_TEX_SPECULAR_BUTTON2    1043
+#define IDC_YRN_TEX_DIFFUSE_BUTTON      1043
 #define cs_blend7                       1044
 #define IDC_YARNCOLOR_SWATCH            1044
 #define ed_texmap_blend_mult7           1045
+#define IDC_YRN_TEX_SPECULAR_LABEL      1045
 #define cs_blend8                       1046
+#define IDC_YRN_TEX_SIZE_LABEL          1046
 #define IDD_SKELETON_MATERIAL           1047
 #define IDD_BLENDMTL                    1047
 #define ed_texmap_blend_mult8           1047
+#define IDC_YRN_TEX_SIZE_BUTTON         1047
 #define cs_blend9                       1048
 #define IDD_BLENDMTL1                   1048
 #define IDD_PARAMS                      1048
 #define IDD_YARN                        1048
 #define ed_texmap_blend_mult9           1049
 #define IDD_BLENDMTL2                   1049
+#define IDC_YRN_TEX_DIFFUSE_LABEL       1049
 #define IDC_SIMPLE_SPIN                 1052
 #define sp_texmap_blend_mult1           1053
 #define sp_texmap_blend_mult2           1054
@@ -134,6 +143,7 @@
 #define bn_coatMtl9                     1078
 #define sp_texmap_blend_mult9           1079
 #define bn_texmap_blend9                1080
+#define IDC_TEX_DIFFUSE_BUTTON          1081
 #define IDC_MTLON1                      1642
 #define cb_giMtl                        1643
 #define cb_reflectMtl                   1644
@@ -145,7 +155,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        109
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1045
+#define _APS_NEXT_CONTROL_VALUE         1050
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
