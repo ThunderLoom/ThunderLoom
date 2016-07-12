@@ -250,6 +250,9 @@ public:
 #define YARN_TYPE_PARAM(param) yarn_type->param = default_yarn_type.param;
 									YARN_TYPE_PARAMETERS
 								}
+								//TODO(Peter): Test this with more complicate wif files!
+								//Set count for subtexmaps
+								sm->pblock->SetCount(texmaps, pattern->num_yarn_types*NUMBER_OF_YRN_TEXMAPS);
 							}
                             sm->m_current_yarn_type = 0;
 							UpdateYarnTypeParameters(0, params,
@@ -435,8 +438,7 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
 		p_subtexno, 0,
 		p_ui, rollout_pattern, TYPE_TEXMAPBUTTON, IDC_TEX_DIFFUSE_BUTTON,
     PB_END,
-    texmaps, _T("diffuseMapList"), TYPE_TEXMAP_TAB, 10, P_VARIABLE_SIZE, 0,
-		//TODO(Peter): Dynamically handle more than 10 subtexmaps.
+    texmaps, _T("diffuseMapList"), TYPE_TEXMAP_TAB, 0, P_VARIABLE_SIZE, 0,
 		//no ui, for the array
 		//handled through Proc
     PB_END,
