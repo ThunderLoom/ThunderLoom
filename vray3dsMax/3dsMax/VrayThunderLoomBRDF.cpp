@@ -60,6 +60,9 @@ VUtils::Color MyBaseBSDF::getDiffuseColor(VUtils::Color &lightColor) {
 }
 VUtils::Color MyBaseBSDF::getLightMult(VUtils::Color &lightColor) {
     float s = m_yarn_type.specular_strength;
+    if(!m_yarn_type.specular_strength_enabled){
+        s = m_weave_parameters->pattern->common_yarn.specular_strength;
+    }
     VUtils::Color ret = (diffuse_color + VUtils::Color(s,s,s)) * lightColor;
     lightColor.makeZero();
     return ret;
@@ -128,6 +131,9 @@ VRayContext* MyBaseBSDF::getNewContext(const VRayContext &rc, int &samplerID, in
 	if (2==doDiffuse) return NULL;
 
     float s = m_yarn_type.specular_strength;
+    if(!m_yarn_type.specular_strength_enabled){
+        s = m_weave_parameters->pattern->common_yarn.specular_strength;
+    }
     VUtils::Color reflect_filter = VUtils::Color(s,s,s);
 	VRayContext &nrc=rc.newSpawnContext(2, reflect_filter, RT_REFLECT | RT_GLOSSY | RT_ENVIRONMENT, normal);
 

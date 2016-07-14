@@ -144,42 +144,80 @@ ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
  |	UI stuff
 \*===========================================================================*/
 
-static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
-	wcWeaveParameters *weave_params, TimeValue t)
-{
-	YarnType yarn_type = weave_params->pattern->yarn_types[yarn_type_id];
-	if (pblock) {
-		pblock->SetValue(yrn_color, t, Point3(yarn_type.color[0],
-			yarn_type.color[1], yarn_type.color[2]));
-		
-#define YARN_TYPE_PARAM(param) pblock->SetValue(yrn_##param, t,yarn_type.param);
-		YARN_TYPE_PARAMETERS
+//TODO(Vidar):Make local...
+static IMtlParams *g_imp;
 
-		pblock->SetValue(mtl_uscale, t, weave_params->uscale);
-		pblock->SetValue(mtl_vscale, t, weave_params->vscale);
-	}
-}
+struct YarnTypeDlgProcData
+{
+    ThunderLoomMtl *sm;
+    int yarn_type;
+};
+
+INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 class PatternRolloutDlgProc : public ParamMap2UserDlgProc {
 public:
 	IParamMap *pmap;
 	ThunderLoomMtl *sm;
 	wchar_t directory[512];
+    HWND *rollups;
+    int num_rollups;
+
+    void update_yarn_type_rollups()
+    {
+        if(g_imp){
+            for (int i = 0; i < num_rollups; i++) {
+                g_imp->DeleteRollupPage(rollups[i]);
+            }
+        }
+        if(rollups){
+            free(rollups);
+        }
+        if(sm && sm->m_weave_parameters.pattern && g_imp){
+            num_rollups = sm->m_weave_parameters.pattern->num_yarn_types;
+            rollups = (HWND*)calloc(num_rollups,sizeof(HWND));
+            if (sm && sm->m_weave_parameters.pattern) {
+            for (int i = 0; i < num_rollups; i++) {
+                    wchar_t buffer[128];
+                    wsprintf(buffer, L"Yarn type %d", i);
+                    YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)
+                        calloc(1,sizeof(YarnTypeDlgProcData));
+                    data->sm = sm;
+                    data->yarn_type = i;
+                    rollups[i] = g_imp->AddRollupPage(hInstance,
+                        MAKEINTRESOURCE(IDD_YARN_TYPE),YarnTypeDlgProc,buffer,
+                        (LPARAM)data, APPENDROLL_CLOSED);
+                }
+            }
+        }else{
+            num_rollups = 0;
+            rollups = 0;
+        }
+    }
 
 	PatternRolloutDlgProc(void)
 	{
+        rollups = 0;
+        num_rollups = 0;
 		sm = NULL;
 		directory[0] = 0;
 	}
+
 	INT_PTR DlgProc(TimeValue t, IParamMap2 *map, HWND hWnd, UINT msg,
 			WPARAM wParam, LPARAM lParam) {
 		int id = LOWORD(wParam);
 		switch (msg) 
 		{
 			case WM_INITDIALOG:{ 
+                update_yarn_type_rollups();
 				break;
             }
 			case WM_DESTROY:
+                if(rollups){
+                    free(rollups);
+                }
+                rollups = 0;
+                num_rollups = 0;
 				break;
 			case WM_COMMAND:
 			{
@@ -213,18 +251,19 @@ public:
 							if(pattern) {
 								for(int i=0;i<pattern->num_yarn_types;i++) {
 									YarnType *yarn_type = pattern->yarn_types+i;
-#define YARN_TYPE_PARAM(param) yarn_type->param = default_yarn_type.param;
+#define YARN_TYPE_PARAM(param,A) yarn_type->param = default_yarn_type.param;
 									YARN_TYPE_PARAMETERS
 								}
 							}
                             sm->m_current_yarn_type = 0;
-							UpdateYarnTypeParameters(0, params,
+							/*UpdateYarnTypeParameters(0, params,
 								&(sm->m_weave_parameters),t);
 							//NOTE(Vidar):Update the yarn rollout too...
 							ParamDlg *yarn_dlg =
 								params->GetMParamDlg()->GetDlg(0);
-							yarn_dlg->SetThing(sm);
+							yarn_dlg->SetThing(sm);*/
 							map->Invalidate();
+                            update_yarn_type_rollups();
 						}
 						break;
 					}
@@ -237,65 +276,21 @@ public:
 		}
 		return FALSE;
 	}
-	void DeleteThis() {}
+	void DeleteThis() {
+        if(rollups){
+            free(rollups);
+        }
+        rollups = 0;
+        num_rollups = 0;
+    }
+
 	void SetThing(ReferenceTarget *m)
 	{
 		sm = (ThunderLoomMtl*)m;
+        update_yarn_type_rollups();
 	}
 };
 
-
-//Here there is the option to add custom behaviour to certain messages.
-class YarnRolloutDlgProc : public ParamMap2UserDlgProc {
-public:
-	IParamMap *pmap;
-	ThunderLoomMtl *sm;
-	HWND m_hWnd;
-
-	void update_yarn_type_combo()
-	{
-		HWND yarn_type_combo_hwnd = GetDlgItem(m_hWnd,
-			IDC_YARNTYPE_COMBO);
-		ComboBox_ResetContent(yarn_type_combo_hwnd);
-		if (sm && sm->m_weave_parameters.pattern) {
-			for (int i = 0; i <
-				sm->m_weave_parameters.pattern->num_yarn_types;
-				i++)
-			{
-				wchar_t buffer[128];
-				swprintf(buffer, L"Yarn type %d", i);
-				ComboBox_AddString(yarn_type_combo_hwnd, buffer);
-			}
-			ComboBox_SetCurSel(yarn_type_combo_hwnd, sm->m_current_yarn_type);
-		}
-	}
-
-	YarnRolloutDlgProc(void) { sm = NULL; }
-	INT_PTR DlgProc(TimeValue t, IParamMap2 *map, HWND hWnd, UINT msg,
-			WPARAM wParam, LPARAM lParam) {
-		int id = LOWORD(wParam);
-		switch (msg) 
-		{
-			case WM_INITDIALOG:{ 
-				m_hWnd = hWnd;
-				update_yarn_type_combo();
-				break;
-            }
-			case WM_DESTROY:
-				break;
-			case WM_COMMAND:
-			{
-			}
-		}
-		return FALSE;
-	}
-	void DeleteThis() {}
-	void SetThing(ReferenceTarget *m)
-	{
-		sm = (ThunderLoomMtl*)m;
-		update_yarn_type_combo();
-	}
-};
 
 /*===========================================================================*\
  |	Paramblock2 Descriptor
@@ -311,16 +306,11 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
 	2,
     rollout_pattern,   IDD_BLENDMTL, IDS_PATTERN, 0, 0,
 		new PatternRolloutDlgProc(), 
-    rollout_yarn_type, IDD_YARN,     IDS_YARN, 0, 0,
-		new YarnRolloutDlgProc(), 
+    rollout_yarn_type, IDD_YARN,     IDS_YARN, 0, 0, NULL, 
     // pattern and geometry
     yrn_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
         p_default, Point3(0.3f,0.3f,0.3f),
         p_ui, rollout_yarn_type, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
-    PB_END,
-    mtl_yarn_type, _FT("yarn_type"), TYPE_INT, P_ANIMATABLE, 0,
-        p_default, 0,
-        p_ui, rollout_yarn_type, TYPE_INT_COMBOBOX, IDC_YARNTYPE_COMBO, 0,
     PB_END,
     mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 1.f,
@@ -332,47 +322,157 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
         p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
     PB_END,
+    mtl_dummy, _FT("dummy"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 1.f,
+    PB_END,
     mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
         p_default, FALSE,
         p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
     PB_END,
     yrn_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 0.5,
+    p_default, default_yarn_type.umax,
         p_range, 0.0f, 1.f,
         p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
     PB_END,
     yrn_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 0.5,
+        p_default, default_yarn_type.psi,
         p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
     PB_END,
     //Lighting params
     yrn_specular_strength, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default,		1.f,
+        p_default,		default_yarn_type.specular_strength,
         p_range,		0.0f, 1.f,
         p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
     p_end,
     yrn_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 0.5f,
+        p_default, default_yarn_type.delta_x,
         p_range, 0.0f, 1.f,
         p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
     PB_END,
     yrn_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 0.05,
+        p_default, default_yarn_type.alpha,
         p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
     PB_END,
     yrn_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 4.f,
+        p_default, default_yarn_type.beta,
         p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
     PB_END,
 PB_END
 );									 
 
+INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    int id = LOWORD(wParam);
+    switch (msg) 
+    {
+        case WM_INITDIALOG:{ 
+            YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)lParam;
+            SetWindowLongPtr(hWnd,GWLP_USERDATA,(LONG_PTR)data);
+
+            wcWeaveParameters params = data->sm->m_weave_parameters;
+            YarnType yarn_type = params.pattern->yarn_types[data->yarn_type];
+            //NOTE(Vidar): Setup spinners
+#define YARN_TYPE_PARAM(A,B){\
+    HWND spinner_hwnd = GetDlgItem(hWnd, IDC_##B##_SPIN);\
+    HWND edit_hwnd = GetDlgItem(hWnd, IDC_##B##_EDIT);\
+    ISpinnerControl * s = GetISpinner(spinner_hwnd);\
+    s->LinkToEdit(edit_hwnd, EDITTYPE_FLOAT);\
+    s->SetLimits(0.f, 1.f, FALSE);\
+    s->SetScale(0.01f);\
+    s->SetValue(yarn_type.A, TRUE);\
+    ReleaseISpinner(s);\
+    uint8_t enabled = yarn_type.A##_enabled;\
+    Button_SetCheck(GetDlgItem(hWnd,IDC_##B##_OVERRIDE),enabled);\
+    EnableWindow(spinner_hwnd,enabled);\
+    EnableWindow(edit_hwnd,enabled);\
+}
+
+            YARN_TYPE_PARAMETERS
+
+            HWND swatch_hwnd = GetDlgItem(hWnd,IDC_YARNCOLOR_SWATCH);
+            IColorSwatch *swatch = GetIColorSwatch(swatch_hwnd);
+            Color col(yarn_type.color[0],yarn_type.color[1],yarn_type.color[2]);
+            swatch->SetColor(col);
+            ReleaseIColorSwatch(swatch);
+            uint8_t enabled = yarn_type.color_enabled;
+            Button_SetCheck(GetDlgItem(hWnd,IDC_COLOR_OVERRIDE),enabled);
+            EnableWindow(swatch_hwnd,enabled);
+            break;
+        }
+        case WM_DESTROY:
+            break;
+        case WM_COMMAND: {
+            switch(HIWORD(wParam)){
+                case BN_CLICKED:{
+                    YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)
+                        GetWindowLong(hWnd,GWLP_USERDATA);
+                    YarnType *yarn_type = &data->sm->m_weave_parameters.pattern
+                        ->yarn_types[data->yarn_type];
+                    switch(id){
+
+#define YARN_TYPE_PARAM(A,B) case IDC_##B##_OVERRIDE:{\
+    HWND spin_hwnd = GetDlgItem(hWnd,IDC_##B##_SPIN);\
+    HWND edit_hwnd = GetDlgItem(hWnd,IDC_##B##_EDIT);\
+    bool check = Button_GetCheck((HWND)lParam);\
+    EnableWindow(spin_hwnd,check);\
+    EnableWindow(edit_hwnd,check);\
+    yarn_type->A##_enabled = check;\
+    break;\
+}
+                        YARN_TYPE_PARAMETERS
+
+                        case IDC_COLOR_OVERRIDE:{
+                            HWND swatch_hwnd =
+                                GetDlgItem(hWnd,IDC_YARNCOLOR_SWATCH);
+                            bool check = Button_GetCheck((HWND)lParam);
+                            EnableWindow(swatch_hwnd,check);
+                            yarn_type->color_enabled = check;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        case CC_SPINNER_CHANGE: {
+            YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)
+                GetWindowLong(hWnd,GWLP_USERDATA);
+            YarnType *yarn_type = &data->sm->m_weave_parameters.pattern
+                ->yarn_types[data->yarn_type];
+            ISpinnerControl *spinner = (ISpinnerControl*)lParam;
+            switch(id){
+
+#define YARN_TYPE_PARAM(yarntype_name,idc_name) case IDC_##idc_name##_SPIN:\
+    yarn_type->yarntype_name = spinner->GetFVal(); break;
+                YARN_TYPE_PARAMETERS
+            }
+            //NOTE(Vidar): Hack to update the preview ball
+            data->sm->pblock->SetValue(mtl_dummy,0,0.5f);
+            break;
+        }
+        case CC_COLOR_CHANGE:{
+            YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)
+                GetWindowLong(hWnd,GWLP_USERDATA);
+            YarnType *yarn_type = &data->sm->m_weave_parameters.pattern
+                ->yarn_types[data->yarn_type];
+            IColorSwatch *swatch = (IColorSwatch*)lParam;
+            COLORREF col = swatch->GetColor();
+            yarn_type->color[0] = (float)GetRValue(col)/255.f;
+            yarn_type->color[1] = (float)GetGValue(col)/255.f;
+            yarn_type->color[2] = (float)GetBValue(col)/255.f;
+            //NOTE(Vidar): Hack to update the preview ball
+            data->sm->pblock->SetValue(mtl_dummy,0,0.5f);
+            break;
+         }
+    }
+    return FALSE;
+}
 
 /*===========================================================================*\
  |	Constructor and Reset systems
@@ -392,46 +492,12 @@ ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
 	Reset();
 }
 
-class TestDlg: public ParamDlg {
-	Class_ID ClassID() { return Class_ID(0x474474f1, 0x9127b25); }
-	void SetThing(ReferenceTarget *a) {}
-	ReferenceTarget *GetThing() { return 0; }
-	void SetTime(TimeValue 	t) {}
-	void ReloadDialog() {}
-	void DeleteThis() {}
-	void ActivateDlg(BOOL 	onOff) {}
-};
-
-INT_PTR TestDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-		int id = LOWORD(wParam);
-		switch (msg) 
-		{
-			case WM_INITDIALOG:{ 
-#define SETUP_SPINNER(name,type,min,max,scale,val)\
-	{ISpinnerControl * s = GetISpinner(GetDlgItem(hWnd, IDC_##name##_SPIN));\
-	s->LinkToEdit(GetDlgItem(hWnd, IDC_##name##_EDIT), type);\
-	s->SetLimits(min, max, FALSE); s->SetScale(scale);\
-	s->SetValue(val, TRUE); ReleaseISpinner(s); }
-
-				SETUP_SPINNER(ALPHA,EDITTYPE_FLOAT, 0.f, 1.f, 0.01f, 0.32f)
-				SETUP_SPINNER(BETA,EDITTYPE_FLOAT, 0.f, 1.f, 0.01f, 0.8f)
-				break;
-            }
-			case WM_DESTROY:
-				break;
-			case WM_COMMAND:
-			{
-			}
-		}
-		return FALSE;
-	}
 
 ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
 	IAutoMParamDlg* masterDlg
 		= thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
 	masterDlg->SetThing(this);
-	imp->AddRollupPage(hInstance, MAKEINTRESOURCE(IDD_YARN),
-		TestDlgProc, _T("Test"));
+    g_imp = imp;
 	return masterDlg;
 }
 
@@ -476,27 +542,16 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 			if (m_weave_parameters.pattern) {
 				ParamID changing_param = pblock->LastNotifyParamID();
 				thunder_loom_param_blk_desc.InvalidateUI(changing_param);
-				YarnType *yarn_type = m_weave_parameters.pattern->yarn_types +
-					m_current_yarn_type;
+                YarnType *yarn_type = &m_weave_parameters.pattern->common_yarn;
 
 				//TODO(Vidar): Not sure about the TimeValue... using 0 for now
 				switch (changing_param) {
-				case mtl_yarn_type:
-				{
-					int sel;
-					pblock->GetValue(mtl_yarn_type, 0, sel, ivalid);
-					m_current_yarn_type = sel;
-					UpdateYarnTypeParameters(sel, pblock,
-						&m_weave_parameters, 0);
-					break;
-				}
 				case yrn_color:
 				{
 					Color c;
 					pblock->GetValue(yrn_color, 0, c,
 						ivalid);
-					float * col = m_weave_parameters.pattern->
-						yarn_types[m_current_yarn_type].color;
+                    float * col = yarn_type->color;
 					col[0] = c.r;
 					col[1] = c.g;
 					col[2] = c.b;
@@ -522,7 +577,7 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 					break;
 				}
 
-#define YARN_TYPE_PARAM(param) case yrn_##param: pblock->GetValue(yrn_##param,0,\
+#define YARN_TYPE_PARAM(param,A) case yrn_##param: pblock->GetValue(yrn_##param,0,\
 					yarn_type->param,ivalid); break;
 				YARN_TYPE_PARAMETERS
 				}

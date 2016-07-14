@@ -46,7 +46,8 @@ EvalDiffuseFunc
     wcPatternData pattern_data = wcGetPatternData(intersection_data,
         weave_parameters);
 	*yarn_type = weave_parameters->pattern->yarn_types[pattern_data.yarn_type];
-	float specular_strength = yarn_type->specular_strength;
+    float specular_strength = yarn_type_get_specular_strength(weave_parameters->
+        pattern,pattern_data.yarn_type);
     wcColor d = 
         wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
     float factor = (1.f - specular_strength);
@@ -117,8 +118,8 @@ EvalSpecularFunc
 
     wcPatternData pattern_data = wcGetPatternData(intersection_data,
         weave_parameters);
-	float specular_strength = weave_parameters->pattern->
-		yarn_types[pattern_data.yarn_type].specular_strength;
+    float specular_strength = yarn_type_get_specular_strength(weave_parameters->
+        pattern,pattern_data.yarn_type);
     float s = specular_strength *
         wcEvalSpecular(intersection_data, pattern_data, weave_parameters);
     reflection_color->r = s;

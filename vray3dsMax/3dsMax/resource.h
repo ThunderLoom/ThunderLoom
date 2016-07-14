@@ -44,6 +44,7 @@
 #define IDC_SPECULAR_EDIT               1012
 #define IDC_CHECK1                      1013
 #define IDC_USCALE_EDIT                 1013
+#define IDC_UMAX_OVERRIDE               1013
 #define IDC_SPECULAR_SPIN               1014
 #define IDC_USCALE_SPIN                 1015
 #define IDC_VSCALE_EDIT                 1016
@@ -95,13 +96,21 @@
 #define IDD_SKELETON_MATERIAL           1047
 #define IDD_BLENDMTL                    1047
 #define ed_texmap_blend_mult8           1047
+#define IDC_PSI_OVERRIDE                1047
 #define cs_blend9                       1048
 #define IDD_BLENDMTL1                   1048
 #define IDD_PARAMS                      1048
 #define IDD_YARN                        1048
+#define IDC_DELTAX_OVERRIDE             1048
 #define ed_texmap_blend_mult9           1049
 #define IDD_BLENDMTL2                   1049
+#define IDD_YARN_TYPE                   1049
+#define IDC_SPECULAR__OVERRIDE          1049
+#define IDC_SPECULAR_OVERRIDE           1049
+#define IDC_ALPHA_OVERRIDE              1050
+#define IDC_BETA_OVERRIDE               1051
 #define IDC_SIMPLE_SPIN                 1052
+#define IDC_COLOR_OVERRIDE              1052
 #define sp_texmap_blend_mult1           1053
 #define sp_texmap_blend_mult2           1054
 #define sp_texmap_blend_mult3           1055
@@ -145,7 +154,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        109
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1046
+#define _APS_NEXT_CONTROL_VALUE         1053
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -157,8 +157,8 @@ void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
     /*segment_u = asinf(x*sinf(params->umax));
         segment_v = asinf(y);*/
     //TODO(Vidar): Use a parameter for choosing model?
-	YarnType yarn_type = params->pattern->yarn_types[pattern_data->yarn_type];
-    float segment_u = pattern_data->y*yarn_type.umax;
+    float segment_u = pattern_data->y*yarn_type_get_umax(params->pattern,
+        pattern_data->yarn_type);
     float segment_v = pattern_data->x*M_PI_2;
 
     //Calculate the normal in yarn-local coordinates
@@ -738,7 +738,6 @@ WC_PREFIX
 float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
     wcPatternData data, const wcWeaveParameters *params)
 {
-	YarnType *yarn_type = params->pattern->yarn_types + data.yarn_type;
     wcVector wi = wcvector(intersection_data.wi_x, intersection_data.wi_y,
         intersection_data.wi_z);
     wcVector wo = wcvector(intersection_data.wo_x, intersection_data.wo_y,
@@ -764,7 +763,8 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
     //calculate yarn tangent.
 
     float reflection = 0.f;
-    if (fabsf(specular_u) < yarn_type->umax) {
+    float umax = yarn_type_get_umax(params->pattern,data.yarn_type);
+    if (fabsf(specular_u) < umax){
         // Make normal for highlights, uses v and specular_u
         wcVector highlight_normal = wcVector_normalize(wcvector(sinf(v),
                     sinf(specular_u)*cosf(v),
@@ -775,28 +775,31 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
                     cosf(specular_u), -sinf(specular_u)));
 
         //get specular_y, using irawans transformation.
-        float specular_y = specular_u/yarn_type->umax;
+        float specular_y = specular_u/umax;
         // our transformation TODO(Peter): Verify!
         //float specular_y = sinf(specular_u)/sinf(m_umax);
 
+        float delta_x = yarn_type_get_delta_x(params->pattern, data.yarn_type);
         //Clamp specular_y TODO(Peter): change name of m_delta_x to m_delta_h
-        specular_y = specular_y < 1.f - yarn_type->delta_x ? specular_y :
-            1.f - yarn_type->delta_x;
-        specular_y = specular_y > -1.f + yarn_type->delta_x ? specular_y :
-            -1.f + yarn_type->delta_x;
+        specular_y = specular_y < 1.f - delta_x ? specular_y :
+            1.f - delta_x;
+        specular_y = specular_y > -1.f + delta_x ? specular_y :
+            -1.f + delta_x;
 
         //this takes the role of xi in the irawan paper.
-        if (fabsf(specular_y - y) < yarn_type->delta_x) {
+        if (fabsf(specular_y - y) < delta_x) {
             // --- Set Gu, using (6)
             float a = 1.f; //radius of yarn
-            float R = 1.f/(sin(yarn_type->umax)); //radius of curvature
+            float R = 1.f/(sin(umax)); //radius of curvature
             float Gu = a*(R + a*cosf(v)) /(
                 wcVector_magnitude(wcVector_add(wi,wo)) *
                 fabsf((wcVector_cross(highlight_tangent,H)).x));
 
+            float alpha = yarn_type_get_alpha(params->pattern, data.yarn_type);
+            float beta = yarn_type_get_beta(params->pattern, data.yarn_type);
             // --- Set fc
             float cos_x = -wcVector_dot(wi, wo);
-            float fc = yarn_type->alpha + vonMises(cos_x, yarn_type->beta);
+            float fc = alpha + vonMises(cos_x, beta);
 
             // --- Set A
             float widotn = wcVector_dot(wi, highlight_normal);
@@ -811,7 +814,7 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
             float l = 2.f;
             //TODO(Peter): Implement As, -- smoothes the dissapeares of the
             // higlight near the ends. Described in (9)
-            reflection = 2.f*l*yarn_type->umax*fc*Gu*A/yarn_type->delta_x;
+            reflection = 2.f*l*umax*fc*Gu*A/delta_x;
         }
     }
     return reflection;
@@ -821,8 +824,6 @@ WC_PREFIX
 float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     wcPatternData data, const wcWeaveParameters *params)
 {
-	YarnType *yarn_type = params->pattern->yarn_types + data.yarn_type;
-
     wcVector wi = wcvector(intersection_data.wi_x, intersection_data.wi_y,
         intersection_data.wi_z);
     wcVector wo = wcvector(intersection_data.wo_x, intersection_data.wo_y,
@@ -836,13 +837,15 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     }
     wcVector H = wcVector_normalize(wcVector_add(wi, wo));
 
+    float psi = yarn_type_get_psi(params->pattern,data.yarn_type);
+
     float u = data.u;
     float x = data.x;
     float D;
     {
         float a = H.y*sinf(u) + H.z*cosf(u);
         D = (H.y*cosf(u)-H.z*sinf(u))/(sqrtf(H.x*H.x + a*a))/
-			tanf(yarn_type->psi);
+			tanf(psi);
     }
     float reflection = 0.f;
             
@@ -860,22 +863,29 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
         // our transformation
         //float specular_x = sinf(specular_v);
 
-        //Clamp specular_x
-        specular_x = specular_x < 1.f - yarn_type->delta_x ? specular_x :
-            1.f - yarn_type->delta_x;
-        specular_x = specular_x > -1.f + yarn_type->delta_x ? specular_x :
-            -1.f + yarn_type->delta_x;
+        float delta_x = yarn_type_get_delta_x(params->pattern,data.yarn_type);
+        float umax = yarn_type_get_umax(params->pattern,data.yarn_type);
 
-        if (fabsf(specular_x - x) < yarn_type->delta_x) {
+        //Clamp specular_x
+        specular_x = specular_x < 1.f - delta_x ? specular_x :
+            1.f - delta_x;
+        specular_x = specular_x > -1.f + delta_x ? specular_x :
+            -1.f + delta_x;
+
+        if (fabsf(specular_x - x) < delta_x) {
+
+            float alpha = yarn_type_get_alpha(params->pattern,data.yarn_type);
+            float beta  = yarn_type_get_beta( params->pattern,data.yarn_type);
+
             // --- Set Gv
             float a = 1.f; //radius of yarn
-            float R = 1.f/(sin(yarn_type->umax)); //radius of curvature
+            float R = 1.f/(sin(umax)); //radius of curvature
             float Gv = a*(R + a*cosf(specular_v))/(
                 wcVector_magnitude(wcVector_add(wi,wo)) *
-                wcVector_dot(highlight_normal,H) * fabsf(sinf(yarn_type->psi)));
+                wcVector_dot(highlight_normal,H) * fabsf(sinf(psi)));
             // --- Set fc
             float cos_x = -wcVector_dot(wi, wo);
-            float fc = yarn_type->alpha + vonMises(cos_x, yarn_type->beta);
+            float fc = alpha + vonMises(cos_x, beta);
             // --- Set A
             float widotn = wcVector_dot(wi, highlight_normal);
             float wodotn = wcVector_dot(wo, highlight_normal);
@@ -888,7 +898,7 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
                 //TODO(Peter): Explain from where the 1/4*PI factor comes from
             }
             float w = 2.f;
-            reflection = 2.f*w*yarn_type->umax*fc*Gv*A/yarn_type->delta_x;
+            reflection = 2.f*w*umax*fc*Gv*A/delta_x;
         }
     }
     return reflection;
@@ -904,11 +914,14 @@ wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
         value *= yarnVariation(data, params);
     }
 
-	YarnType yarn_type = params->pattern->yarn_types[data.yarn_type];
+	YarnType *yarn_type = params->pattern->yarn_types + data.yarn_type;
+    if(!yarn_type->color_enabled){
+        yarn_type = &params->pattern->common_yarn;
+    }
     wcColor color = {
-        yarn_type.color[0] * value,
-        yarn_type.color[1] * value,
-        yarn_type.color[2] * value
+        yarn_type->color[0] * value,
+        yarn_type->color[1] * value,
+        yarn_type->color[2] * value
     };
     return color;
 }
@@ -921,11 +934,11 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
     // staple or filament. They are treated differently in order
     // to work better numerically. 
     float reflection = 0.f;
-	YarnType yarn_type = params->pattern->yarn_types[data.yarn_type];
     if(params->pattern == 0){
         return 0.f;
     }
-    if (yarn_type.psi <= 0.001f) {
+    float psi = yarn_type_get_psi(params->pattern, data.yarn_type);
+    if (psi <= 0.001f) {
         //Filament yarn
         reflection = wcEvalFilamentSpecular(intersection_data, data, params); 
     } else {
@@ -942,12 +955,10 @@ wcColor wcShade(wcIntersectionData intersection_data,
     wcPatternData data = wcGetPatternData(intersection_data,params);
     wcColor ret = wcEvalDiffuse(intersection_data,data,params);
     float spec  = wcEvalSpecular(intersection_data,data,params);
-	YarnType yarn_type = params->pattern->yarn_types[data.yarn_type];
-    ret.r = ret.r*(1.f-yarn_type.specular_strength) +
-		yarn_type.specular_strength*spec;
-    ret.g = ret.g*(1.f-yarn_type.specular_strength) +
-		yarn_type.specular_strength*spec;
-    ret.b = ret.b*(1.f-yarn_type.specular_strength) +
-		yarn_type.specular_strength*spec;
+    float specular_strength = yarn_type_get_specular_strength(params->pattern,
+        data.yarn_type);
+    ret.r = ret.r*(1.f-specular_strength) + specular_strength*spec;
+    ret.g = ret.g*(1.f-specular_strength) + specular_strength*spec;
+    ret.b = ret.b*(1.f-specular_strength) + specular_strength*spec;
     return ret;
 }

@@ -48,7 +48,7 @@ enum {
 	mtl_realworld,
     mtl_uscale,
     mtl_vscale,
-	mtl_yarn_type,
+    mtl_dummy,
 	yrn_color,
 #define YARN_TYPE_PARAM(param) yrn_##param,
 	YARN_TYPE_PARAMETERS
@@ -82,7 +82,9 @@ public:
 	// various variables
 	Interval ivalid;
     wcWeaveParameters m_weave_parameters;
-    uint32_t m_current_yarn_type;
+    uint32_t m_current_yarn_type; //TODO(Vidar):Remove
+    bool *m_yarn_type_overrides;
+
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	//ref 0
