@@ -15,8 +15,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-using namespace VUtils;
-
 void
 #ifdef DYNAMIC
 eval_diffuse
@@ -51,22 +49,41 @@ EvalDiffuseFunc
     wcColor d = 
         wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
 
-	//Texmap variation
+	/*
+	//This is correct but does not look good! causes sudden changes in diffuse color...
+	//If there is more specular, there should be less diffuse and vice versa.
 	int offset = NUMBER_OF_FIXED_TEXMAPS + pattern_data.yarn_type*NUMBER_OF_YRN_TEXMAPS;
-	float diffuse_variation = 1.f;
+	float specular_variation = 1.f;
+	if (texmaps[offset + yrn_texmaps_specular]) {
+		specular_variation = texmaps[offset + yrn_texmaps_specular]->EvalMono(sc);
+	} else if (texmaps[texmaps_specular]) {
+		specular_variation = texmaps[texmaps_specular]->EvalMono(sc);
+	}
+	specular_strength *= specular_variation; 
+	*/
+
+
+	//Texmap variation
+	AColor diffuse_map;
+	int offset = NUMBER_OF_FIXED_TEXMAPS + pattern_data.yarn_type*NUMBER_OF_YRN_TEXMAPS;
 	if (texmaps[offset + yrn_texmaps_diffuse]) {
-		diffuse_variation = texmaps[offset + yrn_texmaps_diffuse]->EvalMono(sc);
+		diffuse_map = texmaps[offset + yrn_texmaps_diffuse]->EvalColor(sc);
 	} else if (texmaps[texmaps_diffuse]) {
-		diffuse_variation = texmaps[texmaps_diffuse]->EvalMono(sc);
+		diffuse_map = texmaps[texmaps_diffuse]->EvalColor(sc);
+	} else {
+		diffuse_map.White();
 	}
 
-	//TODO(Peter): Move actual modification into woven_cloth project,
-	//pass variation mount in with intersection_data
+	//Note(Peter): Currently diffuse map multiplies color to result. 
+	//Should make this clear in the gui
 
-	float factor = (1.f - specular_strength)*diffuse_variation; //Note(Peter): is this variation physically correct!?
-    diffuse_color->r = factor*d.r;
-    diffuse_color->g = factor*d.g;
-    diffuse_color->b = factor*d.b;
+	//TODO(Peter): Move actual modification into woven_cloth project,
+	//pass variation mount in with intersection_data?
+
+	float factor = (1.f - specular_strength);
+    diffuse_color->r = factor*diffuse_map.r*d.r;
+	diffuse_color->g = factor*diffuse_map.g*d.g;
+	diffuse_color->b = factor*diffuse_map.b*d.b;
 }
 
 void
@@ -142,7 +159,7 @@ EvalSpecularFunc
 	} else if (texmaps[texmaps_specular]) {
 		specular_variation = texmaps[texmaps_specular]->EvalMono(sc);
 	}
-	
+
     float s = specular_strength * specular_variation *
         wcEvalSpecular(intersection_data, pattern_data, weave_parameters);
     reflection_color->r = s;
