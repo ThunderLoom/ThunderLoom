@@ -49,19 +49,11 @@ enum {
     mtl_yarnvar_persistance,
     mtl_yarnvar_octaves,
 	mtl_texmap_diffuse,
+	mtl_texmap_specular,
     texmaps, //stores texmaps for each yarntype in a TEXMAPS_TAB pblock
 	yrn_color,
 #define YARN_TYPE_PARAM(param) yrn_##param,
 	YARN_TYPE_PARAMETERS
-};
-
-//Set SubTexMap ids for ALL yarntype specific texmaps
-//These ids will be offsetted with number of
-//texmaps times the the current yarn_type id.
-enum {
-#define YARN_TYPE_TEXMAP(param) yrn_texmaps_##param,
-	YARN_TYPE_TEXMAP_PARAMETERS
-	NUMBER_OF_YRN_TEXMAPS
 };
 
 //NOTE(Peter): update this array when YARN_TYPE_TEXMAP_PARAMETERS changes!
@@ -72,8 +64,6 @@ static int texmapBtnIDCs[NUMBER_OF_YRN_TEXMAPS] =
 	IDC_YRN_TEX_SPECULAR_BUTTON,
 	IDC_YRN_TEX_SIZE_BUTTON
 };
-
-#define NUMBER_OF_FIXED_TEXMAPS 1 //how many non yarn specific texmaps
 
 /*===========================================================================*\
  |	The actual BRDF
@@ -107,6 +97,10 @@ public:
 	Interval ivalid;
     wcWeaveParameters m_weave_parameters;
     uint32_t m_current_yarn_type;
+
+	// Note(Peter): ugly solution
+	// Se ThunderLoomMtl::Shade for more info..
+	Texmap **m_tmp_alltexmaps;
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	//ref 0

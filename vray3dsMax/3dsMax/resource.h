@@ -60,6 +60,7 @@
 #define IDC_UMAX_LABEL                  1026
 #define IDC_VSCALE_LABEL2               1026
 #define IDC_PSI_LABEL                   1027
+#define IDC_VSCALE_LABEL3               1027
 #define IDC_PSI_EDIT                    1028
 #define IDC_PSI_SPIN                    1029
 #define IDC_DELTAX_EDIT                 1030
@@ -91,7 +92,6 @@
 #define cs_blend6                       1042
 #define IDC_YARNTYPE_LABEL              1042
 #define ed_texmap_blend_mult6           1043
-#define IDC_YRN_TEX_SPECULAR_BUTTON2    1043
 #define IDC_YRN_TEX_DIFFUSE_BUTTON      1043
 #define cs_blend7                       1044
 #define IDC_YARNCOLOR_SWATCH            1044
@@ -144,6 +144,8 @@
 #define sp_texmap_blend_mult9           1079
 #define bn_texmap_blend9                1080
 #define IDC_TEX_DIFFUSE_BUTTON          1081
+#define IDC_TEX_DIFFUSE_BUTTON2         1082
+#define IDC_TEX_SPECULAR_BUTTON         1082
 #define IDC_MTLON1                      1642
 #define cb_giMtl                        1643
 #define cb_reflectMtl                   1644

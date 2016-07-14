@@ -15,13 +15,13 @@ protected:
 	Matrix nm, inm; // A matrix with the normal as the z-axis; can be used for anisotropy
 
     wcWeaveParameters *m_weave_parameters;
-	Texmap *m_tex;
+	Texmap **m_texmaps;
 	YarnType m_yarn_type;
 
 public:
 
 	// Initialization
-	void init(const VRayContext &rc, wcWeaveParameters *weave_parameters, Texmap *tex);
+	void init(const VRayContext &rc, wcWeaveParameters *weave_parameters, Texmap **texmaps);
 
 	// From BRDFSampler
 	Vector getDiffuseNormal(const VR::VRayContext &rc);

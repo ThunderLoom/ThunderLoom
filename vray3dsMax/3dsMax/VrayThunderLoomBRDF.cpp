@@ -1,4 +1,3 @@
-//blinnbrdf.cpp
 //More Vray specific things. Implements methods for the BSDFSampler interface.
 
 #include "dynamic.h"
@@ -7,6 +6,7 @@
 #include "vraycore.h"
 #include "vrayrenderer.h"
 #include "imtl.h"
+#include "helper.h"
 
 #include "VrayThunderLoomBRDF.h"
 
@@ -24,9 +24,10 @@ using namespace VUtils;
 // one calling eval(). In this function we can do all the work that is common
 // throughout all directions, such as computing the diffuse color.
 void
-MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters, Texmap *tex) {
+MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters, Texmap **texmaps) {
     m_weave_parameters = weave_parameters;
-    EvalDiffuseFunc(rc,weave_parameters,tex,&diffuse_color,&m_yarn_type);
+	m_texmaps = texmaps;
+    EvalDiffuseFunc(rc,weave_parameters,texmaps,&diffuse_color,&m_yarn_type);
     orig_backside = rc.rayresult.realBack;
 
 	// Set the normals to use for lighting
@@ -92,7 +93,8 @@ VUtils::Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction,
         VUtils::Color reflect_color;
         //TODO(Vidar):Better importance sampling... Cosine weighted for now
         float probReflection=cs;
-        EvalSpecularFunc(rc,direction,m_weave_parameters,nm,&reflect_color);
+		EvalSpecularFunc(rc,direction,m_weave_parameters,m_texmaps,nm,&reflect_color);
+
         //NOTE(Vidar): Multiple importance sampling factor
         float weight = getReflectionWeight(probLight,probReflection);
         ret += cs*reflect_color*weight;

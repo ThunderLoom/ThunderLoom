@@ -10,6 +10,7 @@
 #include "vrayrenderer.h"
 #include "shadedata_new.h"
 #include "woven_cloth.h"
+#include "../3dsMax/helper.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -23,7 +24,7 @@ eval_diffuse
 EvalDiffuseFunc
 #endif
 (const VUtils::VRayContext &rc,
-    wcWeaveParameters *weave_parameters, Texmap *tex,
+    wcWeaveParameters *weave_parameters, Texmap **texmaps,
 	VUtils::Color *diffuse_color, YarnType* yarn_type)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
@@ -50,11 +51,19 @@ EvalDiffuseFunc
     wcColor d = 
         wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
 
-	float variation = 1.f;
-	if (tex)
-		variation = tex->EvalMono(sc);
+	//Texmap variation
+	int offset = NUMBER_OF_FIXED_TEXMAPS + pattern_data.yarn_type*NUMBER_OF_YRN_TEXMAPS;
+	float diffuse_variation = 1.f;
+	if (texmaps[offset + yrn_texmaps_diffuse]) {
+		diffuse_variation = texmaps[offset + yrn_texmaps_diffuse]->EvalMono(sc);
+	} else if (texmaps[texmaps_diffuse]) {
+		diffuse_variation = texmaps[texmaps_diffuse]->EvalMono(sc);
+	}
 
-	float factor = (1.f - specular_strength)*variation;
+	//TODO(Peter): Move actual modification into woven_cloth project,
+	//pass variation mount in with intersection_data
+
+	float factor = (1.f - specular_strength)*diffuse_variation; //Note(Peter): is this variation physically correct!?
     diffuse_color->r = factor*d.r;
     diffuse_color->g = factor*d.g;
     diffuse_color->b = factor*d.b;
@@ -67,7 +76,7 @@ eval_specular
 EvalSpecularFunc
 #endif
 ( const VUtils::VRayContext &rc, const VUtils::Vector &direction,
-    wcWeaveParameters *weave_parameters, VUtils::Matrix nm,
+    wcWeaveParameters *weave_parameters, Texmap **texmaps, VUtils::Matrix nm,
     VUtils::Color *reflection_color)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
@@ -124,7 +133,17 @@ EvalSpecularFunc
         weave_parameters);
 	float specular_strength = weave_parameters->pattern->
 		yarn_types[pattern_data.yarn_type].specular_strength;
-    float s = specular_strength *
+
+	//Texmap variation
+	int offset = NUMBER_OF_FIXED_TEXMAPS + pattern_data.yarn_type*NUMBER_OF_YRN_TEXMAPS;
+	float specular_variation = 1.f;
+	if (texmaps[offset + yrn_texmaps_specular]) {
+		specular_variation = texmaps[offset + yrn_texmaps_specular]->EvalMono(sc);
+	} else if (texmaps[texmaps_specular]) {
+		specular_variation = texmaps[texmaps_specular]->EvalMono(sc);
+	}
+	
+    float s = specular_strength * specular_variation *
         wcEvalSpecular(intersection_data, pattern_data, weave_parameters);
     reflection_color->r = s;
     reflection_color->g = s;

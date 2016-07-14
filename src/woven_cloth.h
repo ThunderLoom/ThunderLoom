@@ -70,7 +70,7 @@ typedef struct
 
 // These are used to load a weaving pattern from a file
 // Call _after_ all parameters have been set.
-// Don't forget to free the weaving pattern when you're done reandering
+// Don't forget to free the weaving pattern when you're done rendering
 WC_PREFIX
 void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename);
 WC_PREFIX
@@ -84,8 +84,6 @@ void wcFreeWeavePattern(wcWeaveParameters *params);
 WC_PREFIX
 wcColor wcShade(wcIntersectionData intersection_data,
         const wcWeaveParameters *params);
-
-
 
 
 // ========= Advanced usage =========

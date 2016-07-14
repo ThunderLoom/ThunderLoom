@@ -28,18 +28,6 @@ typedef struct
                        //should be ok, right?
 }PatternEntry;
 
-//NOTE(Peter):These are parameters for each yarn type that can be varied  
-//for each uv position. These paramters are good to vary using texture maps
-#define YARN_TYPE_TEXMAP_PARAMETERS\
-	YARN_TYPE_TEXMAP(diffuse)\
-	YARN_TYPE_TEXMAP(specular)\
-	YARN_TYPE_TEXMAP(yarnsize)
-typedef struct 
-{
-#define YARN_TYPE_TEXMAP(param) float param;
-	YARN_TYPE_TEXMAP_PARAMETERS
-}YarnVariationParams;
-
 //NOTE(Vidar):These are the yarn type parameters (except color)
 #define YARN_TYPE_PARAMETERS\
 	YARN_TYPE_PARAM(umax)\
@@ -66,6 +54,35 @@ YarnType default_yarn_type =
 	0.3f,  //delta_x
 	0.4f,  //specular_strength
 	0.3f, 0.3f, 0.3f,  //color
+};
+
+
+//TODO(Peter): Find a nice place for this!
+//Set SubTexMap ids for ALL yarntype specific texmaps
+//These ids will be offsetted with number of
+//texmaps times the the current yarn_type id.
+//Used when rendering and 
+
+//NOTE(Peter):These are parameters for that can be varied  
+//for each uv position. These paramters are good to vary using texture maps
+#define TEXMAP_PARAMETERS\
+	TEXMAP(diffuse)\
+	TEXMAP(specular)
+enum {
+#define TEXMAP(param) texmaps_##param,
+	TEXMAP_PARAMETERS
+	NUMBER_OF_FIXED_TEXMAPS //how many non yarn specific texmaps
+};
+//NOTE(Peter):These are parameters for each yarn type that can be varied  
+//for each uv position. These paramters are good to vary using texture maps
+#define YARN_TYPE_TEXMAP_PARAMETERS\
+	YARN_TYPE_TEXMAP(diffuse)\
+	YARN_TYPE_TEXMAP(specular)\
+	YARN_TYPE_TEXMAP(yarnsize)
+enum {
+#define YARN_TYPE_TEXMAP(param) yrn_texmaps_##param,
+	YARN_TYPE_TEXMAP_PARAMETERS
+	NUMBER_OF_YRN_TEXMAPS
 };
 
 typedef struct

@@ -336,7 +336,7 @@ public:
 					for(int i = 0; i < NUMBER_OF_YRN_TEXMAPS; i++) {
 						if (LOWORD(wParam) == texmapBtnIDCs[i] && HIWORD(wParam) == BN_CLICKED){
 							//set mtl!
-							int subtexmap_id = sm->m_current_yarn_type*NUMBER_OF_YRN_TEXMAPS + i + 1;
+							int subtexmap_id = NUMBER_OF_FIXED_TEXMAPS + sm->m_current_yarn_type*NUMBER_OF_YRN_TEXMAPS + i;
 							//User pressed Texmap button for ith submap
 							PostMessage(sm->m_hwMtlEdit, WM_TEXMAP_BUTTON, subtexmap_id,(LPARAM)sm);
 							DBOUT("Posted WM_TEXMAP_BUTTON, with texmap id " << subtexmap_id);
@@ -437,6 +437,10 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
 	mtl_texmap_diffuse, _T("diffuseMap"), TYPE_TEXMAP, 0, 0, 
 		p_subtexno, 0,
 		p_ui, rollout_pattern, TYPE_TEXMAPBUTTON, IDC_TEX_DIFFUSE_BUTTON,
+    PB_END,
+	mtl_texmap_specular, _T("specularMap"), TYPE_TEXMAP, 0, 0, 
+		p_subtexno, 1,
+		p_ui, rollout_pattern, TYPE_TEXMAPBUTTON, IDC_TEX_SPECULAR_BUTTON,
     PB_END,
     texmaps, _T("diffuseMapList"), TYPE_TEXMAP_TAB, 0, P_VARIABLE_SIZE, 0,
 		//no ui, for the array
@@ -590,29 +594,47 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 
 int ThunderLoomMtl::NumSubTexmaps() {
 	if (this->m_weave_parameters.pattern) {
-		return 1 + this->m_weave_parameters.pattern->num_yarn_types*NUMBER_OF_YRN_TEXMAPS;
+		return NUMBER_OF_FIXED_TEXMAPS + this->m_weave_parameters.pattern->num_yarn_types*NUMBER_OF_YRN_TEXMAPS;
 	} else {
-		return 1; //master diffusemap
+		return NUMBER_OF_FIXED_TEXMAPS;
 	}
 }
 
 Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
 	//DBOUT( "GetSubtex i: " << i );
-	if (i == 0) {
-		return pblock->GetTexmap(mtl_texmap_diffuse);
-	} else if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
-		return pblock->GetTexmap(texmaps, 0, i-NUMBER_OF_FIXED_TEXMAPS);
-	} else {
-		return NULL;
+	switch (i)
+	{
+		case 0:
+			return pblock->GetTexmap(mtl_texmap_diffuse);
+			break;
+		case 1:
+			return pblock->GetTexmap(mtl_texmap_specular);
+			break;
+		default:
+			if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
+				return pblock->GetTexmap(texmaps, 0, i-NUMBER_OF_FIXED_TEXMAPS);
+			} else {
+				return NULL;
+			}
+			break;
 	}
 }
 
 void ThunderLoomMtl::SetSubTexmap(int i, Texmap* m) {
 	DBOUT( "SetSubtex i: " << i );
-	if (i == 0) {
-		pblock->SetValue(mtl_texmap_diffuse, 0, m);
-	} else if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
-		pblock->SetValue(texmaps, 0, m, i-NUMBER_OF_FIXED_TEXMAPS);
+	switch (i)
+	{
+		case 0:
+			pblock->SetValue(mtl_texmap_diffuse, 0, m);
+			break;
+		case 1:
+			pblock->SetValue(mtl_texmap_specular, 0, m);
+			break;
+		default:
+			if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
+				pblock->SetValue(texmaps, 0, m, i-NUMBER_OF_FIXED_TEXMAPS);
+			}
+			break;
 	}
 }
 
@@ -620,6 +642,7 @@ TSTR ThunderLoomMtl::GetSubTexmapSlotName(int i) {
 	DBOUT( "GetSubtexname i: " << i );
 	switch(i) {
 		case 0: return L"Main Diffuse Map";
+		case 1: return L"Main Specular Map";
 	}
 
 	//if not main texmap, then yarntexmap
@@ -794,26 +817,37 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 
 	wcFinalizeWeaveParameters(&m_weave_parameters);
 
+	// NOTE(Peter): I would like feedback on this method getting textures to the bsdf. This feels ugly! But not sure how to improve!
+	// Alternitive is simply passing pblock pointer or pointer to entire material to the eval BSDF function. But this might 
+	// add a lot of overhead in the performance cirical area.... :/
+
+	//Gather texmap pointers for use in vray, gathering here to avoid including paramblock2.h in eval function.
+	//Not gathering in newBSDF since that gets called for every sample.
+	DBOUT("Gathering texmaps!")
+	if (this->m_weave_parameters.pattern) {
+		int ntexmaps = NUMBER_OF_FIXED_TEXMAPS + NUMBER_OF_YRN_TEXMAPS * this->m_weave_parameters.pattern->num_yarn_types;
+		m_tmp_alltexmaps = (Texmap**)calloc(ntexmaps,sizeof(Texmap*));
+		for (int i = 0; i < ntexmaps; i++) {
+			m_tmp_alltexmaps[i] = GetSubTexmap(i);
+		}
+	}
+
 	const VR::VRaySequenceData &sdata=vray->getSequenceData();
 	bsdfPool.init(sdata.maxRenderThreads);
 }
 
 void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
-
+	if (this->m_weave_parameters.pattern) {
+		free(m_tmp_alltexmaps);
+	}
 	bsdfPool.freeMem();
 	renderChannels.freeMem();
 }
 
 VR::BSDFSampler* ThunderLoomMtl::newBSDF(const VR::VRayContext &rc, VR::VRenderMtlFlags flags) {
-		//TODO(Peter): Have mapping stuff here or in the BRDF?
-		//it is 3dsmax specific
-		//This is just a test!	
-		float variation = 1.f;
-		Texmap *tex = pblock->GetTexmap(mtl_texmap_diffuse);
-
 	MyBlinnBSDF *bsdf=bsdfPool.newBRDF(rc);
 	if (!bsdf) return NULL;
-    bsdf->init(rc, &m_weave_parameters, tex);
+	bsdf->init(rc, &m_weave_parameters, m_tmp_alltexmaps);
 	return bsdf;
 }
 
@@ -837,7 +871,6 @@ VR::VRayVolume* ThunderLoomMtl::getVolume(const VR::VRayContext &rc) {
 
 void ThunderLoomMtl::Shade(ShadeContext &sc) {
 	if (sc.ClassID()==VRAYCONTEXT_CLASS_ID) {
-
 		//shade() creates brdf, shades and deletes the brdf
 		//it does this using the corresponding methods that have
 		//been implemented from VUtils::VRenderMtl
