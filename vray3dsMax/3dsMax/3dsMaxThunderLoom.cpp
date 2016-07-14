@@ -144,9 +144,6 @@ ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
  |	UI stuff
 \*===========================================================================*/
 
-//TODO(Vidar):Make local...
-static IMtlParams *g_imp;
-
 struct YarnTypeDlgProcData
 {
     ThunderLoomMtl *sm;
@@ -165,15 +162,15 @@ public:
 
     void update_yarn_type_rollups()
     {
-        if(g_imp){
+        if(sm && sm->m_i_mtl_params){
             for (int i = 0; i < num_rollups; i++) {
-                g_imp->DeleteRollupPage(rollups[i]);
+                sm->m_i_mtl_params->DeleteRollupPage(rollups[i]);
             }
         }
         if(rollups){
             free(rollups);
         }
-        if(sm && sm->m_weave_parameters.pattern && g_imp){
+        if(sm && sm->m_weave_parameters.pattern && sm->m_i_mtl_params){
             num_rollups = sm->m_weave_parameters.pattern->num_yarn_types;
             rollups = (HWND*)calloc(num_rollups,sizeof(HWND));
             if (sm && sm->m_weave_parameters.pattern) {
@@ -184,7 +181,7 @@ public:
                         calloc(1,sizeof(YarnTypeDlgProcData));
                     data->sm = sm;
                     data->yarn_type = i;
-                    rollups[i] = g_imp->AddRollupPage(hInstance,
+                    rollups[i] = sm->m_i_mtl_params->AddRollupPage(hInstance,
                         MAKEINTRESOURCE(IDD_YARN_TYPE),YarnTypeDlgProc,buffer,
                         (LPARAM)data, APPENDROLL_CLOSED);
                 }
@@ -282,6 +279,7 @@ public:
         }
         rollups = 0;
         num_rollups = 0;
+        sm = NULL;
     }
 
 	void SetThing(ReferenceTarget *m)
@@ -480,12 +478,14 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 \*===========================================================================*/
 
 void ThunderLoomMtl::Reset() {
+    m_i_mtl_params = 0;
 	m_weave_parameters.pattern = 0;
 	ivalid.SetEmpty();
 	thunderLoomDesc.Reset(this);
 }
 
 ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
+    m_i_mtl_params = 0;
 	pblock=NULL;
 	ivalid.SetEmpty();
 	thunderLoomDesc.MakeAutoParamBlocks(this);
@@ -497,7 +497,7 @@ ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
 	IAutoMParamDlg* masterDlg
 		= thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
 	masterDlg->SetThing(this);
-    g_imp = imp;
+    m_i_mtl_params = imp;
 	return masterDlg;
 }
 

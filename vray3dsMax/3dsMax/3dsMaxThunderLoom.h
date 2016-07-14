@@ -84,6 +84,7 @@ public:
     wcWeaveParameters m_weave_parameters;
     uint32_t m_current_yarn_type; //TODO(Vidar):Remove
     bool *m_yarn_type_overrides;
+    IMtlParams *m_i_mtl_params;
 
 
 	// Parameter and UI management
