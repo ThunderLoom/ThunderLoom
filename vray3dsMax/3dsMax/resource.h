@@ -146,6 +146,7 @@
 #define IDC_TEX_DIFFUSE_BUTTON          1081
 #define IDC_TEX_DIFFUSE_BUTTON2         1082
 #define IDC_TEX_SPECULAR_BUTTON         1082
+#define IDR_MENU_TEX_CLEAR				1083
 #define IDC_MTLON1                      1642
 #define cb_giMtl                        1643
 #define cb_reflectMtl                   1644
@@ -155,7 +156,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        109
+#define _APS_NEXT_RESOURCE_VALUE        110
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1050
 #define _APS_NEXT_SYMED_VALUE           101

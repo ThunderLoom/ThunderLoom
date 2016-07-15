@@ -324,26 +324,58 @@ public:
 				break;
 			case WM_COMMAND:
 			{
-				/*
 				switch (LOWORD(wParam)) {
-					case IDC_WIFFILE_BUTTON: {
+					/*case IDC_WIFFILE_BUTTON: {
 						//do something
 						break;
-					}
-				}*/
-
-				default: {
-					for(int i = 0; i < NUMBER_OF_YRN_TEXMAPS; i++) {
-						if (LOWORD(wParam) == texmapBtnIDCs[i] && HIWORD(wParam) == BN_CLICKED){
-							//set mtl!
-							int subtexmap_id = NUMBER_OF_FIXED_TEXMAPS + sm->m_current_yarn_type*NUMBER_OF_YRN_TEXMAPS + i;
-							//User pressed Texmap button for ith submap
-							PostMessage(sm->m_hwMtlEdit, WM_TEXMAP_BUTTON, subtexmap_id,(LPARAM)sm);
-							DBOUT("Posted WM_TEXMAP_BUTTON, with texmap id " << subtexmap_id);
+					}*/
+				
+					default: {
+						if(sm->m_weave_parameters.pattern) {
+						for(int i = 0; i < NUMBER_OF_YRN_TEXMAPS; i++) {
+							if (LOWORD(wParam) == texmapBtnIDCs[i] && HIWORD(wParam) == BN_CLICKED){
+								//set mtl!
+								int subtexmap_id = NUMBER_OF_FIXED_TEXMAPS + sm->m_current_yarn_type*NUMBER_OF_YRN_TEXMAPS + i;
+								//User pressed Texmap button for ith submap
+								PostMessage(sm->m_hwMtlEdit, WM_TEXMAP_BUTTON, subtexmap_id,(LPARAM)sm);
+								DBOUT("Posted WM_TEXMAP_BUTTON, with texmap id " << subtexmap_id);
+							}
+						}
 						}
 					}
 				}
 
+			}
+			case WM_CONTEXTMENU:
+			{
+				//Note(Peter): Allow for right click context menu when rightclicking 
+				// yarn texmaps, much like the way when clicking regular texmaps buttons
+				// handled by a paramblock. Is probably a a better way to get the same
+				// menu without, cannot find how though, this will do for now.
+				POINT ptScreen = {LOWORD(lParam), HIWORD(lParam)};
+				POINT ptClient = ptScreen;
+				ScreenToClient(hWnd, &ptClient);
+				HWND hWndChild  = RealChildWindowFromPoint(hWnd, ptClient); //Get handle to clicked child window
+				for(int i = 0; i < NUMBER_OF_YRN_TEXMAPS; i++) {
+					if (hWndChild == GetDlgItem(hWnd, texmapBtnIDCs[i])){
+						//We right clicked on a texture button!
+						int subtex_id = NUMBER_OF_FIXED_TEXMAPS + NUMBER_OF_YRN_TEXMAPS*sm->m_current_yarn_type + i;
+						Texmap *texmap = sm->GetSubTexmap(subtex_id);
+						if (!texmap) {
+							break;
+						}
+
+						HMENU hMenu = CreatePopupMenu();
+						LPCTSTR menuLabel = L"Clear\0";
+						AppendMenu(hMenu, MF_STRING, IDR_MENU_TEX_CLEAR, menuLabel);
+						int return_value = TrackPopupMenu(hMenu, TPM_LEFTALIGN + TPM_TOPALIGN + TPM_RETURNCMD + TPM_RIGHTBUTTON + TPM_NOANIMATION, ptScreen.x, ptScreen.y, 0, hWnd, 0);
+						if (return_value == IDR_MENU_TEX_CLEAR) {
+							//We clicked on Clear item in context menu
+							sm->SetSubTexmap(subtex_id,NULL);
+							SetThing(sm);
+						}
+					}
+				}
 			}
 		}
 		return FALSE;
