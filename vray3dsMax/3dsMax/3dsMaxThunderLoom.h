@@ -93,8 +93,7 @@ public:
     wcWeaveParameters m_weave_parameters;
     uint32_t m_current_yarn_type;
 
-	// Note(Peter): ugly solution
-	// Se ThunderLoomMtl::Shade for more info..
+	// Tmp array of texmap pointers used during rendering.
 	Texmap **m_tmp_alltexmaps;
 
 	// Parameter and UI management

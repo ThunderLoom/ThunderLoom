@@ -50,7 +50,7 @@ EvalDiffuseFunc
         wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
 
 	/*
-	//This is correct but does not look good! causes sudden changes in diffuse color...
+	//For texmap variation this is correct but does not look good! causes sudden changes in diffuse color...
 	//If there is more specular, there should be less diffuse and vice versa.
 	int offset = NUMBER_OF_FIXED_TEXMAPS + pattern_data.yarn_type*NUMBER_OF_YRN_TEXMAPS;
 	float specular_variation = 1.f;
@@ -61,7 +61,6 @@ EvalDiffuseFunc
 	}
 	specular_strength *= specular_variation; 
 	*/
-
 
 	//Texmap variation
 	AColor diffuse_map;
@@ -74,9 +73,8 @@ EvalDiffuseFunc
 		diffuse_map.White();
 	}
 
-	//Note(Peter): Currently diffuse map multiplies color to result. 
+	//TODO(Peter): Currently diffuse map multiplies color to result. 
 	//Should make this clear in the gui
-
 	//TODO(Peter): Move actual modification into woven_cloth project,
 	//pass variation mount in with intersection_data?
 

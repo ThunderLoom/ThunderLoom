@@ -131,8 +131,6 @@ public:
 	Bitmap* GetEntryThumbnail() const { return NULL; }
 #endif
 };
-
-//Make instance of Plugin ClassDescriptor
 static ThunderLoomClassDesc thunderLoomDesc;
 ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
 
@@ -164,12 +162,6 @@ static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
 
 static void UpdateYarnTexmaps(int yarn_type_id, IParamBlock2 *pblock, HWND hWnd, TimeValue t)
 {
-	//NOTE(peter): skip hWnd as argument? Just use dlgProc.m_hWnd
-
-	DBOUT("yarn_type_id:" << yarn_type_id)
-	DBOUT("hWnd:" << hWnd)
-
-	//Update yrntexmap buttons for current yarn_type!
 	for (int i = yarn_type_id*NUMBER_OF_YRN_TEXMAPS;
 		i < (yarn_type_id+1)*NUMBER_OF_YRN_TEXMAPS; i++) {
 		int texmap_id = i % NUMBER_OF_YRN_TEXMAPS;
@@ -183,12 +175,8 @@ static void UpdateYarnTexmaps(int yarn_type_id, IParamBlock2 *pblock, HWND hWnd,
 			str << "None";
 		}
 
-		DBOUT("texmapid:" << texmap_id)
 		HWND hCtrl = GetDlgItem( hWnd, texmapBtnIDCs[texmap_id]);
-		DBOUT("hCtrl:" << hCtrl)
 		ICustButton *button = GetICustButton(hCtrl);
-		DBOUT("button:" << button)
-		DBOUT("str:" << str)
 		button->SetText(str.str().c_str());
 	}
 }
@@ -283,7 +271,7 @@ public:
 };
 
 
-//Here there is the option to add custom behaviour to certain messages.
+//Here there is the option to add custom behaviour to certain messages for the yarn rollout.
 class YarnRolloutDlgProc : public ParamMap2UserDlgProc {
 public:
 	IParamMap *pmap;
@@ -347,7 +335,7 @@ public:
 			}
 			case WM_CONTEXTMENU:
 			{
-				//Note(Peter): Allow for right click context menu when rightclicking 
+				// Note(Peter): Allow for right click context menu when rightclicking 
 				// yarn texmaps, much like the way when clicking regular texmaps buttons
 				// handled by a paramblock. Is probably a a better way to get the same
 				// menu without, cannot find how though, this will do for now.
@@ -385,9 +373,9 @@ public:
 		sm = (ThunderLoomMtl*)m;
 		update_yarn_type_combo();
 		if (sm->m_weave_parameters.pattern){
-			UpdateYarnTexmaps(sm->m_current_yarn_type, sm->pblock, m_hWnd, 0);
 			//Update yarn texmaps here so that buttons have correct text
 			//when returning from editing subtexmap.
+			UpdateYarnTexmaps(sm->m_current_yarn_type, sm->pblock, m_hWnd, 0);
 		}
 	}
 };
@@ -619,11 +607,7 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 					yarn_type->param,ivalid); break;
 				YARN_TYPE_PARAMETERS
 
-				//TODO(Peter): something for the yarn specific texmaps here? not sure
-
 				}
-
-
 
 			}
 			break;
@@ -643,7 +627,6 @@ int ThunderLoomMtl::NumSubTexmaps() {
 }
 
 Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
-	//DBOUT( "GetSubtex i: " << i );
 	switch (i)
 	{
 		case 0:
@@ -663,7 +646,6 @@ Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
 }
 
 void ThunderLoomMtl::SetSubTexmap(int i, Texmap* m) {
-	DBOUT( "SetSubtex i: " << i );
 	switch (i)
 	{
 		case 0:
@@ -681,21 +663,25 @@ void ThunderLoomMtl::SetSubTexmap(int i, Texmap* m) {
 }
 
 TSTR ThunderLoomMtl::GetSubTexmapSlotName(int i) {
-	DBOUT( "GetSubtexname i: " << i );
 	switch(i) {
 		case 0: return L"Main Diffuse Map";
 		case 1: return L"Main Specular Map";
 	}
 
 	//if not main texmap, then yarntexmap
+	wchar_t *texstr;
+	wchar_t str[80];
+	wcscpy (str,L"Yarn ");
 	int yrntexmap_id = i - NUMBER_OF_FIXED_TEXMAPS;
 	switch(yrntexmap_id % NUMBER_OF_YRN_TEXMAPS) {
-#define YARN_TYPE_TEXMAP(param) case yrn_texmaps_##param: return L"##param"; //TODO(peter): Fix this!
+#define YARN_TYPE_TEXMAP(param) case yrn_texmaps_##param: texstr = L#param;break;
 		YARN_TYPE_TEXMAP_PARAMETERS
 		
 		default:
 			return L"";
 	}
+	wcscat(str,texstr);
+	return str;
 }
 
 TSTR ThunderLoomMtl::GetSubTexmapTVName(int i) {
@@ -857,10 +843,6 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	m_weave_parameters.yarnvar_octaves = 1;
 
 	wcFinalizeWeaveParameters(&m_weave_parameters);
-
-	// NOTE(Peter): I would like feedback on this method getting textures to the bsdf. This feels ugly! But not sure how to improve!
-	// Alternitive is simply passing pblock pointer or pointer to entire material to the eval BSDF function. But this might 
-	// add a lot of overhead in the performance cirical area.... :/
 
 	//Gather texmap pointers for use in vray, gathering here to avoid including paramblock2.h in eval function.
 	//Not gathering in newBSDF since that gets called for every sample.
