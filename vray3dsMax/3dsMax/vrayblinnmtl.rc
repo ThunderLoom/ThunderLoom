@@ -109,18 +109,21 @@ BEGIN
     LTEXT           "Thunder Loom version xx",IDC_VERSION,4,39,119,8
     LTEXT           "uscale",IDC_USCALE_LABEL,19,88,22,8
     CONTROL         "Custom2",IDC_USCALE_EDIT,"CustEdit",0x0,145,85,44,10
-    CONTROL         "Custom3",IDC_USCALE_SPIN,"SpinnerControl",WS_TABSTOP,190,85,7,10
+    CONTROL         "Custom3",IDC_USCALE_SPIN,"SpinnerControl",WS_TABSTOP,190,85,6,10
     LTEXT           "vscale",IDC_VSCALE_LABEL,19,102,22,8
     CONTROL         "Custom2",IDC_VSCALE_EDIT,"CustEdit",WS_TABSTOP,145,100,44,10
-    CONTROL         "Custom3",IDC_VSCALE_SPIN,"SpinnerControl",0x0,190,100,7,10
+    CONTROL         "Custom3",IDC_VSCALE_SPIN,"SpinnerControl",0x0,190,100,6,10
     CONTROL         "Load WIF file",IDC_WIFFILE_BUTTON,"CustButton",WS_TABSTOP,56,74,81,10
     GROUPBOX        "Pattern",IDC_PATTERN_GROUP2,4,55,210,125
     LTEXT           "realworld",IDC_REALWORLD_LABEL,10,118,29,8
     CONTROL         "",IDC_REALWORLD_CHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,182,115,8,10
     LTEXT           "main diffuse (color mult)",IDC_VSCALE_LABEL2,20,132,85,8
-    CONTROL         "Custom2",IDC_TEX_DIFFUSE_BUTTON,"CustButton",WS_TABSTOP,126,129,71,10
+    CONTROL         "Custom2",IDC_TEX_DIFFUSE_BUTTON,"CustButton",WS_TABSTOP,125,129,71,10
     LTEXT           "main specular (mono)",IDC_VSCALE_LABEL3,20,148,73,8
-    CONTROL         "Custom2",IDC_TEX_SPECULAR_BUTTON,"CustButton",WS_TABSTOP,126,145,71,10
+    CONTROL         "Custom2",IDC_TEX_SPECULAR_BUTTON,"CustButton",WS_TABSTOP,125,145,71,10
+    LTEXT           "Specular noise",IDC_SPECNOISE_LABEL,19,162,48,8
+    CONTROL         "Custom2",IDC_SPECULARNOISE_EDIT,"CustEdit",WS_TABSTOP,145,160,44,10
+    CONTROL         "Custom3",IDC_SPECULARNOISE_SPIN,"SpinnerControl",0x0,190,160,6,10
 END
 
 IDD_YARN DIALOGEX 0, 0, 220, 252
@@ -176,7 +179,7 @@ BEGIN
         VERTGUIDE, 13
         VERTGUIDE, 147
         VERTGUIDE, 190
-        VERTGUIDE, 197
+        VERTGUIDE, 196
         TOPMARGIN, 4
         BOTTOMMARGIN, 182
     END

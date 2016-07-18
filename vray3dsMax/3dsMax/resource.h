@@ -49,7 +49,6 @@
 #define IDC_VSCALE_EDIT                 1016
 #define IDC_VSCALE_SPIN                 1017
 #define IDC_UMAX_EDIT                   1018
-#define IDC_VSCALE_EDIT2                1018
 #define IDC_UMAX_SPIN                   1019
 #define IDC_VERSION                     1020
 #define IDC_PATTERN_GROUP               1021
@@ -62,6 +61,7 @@
 #define IDC_PSI_LABEL                   1027
 #define IDC_VSCALE_LABEL3               1027
 #define IDC_PSI_EDIT                    1028
+#define IDC_SPECNOISE_LABEL             1028
 #define IDC_PSI_SPIN                    1029
 #define IDC_DELTAX_EDIT                 1030
 #define IDC_DELTAX_SPIN                 1031
@@ -146,7 +146,9 @@
 #define IDC_TEX_DIFFUSE_BUTTON          1081
 #define IDC_TEX_DIFFUSE_BUTTON2         1082
 #define IDC_TEX_SPECULAR_BUTTON         1082
-#define IDR_MENU_TEX_CLEAR				1083
+#define IDR_MENU_TEX_CLEAR              1083
+#define IDC_SPECULARNOISE_EDIT          1084
+#define IDC_SPECULARNOISE_SPIN          1085
 #define IDC_MTLON1                      1642
 #define cb_giMtl                        1643
 #define cb_reflectMtl                   1644

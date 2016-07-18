@@ -378,7 +378,7 @@ void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename)
         } else {
             wcWeavePatternFromWeaveFile(params,filename);
         }
-    }else{
+    } else{
         params->pattern_height = params->pattern_width = 0;
         params->pattern = 0;
     }

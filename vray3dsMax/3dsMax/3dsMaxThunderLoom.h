@@ -43,11 +43,6 @@ enum {
     mtl_vscale,
 	mtl_yarn_type,
     mtl_intensity_fineness,
-	mtl_yarnvar_amplitude,
-    mtl_yarnvar_xscale,
-    mtl_yarnvar_yscale,
-    mtl_yarnvar_persistance,
-    mtl_yarnvar_octaves,
 	mtl_texmap_diffuse,
 	mtl_texmap_specular,
     texmaps, //stores texmaps for each yarntype in a TEXMAPS_TAB pblock

@@ -157,8 +157,7 @@ static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
 
 		pblock->SetValue(mtl_uscale, t, weave_params->uscale);
 		pblock->SetValue(mtl_vscale, t, weave_params->vscale);
-
-
+		pblock->SetValue(mtl_intensity_fineness, t, weave_params->intensity_fineness);
 			
 	}
 }
@@ -432,6 +431,11 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
         p_default, FALSE,
         p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
     PB_END,
+    mtl_intensity_fineness, _FT("specularnoise"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 0.f,
+		p_range, 0.0f, 10.f,
+		p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULARNOISE_EDIT, IDC_SPECULARNOISE_SPIN, 0.1f,
+    PB_END,
     yrn_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.5,
         p_range, 0.0f, 1.f,
@@ -449,7 +453,7 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
         p_range,		0.0f, 1.f,
         p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
-    p_end,
+    PB_END,
     yrn_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.5f,
         p_range, 0.0f, 1.f,
@@ -600,6 +604,12 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 				case mtl_vscale:
 				{
 					pblock->GetValue(mtl_vscale, 0, m_weave_parameters.vscale,
+						ivalid);
+					break;
+				}
+				case mtl_intensity_fineness:
+				{
+					pblock->GetValue(mtl_intensity_fineness, 0, m_weave_parameters.intensity_fineness,
 						ivalid);
 					break;
 				}
@@ -840,7 +850,6 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 
 	//default values for the time being.
 	//these paramters will be removed later, is the plan
-	m_weave_parameters.intensity_fineness = 0.f;
 	m_weave_parameters.yarnvar_amplitude = 0.f;
 	m_weave_parameters.yarnvar_xscale = 1.f;
 	m_weave_parameters.yarnvar_yscale = 1.f;
