@@ -465,7 +465,12 @@ Pattern *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h,
             yarn_types[c].color[0] = data->colors[c*3+0];
             yarn_types[c].color[1] = data->colors[c*3+1];
             yarn_types[c].color[2] = data->colors[c*3+2];
-            yarn_types[c].color_enabled = 1;
+			yarn_types[c].color_enabled=1;
+		#define YARN_TYPE_PARAM(A,B)\
+            yarn_types[c].A = default_yarn_type.A;\
+            yarn_types[c].A##_enabled = 0;
+			YARN_TYPE_PARAMETERS
+		#undef YARN_TYPE_PARAM
         }
         for(y=0;y<*h;y++){
             for(x=0;x<*w;x++){
@@ -484,6 +489,7 @@ Pattern *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h,
         pattern->entries = entries;
 		pattern->num_yarn_types = data->num_colors;
         pattern->yarn_types = yarn_types;
+		pattern->common_yarn=default_yarn_type;
     }
     return pattern;
 }

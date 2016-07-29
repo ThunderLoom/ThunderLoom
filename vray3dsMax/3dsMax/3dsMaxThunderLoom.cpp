@@ -167,21 +167,31 @@ public:
                 sm->m_i_mtl_params->DeleteRollupPage(rollups[i]);
             }
         }
-        if(rollups){
-            free(rollups);
-        }
+		free(rollups);
         if(sm && sm->m_weave_parameters.pattern && sm->m_i_mtl_params){
-            num_rollups = sm->m_weave_parameters.pattern->num_yarn_types;
+            num_rollups = sm->m_weave_parameters.pattern->num_yarn_types+1;
             rollups = (HWND*)calloc(num_rollups,sizeof(HWND));
             if (sm && sm->m_weave_parameters.pattern) {
-            for (int i = 0; i < num_rollups; i++) {
+				//NOTE(Vidar): Common yarn rollup
+				{
+					YarnTypeDlgProcData *data=(YarnTypeDlgProcData*)
+						calloc(1,sizeof(YarnTypeDlgProcData));
+					data->sm=sm;
+					data->yarn_type=-1;
+					rollups[0] = sm->m_i_mtl_params->AddRollupPage(
+						hInstance, MAKEINTRESOURCE(IDD_YARN),YarnTypeDlgProc,
+						L"Common Yarn Settings",
+						(LPARAM)data,0);
+				}
+				//NOTE(Vidar): Yarn type rollups
+				for (int i = 0; i < num_rollups-1; i++) {
                     wchar_t buffer[128];
                     wsprintf(buffer, L"Yarn type %d", i);
                     YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)
                         calloc(1,sizeof(YarnTypeDlgProcData));
                     data->sm = sm;
                     data->yarn_type = i;
-                    rollups[i] = sm->m_i_mtl_params->AddRollupPage(hInstance,
+                    rollups[i+1] = sm->m_i_mtl_params->AddRollupPage(hInstance,
                         MAKEINTRESOURCE(IDD_YARN_TYPE),YarnTypeDlgProc,buffer,
                         (LPARAM)data, APPENDROLL_CLOSED);
                 }
@@ -238,29 +248,24 @@ public:
 						if (GetOpenFileName(&openfilename)) {
 							IParamBlock2 *params = map->GetParamBlock();
 							wcFreeWeavePattern(&(sm->m_weave_parameters));
-							//NOTE(Vidar):Set default parameters...
-							sm->m_weave_parameters.uscale = 1.0f;
-							sm->m_weave_parameters.vscale = 1.0f;
-							sm->m_weave_parameters.realworld_uv = 0;
 							wcWeavePatternFromFile_wchar(
 								&(sm->m_weave_parameters), buffer);
-							Pattern *pattern = sm->m_weave_parameters.pattern;
-							if(pattern) {
-								for(int i=0;i<pattern->num_yarn_types;i++) {
-									YarnType *yarn_type = pattern->yarn_types+i;
-#define YARN_TYPE_PARAM(param,A) yarn_type->param = default_yarn_type.param;
-									YARN_TYPE_PARAMETERS
-								}
-							}
+							//NOTE(Vidar):Set parameters...
+							int realworld;
+							sm->pblock->GetValue(mtl_realworld, 0, realworld,
+								sm->ivalid);
+							sm->m_weave_parameters.realworld_uv = realworld;
+							sm->pblock->GetValue(mtl_uscale, 0,
+								sm->m_weave_parameters.uscale,
+								sm->ivalid);
+							sm->pblock->GetValue(mtl_vscale, 0,
+								sm->m_weave_parameters.vscale,
+								sm->ivalid);
                             sm->m_current_yarn_type = 0;
-							/*UpdateYarnTypeParameters(0, params,
-								&(sm->m_weave_parameters),t);
-							//NOTE(Vidar):Update the yarn rollout too...
-							ParamDlg *yarn_dlg =
-								params->GetMParamDlg()->GetDlg(0);
-							yarn_dlg->SetThing(sm);*/
 							map->Invalidate();
                             update_yarn_type_rollups();
+							//NOTE(Vidar): Hack to update the preview ball
+							sm->pblock->SetValue(mtl_dummy,0,0.5f);
 						}
 						break;
 					}
@@ -301,15 +306,10 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
     mtl_params, _T("Test mtl params"), 0,
     &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI + P_MULTIMAP, 0,
     //rollouts
-	2,
+	1,
+	//2,
     rollout_pattern,   IDD_BLENDMTL, IDS_PATTERN, 0, 0,
 		new PatternRolloutDlgProc(), 
-    rollout_yarn_type, IDD_YARN,     IDS_YARN, 0, 0, NULL, 
-    // pattern and geometry
-    yrn_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
-        p_default, Point3(0.3f,0.3f,0.3f),
-        p_ui, rollout_yarn_type, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
-    PB_END,
     mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 1.f,
         p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
@@ -327,40 +327,6 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
         p_default, FALSE,
         p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
     PB_END,
-    yrn_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
-    p_default, default_yarn_type.umax,
-        p_range, 0.0f, 1.f,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
-    PB_END,
-    yrn_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, default_yarn_type.psi,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
-    PB_END,
-    //Lighting params
-    yrn_specular_strength, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default,		default_yarn_type.specular_strength,
-        p_range,		0.0f, 1.f,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
-    p_end,
-    yrn_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, default_yarn_type.delta_x,
-        p_range, 0.0f, 1.f,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
-    PB_END,
-    yrn_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, default_yarn_type.alpha,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
-    PB_END,
-    yrn_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, default_yarn_type.beta,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
-    PB_END,
 PB_END
 );									 
 
@@ -374,56 +340,81 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             SetWindowLongPtr(hWnd,GWLP_USERDATA,(LONG_PTR)data);
 
             wcWeaveParameters params = data->sm->m_weave_parameters;
-            YarnType yarn_type = params.pattern->yarn_types[data->yarn_type];
-            //NOTE(Vidar): Setup spinners
-#define YARN_TYPE_PARAM(A,B){\
-    HWND spinner_hwnd = GetDlgItem(hWnd, IDC_##B##_SPIN);\
-    HWND edit_hwnd = GetDlgItem(hWnd, IDC_##B##_EDIT);\
-    ISpinnerControl * s = GetISpinner(spinner_hwnd);\
-    s->LinkToEdit(edit_hwnd, EDITTYPE_FLOAT);\
-    s->SetLimits(0.f, 1.f, FALSE);\
-    s->SetScale(0.01f);\
-    s->SetValue(yarn_type.A, TRUE);\
-    ReleaseISpinner(s);\
-    uint8_t enabled = yarn_type.A##_enabled;\
-    Button_SetCheck(GetDlgItem(hWnd,IDC_##B##_OVERRIDE),enabled);\
-    EnableWindow(spinner_hwnd,enabled);\
-    EnableWindow(edit_hwnd,enabled);\
-}
+			if(params.pattern){
+				YarnType yarn_type=params.pattern->common_yarn;
+				if(data->yarn_type>=0){
+					yarn_type=params.pattern->yarn_types[data->yarn_type];
+				}
+				//NOTE(Vidar): Setup spinners
+				#define YARN_TYPE_PARAM(A,B){\
+					HWND spinner_hwnd = GetDlgItem(hWnd, IDC_##B##_SPIN);\
+					HWND edit_hwnd = GetDlgItem(hWnd, IDC_##B##_EDIT);\
+					ISpinnerControl * s = GetISpinner(spinner_hwnd);\
+					s->LinkToEdit(edit_hwnd, EDITTYPE_FLOAT);\
+					s->SetLimits(0.f, 1.f, FALSE);\
+					s->SetScale(0.01f);\
+					s->SetValue(yarn_type.A, FALSE);\
+					ReleaseISpinner(s);\
+					if(data->yarn_type >= 0){\
+						uint8_t enabled=yarn_type.A##_enabled;\
+						Button_SetCheck(\
+                            GetDlgItem(hWnd,IDC_##B##_OVERRIDE),enabled);\
+						EnableWindow(spinner_hwnd,enabled);\
+						EnableWindow(edit_hwnd,enabled);\
+					}\
+				}
+				YARN_TYPE_PARAMETERS
+				#undef YARN_TYPE_PARAM
 
-            YARN_TYPE_PARAMETERS
-
-            HWND swatch_hwnd = GetDlgItem(hWnd,IDC_YARNCOLOR_SWATCH);
-            IColorSwatch *swatch = GetIColorSwatch(swatch_hwnd);
-            Color col(yarn_type.color[0],yarn_type.color[1],yarn_type.color[2]);
-            swatch->SetColor(col);
-            ReleaseIColorSwatch(swatch);
-            uint8_t enabled = yarn_type.color_enabled;
-            Button_SetCheck(GetDlgItem(hWnd,IDC_COLOR_OVERRIDE),enabled);
-            EnableWindow(swatch_hwnd,enabled);
+				//NOTE(Vidar): Setup color picker
+					HWND swatch_hwnd=GetDlgItem(hWnd,IDC_YARNCOLOR_SWATCH);
+				IColorSwatch *swatch=GetIColorSwatch(swatch_hwnd);
+				Color col(yarn_type.color[0],yarn_type.color[1],
+					yarn_type.color[2]);
+				swatch->SetColor(col);
+				ReleaseIColorSwatch(swatch);
+				if(data->yarn_type>=0){
+					uint8_t enabled=yarn_type.color_enabled;
+					Button_SetCheck(GetDlgItem(hWnd,IDC_COLOR_OVERRIDE),enabled);
+					EnableWindow(swatch_hwnd,enabled);
+				}
+			}
             break;
         }
         case WM_DESTROY:
             break;
+
+		#define GET_YARN_TYPE\
+			YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)\
+				GetWindowLong(hWnd,GWLP_USERDATA);\
+			YarnType *yarn_type = &data->sm->m_weave_parameters.pattern\
+					->common_yarn;\
+			if(data->yarn_type >= 0){\
+				yarn_type = &data->sm->m_weave_parameters.pattern\
+					->yarn_types[data->yarn_type];\
+			}
+			 //NOTE(Vidar): Hack to update the preview ball
+		#define UPDATE_BALL\
+            data->sm->pblock->SetValue(mtl_dummy,0,0.5f);
+
+	    //NOTE(Vidar): Update checkbox
         case WM_COMMAND: {
             switch(HIWORD(wParam)){
                 case BN_CLICKED:{
-                    YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)
-                        GetWindowLong(hWnd,GWLP_USERDATA);
-                    YarnType *yarn_type = &data->sm->m_weave_parameters.pattern
-                        ->yarn_types[data->yarn_type];
+					GET_YARN_TYPE
                     switch(id){
 
-#define YARN_TYPE_PARAM(A,B) case IDC_##B##_OVERRIDE:{\
-    HWND spin_hwnd = GetDlgItem(hWnd,IDC_##B##_SPIN);\
-    HWND edit_hwnd = GetDlgItem(hWnd,IDC_##B##_EDIT);\
-    bool check = Button_GetCheck((HWND)lParam);\
-    EnableWindow(spin_hwnd,check);\
-    EnableWindow(edit_hwnd,check);\
-    yarn_type->A##_enabled = check;\
-    break;\
-}
+						#define YARN_TYPE_PARAM(A,B) case IDC_##B##_OVERRIDE:{\
+							HWND spin_hwnd = GetDlgItem(hWnd,IDC_##B##_SPIN);\
+							HWND edit_hwnd = GetDlgItem(hWnd,IDC_##B##_EDIT);\
+							bool check = Button_GetCheck((HWND)lParam);\
+							EnableWindow(spin_hwnd,check);\
+							EnableWindow(edit_hwnd,check);\
+							yarn_type->A##_enabled = check;\
+							break;\
+						}
                         YARN_TYPE_PARAMETERS
+						#undef YARN_TYPE_PARAM
 
                         case IDC_COLOR_OVERRIDE:{
                             HWND swatch_hwnd =
@@ -434,38 +425,34 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                             break;
                         }
                     }
+					UPDATE_BALL;
                     break;
                 }
             }
         }
+	    //NOTE(Vidar): Update float parameters
         case CC_SPINNER_CHANGE: {
-            YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)
-                GetWindowLong(hWnd,GWLP_USERDATA);
-            YarnType *yarn_type = &data->sm->m_weave_parameters.pattern
-                ->yarn_types[data->yarn_type];
+			GET_YARN_TYPE
             ISpinnerControl *spinner = (ISpinnerControl*)lParam;
             switch(id){
-
-#define YARN_TYPE_PARAM(yarntype_name,idc_name) case IDC_##idc_name##_SPIN:\
-    yarn_type->yarntype_name = spinner->GetFVal(); break;
+				#define YARN_TYPE_PARAM(yarntype_name,idc_name)\
+					case IDC_##idc_name##_SPIN:\
+					yarn_type->yarntype_name = spinner->GetFVal(); break;
                 YARN_TYPE_PARAMETERS
+				#undef YARN_TYPE_PARAM
             }
-            //NOTE(Vidar): Hack to update the preview ball
-            data->sm->pblock->SetValue(mtl_dummy,0,0.5f);
+			UPDATE_BALL
             break;
         }
+	    //NOTE(Vidar): Update color parameters
         case CC_COLOR_CHANGE:{
-            YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)
-                GetWindowLong(hWnd,GWLP_USERDATA);
-            YarnType *yarn_type = &data->sm->m_weave_parameters.pattern
-                ->yarn_types[data->yarn_type];
+			GET_YARN_TYPE
             IColorSwatch *swatch = (IColorSwatch*)lParam;
             COLORREF col = swatch->GetColor();
             yarn_type->color[0] = (float)GetRValue(col)/255.f;
             yarn_type->color[1] = (float)GetGValue(col)/255.f;
             yarn_type->color[2] = (float)GetBValue(col)/255.f;
-            //NOTE(Vidar): Hack to update the preview ball
-            data->sm->pblock->SetValue(mtl_dummy,0,0.5f);
+			UPDATE_BALL
             break;
          }
     }
@@ -496,8 +483,8 @@ ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
 ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
 	IAutoMParamDlg* masterDlg
 		= thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
-	masterDlg->SetThing(this);
     m_i_mtl_params = imp;
+	masterDlg->SetThing(this);
 	return masterDlg;
 }
 
@@ -546,40 +533,25 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 
 				//TODO(Vidar): Not sure about the TimeValue... using 0 for now
 				switch (changing_param) {
-				case yrn_color:
-				{
-					Color c;
-					pblock->GetValue(yrn_color, 0, c,
-						ivalid);
-                    float * col = yarn_type->color;
-					col[0] = c.r;
-					col[1] = c.g;
-					col[2] = c.b;
-					break;
-				}
-				case mtl_realworld:
-				{
-					int realworld;
-					pblock->GetValue(mtl_realworld, 0, realworld, ivalid);
-					m_weave_parameters.realworld_uv = realworld;
-					break;
-				}
-				case mtl_uscale:
-				{
-					pblock->GetValue(mtl_uscale, 0, m_weave_parameters.uscale,
-						ivalid);
-					break;
-				}
-				case mtl_vscale:
-				{
-					pblock->GetValue(mtl_vscale, 0, m_weave_parameters.vscale,
-						ivalid);
-					break;
-				}
-
-#define YARN_TYPE_PARAM(param,A) case yrn_##param: pblock->GetValue(yrn_##param,0,\
-					yarn_type->param,ivalid); break;
-				YARN_TYPE_PARAMETERS
+					case mtl_realworld:
+					{
+						int realworld;
+						pblock->GetValue(mtl_realworld, 0, realworld, ivalid);
+						m_weave_parameters.realworld_uv = realworld;
+						break;
+					}
+					case mtl_uscale:
+					{
+						pblock->GetValue(mtl_uscale, 0, m_weave_parameters.uscale,
+							ivalid);
+						break;
+					}
+					case mtl_vscale:
+					{
+						pblock->GetValue(mtl_vscale, 0, m_weave_parameters.vscale,
+							ivalid);
+						break;
+					}
 				}
 			}
 			break;

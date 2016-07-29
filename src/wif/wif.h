@@ -41,9 +41,11 @@ typedef struct
 {
 #define YARN_TYPE_PARAM(param,A) float param;
 	YARN_TYPE_PARAMETERS
+#undef YARN_TYPE_PARAM
     float color[3];
 #define YARN_TYPE_PARAM(param,A) uint8_t param##_enabled;
 	YARN_TYPE_PARAMETERS
+#undef YARN_TYPE_PARAM
     uint8_t color_enabled;
 }YarnType;
 
@@ -70,11 +72,11 @@ typedef struct
 // Getter functions for the yarn type parameters.
 // These take into account whether the parameter is enabled or not
 #define YARN_TYPE_PARAM(param,A) static inline float yarn_type_get_##param\
-(Pattern *p, uint32_t i){\
-YarnType yarn_type = p->yarn_types[i];\
-return yarn_type.param##_enabled ? yarn_type.param : p->common_yarn.param;}
-
+	(Pattern *p, uint32_t i){\
+	YarnType yarn_type = p->yarn_types[i];\
+	return yarn_type.param##_enabled ? yarn_type.param : p->common_yarn.param;}
 YARN_TYPE_PARAMETERS
+#undef YARN_TYPE_PARAM
 
 // Read a WIF file from disk
 WeaveData *wif_read(const char *filename);
