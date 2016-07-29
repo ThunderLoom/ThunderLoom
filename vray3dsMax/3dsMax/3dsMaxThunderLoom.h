@@ -43,21 +43,17 @@ enum {
     mtl_vscale,
 	mtl_yarn_type,
     mtl_intensity_fineness,
-	mtl_texmap_diffuse,
-	mtl_texmap_specular,
+	//mtl_texmap_diffuse,
+	//mtl_texmap_specular,
     texmaps, //stores texmaps for each yarntype in a TEXMAPS_TAB pblock
-	yrn_color,
-#define YARN_TYPE_PARAM(param) yrn_##param,
-	YARN_TYPE_PARAMETERS
+    mtl_dummy,
 };
 
-//NOTE(Peter): update this array when YARN_TYPE_TEXMAP_PARAMETERS changes!
-//needs to be the same order! See wif.h
 static int texmapBtnIDCs[NUMBER_OF_YRN_TEXMAPS] = 
 {
-	IDC_YRN_TEX_DIFFUSE_BUTTON,
-	IDC_YRN_TEX_SPECULAR_BUTTON,
-	IDC_YRN_TEX_SIZE_BUTTON
+#define YARN_TYPE_TEXMAP(A,id) IDC_YRN_TEX_##id##_BUTTON,
+	YARN_TYPE_TEXMAP_PARAMETERS
+#undef YARN_TYPE_PARAM
 };
 
 /*===========================================================================*\
@@ -91,10 +87,8 @@ public:
 
 	Interval ivalid;
     wcWeaveParameters m_weave_parameters;
-    uint32_t m_current_yarn_type;
-
-	// Tmp array of texmap pointers used during rendering.
-	Texmap **m_tmp_alltexmaps;
+    bool *m_yarn_type_overrides;
+    IMtlParams *m_i_mtl_params;
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	//ref 0

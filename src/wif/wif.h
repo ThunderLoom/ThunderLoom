@@ -30,18 +30,27 @@ typedef struct
 
 //NOTE(Vidar):These are the yarn type parameters (except color)
 #define YARN_TYPE_PARAMETERS\
-	YARN_TYPE_PARAM(umax)\
-	YARN_TYPE_PARAM(psi)\
-	YARN_TYPE_PARAM(alpha)\
-	YARN_TYPE_PARAM(beta)\
-	YARN_TYPE_PARAM(delta_x)\
-	YARN_TYPE_PARAM(specular_strength)
+	YARN_TYPE_PARAM(umax, UMAX)\
+	YARN_TYPE_PARAM(psi, PSI)\
+	YARN_TYPE_PARAM(alpha, ALPHA)\
+	YARN_TYPE_PARAM(beta, BETA)\
+	YARN_TYPE_PARAM(delta_x, DELTAX)\
+	YARN_TYPE_PARAM(specular_strength, SPECULAR)
 
 typedef struct
 {
-#define YARN_TYPE_PARAM(param) float param;
+#define YARN_TYPE_PARAM(param,A) float param;
 	YARN_TYPE_PARAMETERS
+#undef YARN_TYPE_PARAM
     float color[3];
+#define YARN_TYPE_PARAM(param,A) uint8_t param##_enabled;
+	YARN_TYPE_PARAMETERS
+#undef YARN_TYPE_PARAM
+    uint8_t color_enabled;
+#define YARN_TYPE_PARAM(param,A) void* param##_texmap;
+	YARN_TYPE_PARAMETERS
+#undef YARN_TYPE_PARAM
+	void *color_texmap;
 }YarnType;
 
 static const
@@ -54,6 +63,8 @@ YarnType default_yarn_type =
 	0.3f,  //delta_x
 	0.4f,  //specular_strength
 	0.3f, 0.3f, 0.3f,  //color
+    1,1,1,1,1,1,1, // Everything enabled
+	0,             // No texmaps...
 };
 
 
@@ -66,22 +77,25 @@ YarnType default_yarn_type =
 //NOTE(Peter):These are parameters for that can be varied  
 //for each uv position. These paramters are good to vary using texture maps
 #define TEXMAP_PARAMETERS\
-	TEXMAP(diffuse)\
-	TEXMAP(specular)
+
 enum {
 #define TEXMAP(param) texmaps_##param,
 	TEXMAP_PARAMETERS
+#undef TEXMAP
 	NUMBER_OF_FIXED_TEXMAPS //how many non yarn specific texmaps
 };
+
+//TODO(Vidar):Move to the 3ds max plugin
 //NOTE(Peter):These are parameters for each yarn type that can be varied  
 //for each uv position. These paramters are good to vary using texture maps
 #define YARN_TYPE_TEXMAP_PARAMETERS\
-	YARN_TYPE_TEXMAP(diffuse)\
-	YARN_TYPE_TEXMAP(specular)\
-	YARN_TYPE_TEXMAP(yarnsize)
+	YARN_TYPE_TEXMAP(color,DIFFUSE)\
+	YARN_TYPE_TEXMAP(specular_strength,SPECULAR)\
+	//YARN_TYPE_TEXMAP(yarnsize)
 enum {
-#define YARN_TYPE_TEXMAP(param) yrn_texmaps_##param,
+#define YARN_TYPE_TEXMAP(param,A) yrn_texmaps_##param,
 	YARN_TYPE_TEXMAP_PARAMETERS
+#undef YARN_TYPE_PARAM
 	NUMBER_OF_YRN_TEXMAPS
 };
 
@@ -89,8 +103,36 @@ typedef struct
 {
     int num_yarn_types;
     PatternEntry *entries;
+	//Yarn type 0 contains the settings which are common for all yarn types
+	// unless overridden
     YarnType *yarn_types;
 }Pattern;
+
+//These needs to be defined in the implementation...
+float wc_eval_texmap_mono(void *texmap, void *context);
+void  wc_eval_texmap_color(void *texmap, void *context, float *col);
+
+// Getter functions for the yarn type parameters.
+// These take into account whether the parameter is enabled or not
+// And handle the texmaps
+#define YARN_TYPE_PARAM(param,A) static inline float yarn_type_get_##param\
+	(Pattern *p, uint32_t i, void* context){\
+	YarnType yarn_type = p->yarn_types[i];\
+    float ret;\
+	if(yarn_type.param##_enabled){\
+		ret = yarn_type.param;\
+		if(yarn_type.param##_texmap){\
+			ret=wc_eval_texmap_mono(yarn_type.param##_texmap,context);\
+		}\
+	} else{\
+		ret = p->yarn_types[0].param;\
+		if(p->yarn_types[0].param##_texmap){\
+			ret=wc_eval_texmap_mono(p->yarn_types[0].param##_texmap,context);\
+		}\
+	}\
+	return ret;}
+YARN_TYPE_PARAMETERS
+#undef YARN_TYPE_PARAM
 
 // Read a WIF file from disk
 WeaveData *wif_read(const char *filename);

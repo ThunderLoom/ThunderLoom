@@ -142,24 +142,6 @@ ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
  |	UI stuff
 \*===========================================================================*/
 
-static void UpdateYarnTypeParameters(int yarn_type_id, IParamBlock2 *pblock,
-	wcWeaveParameters *weave_params, TimeValue t)
-{
-	YarnType yarn_type = weave_params->pattern->yarn_types[yarn_type_id];
-	if (pblock) {
-		pblock->SetValue(yrn_color, t, Point3(yarn_type.color[0],
-			yarn_type.color[1], yarn_type.color[2]));
-		
-#define YARN_TYPE_PARAM(param) pblock->SetValue(yrn_##param, t,yarn_type.param);
-		YARN_TYPE_PARAMETERS
-
-		pblock->SetValue(mtl_uscale, t, weave_params->uscale);
-		pblock->SetValue(mtl_vscale, t, weave_params->vscale);
-		pblock->SetValue(mtl_intensity_fineness, t, weave_params->intensity_fineness);
-			
-	}
-}
-
 static void UpdateYarnTexmaps(int yarn_type_id, IParamBlock2 *pblock, HWND hWnd, TimeValue t)
 {
 	for (int i = yarn_type_id*NUMBER_OF_YRN_TEXMAPS;
@@ -181,204 +163,164 @@ static void UpdateYarnTexmaps(int yarn_type_id, IParamBlock2 *pblock, HWND hWnd,
 	}
 }
 
-class PatternRolloutDlgProc : public ParamMap2UserDlgProc {
+struct YarnTypeDlgProcData
+{
+    ThunderLoomMtl *sm;
+    int yarn_type;
+};
+
+INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+class PatternRolloutDlgProc: public ParamMap2UserDlgProc{
 public:
 	IParamMap *pmap;
 	ThunderLoomMtl *sm;
 	wchar_t directory[512];
+	HWND *rollups;
+	int num_rollups;
+
+	void update_yarn_type_rollups()
+	{
+		if(sm && sm->m_i_mtl_params){
+			for(int i=0; i<num_rollups; i++){
+				sm->m_i_mtl_params->DeleteRollupPage(rollups[i]);
+			}
+		}
+		free(rollups);
+		if(sm && sm->m_weave_parameters.pattern && sm->m_i_mtl_params){
+			num_rollups=sm->m_weave_parameters.pattern->num_yarn_types;
+			rollups=(HWND*)calloc(num_rollups,sizeof(HWND));
+			if(sm && sm->m_weave_parameters.pattern){
+				//NOTE(Vidar): Create yarn type rollups
+				for(int i=0; i<num_rollups; i++){
+					YarnTypeDlgProcData *data=(YarnTypeDlgProcData*)
+						calloc(1,sizeof(YarnTypeDlgProcData));
+					data->sm=sm;
+					data->yarn_type=i;
+					if(i==0){
+						//NOTE(Vidar): Common yarn rollout
+						rollups[0]=sm->m_i_mtl_params->AddRollupPage(
+							hInstance,MAKEINTRESOURCE(IDD_YARN),YarnTypeDlgProc,
+							L"Common Yarn Settings",
+							(LPARAM)data,0);
+					} else{
+						wchar_t buffer[128];
+						wsprintf(buffer,L"Yarn type %d",i);
+						rollups[i]=sm->m_i_mtl_params->AddRollupPage(hInstance,
+							MAKEINTRESOURCE(IDD_YARN_TYPE),YarnTypeDlgProc,buffer,
+							(LPARAM)data,APPENDROLL_CLOSED);
+					}
+				}
+			}
+		} else{
+			num_rollups=0;
+			rollups=0;
+		}
+	}
 
 	PatternRolloutDlgProc(void)
 	{
-		sm = NULL;
-		directory[0] = 0;
+		rollups=0;
+		num_rollups=0;
+		sm=NULL;
+		directory[0]=0;
 	}
-	INT_PTR DlgProc(TimeValue t, IParamMap2 *map, HWND hWnd, UINT msg,
-			WPARAM wParam, LPARAM lParam) {
-		int id = LOWORD(wParam);
-		switch (msg) 
-		{
-			case WM_INITDIALOG:{ 
+
+	INT_PTR DlgProc(TimeValue t,IParamMap2 *map,HWND hWnd,UINT msg,
+			WPARAM wParam,LPARAM lParam)
+	{
+		int id=LOWORD(wParam);
+		switch(msg){
+			case WM_INITDIALOG:
+			{
+				update_yarn_type_rollups();
 				break;
-            }
+			}
 			case WM_DESTROY:
+				if(rollups){
+					free(rollups);
+				}
+				rollups=0;
+				num_rollups=0;
 				break;
 			case WM_COMMAND:
 			{
-				switch (LOWORD(wParam)) {
-				case IDC_WIFFILE_BUTTON: {
-					switch (HIWORD(wParam)) {
-					case BN_CLICKED: {
-						wchar_t *filters =
-							L"Weave Files | *.WIF\0*.WIF\0"
-							L"All Files | *.*\0*.*\0"
-						;
-						wchar_t buffer[512] = { 0 };
-						OPENFILENAME openfilename = { 0 };
-						openfilename.lStructSize = sizeof(OPENFILENAME);
-						openfilename.hwndOwner = hWnd;
-						openfilename.lpstrFilter = filters;
-						openfilename.lpstrFile = buffer;
-						openfilename.nMaxFile = 512;
-						openfilename.lpstrInitialDir = directory;
-						openfilename.lpstrTitle = L"Open weaving draft";
-						if (GetOpenFileName(&openfilename)) {
-							IParamBlock2 *params = map->GetParamBlock();
-							wcFreeWeavePattern(&(sm->m_weave_parameters));
-							//NOTE(Vidar):Set default parameters...
-							sm->m_weave_parameters.uscale = 1.0f;
-							sm->m_weave_parameters.vscale = 1.0f;
-							sm->m_weave_parameters.realworld_uv = 0;
-							wcWeavePatternFromFile_wchar(
-								&(sm->m_weave_parameters), buffer);
-							Pattern *pattern = sm->m_weave_parameters.pattern;
-							if(pattern) {
-								for(int i=0;i<pattern->num_yarn_types;i++) {
-									YarnType *yarn_type = pattern->yarn_types+i;
-#define YARN_TYPE_PARAM(param) yarn_type->param = default_yarn_type.param;
-									YARN_TYPE_PARAMETERS
+				switch(LOWORD(wParam)){
+					case IDC_WIFFILE_BUTTON:
+					{
+						switch(HIWORD(wParam)){
+							case BN_CLICKED:
+							{
+								wchar_t *filters=
+									L"Weave Files | *.WIF\0*.WIF\0"
+									L"All Files | *.*\0*.*\0"
+									;
+								wchar_t buffer[512]={0};
+								OPENFILENAME openfilename={0};
+								openfilename.lStructSize=sizeof(OPENFILENAME);
+								openfilename.hwndOwner=hWnd;
+								openfilename.lpstrFilter=filters;
+								openfilename.lpstrFile=buffer;
+								openfilename.nMaxFile=512;
+								openfilename.lpstrInitialDir=directory;
+								openfilename.lpstrTitle=L"Open weaving draft";
+								if(GetOpenFileName(&openfilename)){
+									IParamBlock2 *params=map->GetParamBlock();
+									wcFreeWeavePattern(&(sm->m_weave_parameters));
+									wcWeavePatternFromFile_wchar(
+										&(sm->m_weave_parameters),buffer);
+									//NOTE(Vidar):Set parameters...
+									int realworld;
+									sm->pblock->GetValue(mtl_realworld,0,realworld,
+										sm->ivalid);
+									sm->m_weave_parameters.realworld_uv=realworld;
+									sm->pblock->GetValue(mtl_uscale,0,
+										sm->m_weave_parameters.uscale,
+										sm->ivalid);
+									sm->pblock->GetValue(mtl_vscale,0,
+										sm->m_weave_parameters.vscale,
+										sm->ivalid);
+									Pattern *pattern=sm->m_weave_parameters.pattern;
+									if(pattern){
+										//TODO(Peter): Test this with more complicate wif files!
+										//Set count for subtexmaps
+										sm->pblock->SetCount(texmaps,
+											pattern->num_yarn_types*
+											NUMBER_OF_YRN_TEXMAPS);
+									}
+									map->Invalidate();
+									update_yarn_type_rollups();
+									//NOTE(Vidar): Hack to update the preview ball
+									sm->pblock->SetValue(mtl_dummy,0,0.5f);
 								}
-								//TODO(Peter): Test this with more complicate wif files!
-								//Set count for subtexmaps
-								sm->pblock->SetCount(texmaps, pattern->num_yarn_types*NUMBER_OF_YRN_TEXMAPS);
+								break;
 							}
-                            sm->m_current_yarn_type = 0;
-							UpdateYarnTypeParameters(0, params,
-								&(sm->m_weave_parameters),t);
-
-							//NOTE(Vidar):Update the yarn rollout too...
-							ParamDlg *yarn_dlg =
-								params->GetMParamDlg()->GetDlg(0);
-							yarn_dlg->SetThing(sm);
-							map->Invalidate();
 						}
 						break;
 					}
-					}
-					break;
-				}
 				}
 				break;
-		}
+			}
 
 		}
 		return FALSE;
 	}
-	void DeleteThis() {}
+	void DeleteThis()
+	{
+		if(rollups){
+			free(rollups);
+		}
+		rollups=0;
+		num_rollups=0;
+		sm=NULL;
+	}
 	void SetThing(ReferenceTarget *m)
 	{
-		sm = (ThunderLoomMtl*)m;
+		sm=(ThunderLoomMtl*)m;
+		update_yarn_type_rollups();
 	}
 };
 
-
-//Here there is the option to add custom behaviour to certain messages for the yarn rollout.
-class YarnRolloutDlgProc : public ParamMap2UserDlgProc {
-public:
-	IParamMap *pmap;
-	ThunderLoomMtl *sm;
-	HWND m_hWnd;
-
-	void update_yarn_type_combo()
-	{
-		HWND yarn_type_combo_hwnd = GetDlgItem(m_hWnd,
-			IDC_YARNTYPE_COMBO);
-		ComboBox_ResetContent(yarn_type_combo_hwnd);
-		if (sm && sm->m_weave_parameters.pattern) {
-			for (int i = 0; i <
-				sm->m_weave_parameters.pattern->num_yarn_types;
-				i++)
-			{
-				wchar_t buffer[128];
-				swprintf(buffer, L"Yarn type %d", i);
-				ComboBox_AddString(yarn_type_combo_hwnd, buffer);
-			}
-			ComboBox_SetCurSel(yarn_type_combo_hwnd, sm->m_current_yarn_type);
-		}
-	}
-
-	YarnRolloutDlgProc(void) { sm = NULL; }
-	INT_PTR DlgProc(TimeValue t, IParamMap2 *map, HWND hWnd, UINT msg,
-			WPARAM wParam, LPARAM lParam) {
-		int id = LOWORD(wParam);
-		switch (msg) 
-		{
-			case WM_INITDIALOG:{ 
-				m_hWnd = hWnd;
-				update_yarn_type_combo();
-				break;
-            }
-			case WM_DESTROY:
-				break;
-			case WM_COMMAND:
-			{
-				switch (LOWORD(wParam)) {
-					/*case IDC_WIFFILE_BUTTON: {
-						//do something
-						break;
-					}*/
-				
-					default: {
-						if(sm->m_weave_parameters.pattern) {
-						for(int i = 0; i < NUMBER_OF_YRN_TEXMAPS; i++) {
-							if (LOWORD(wParam) == texmapBtnIDCs[i] && HIWORD(wParam) == BN_CLICKED){
-								//set mtl!
-								int subtexmap_id = NUMBER_OF_FIXED_TEXMAPS + sm->m_current_yarn_type*NUMBER_OF_YRN_TEXMAPS + i;
-								//User pressed Texmap button for ith submap
-								PostMessage(sm->m_hwMtlEdit, WM_TEXMAP_BUTTON, subtexmap_id,(LPARAM)sm);
-								DBOUT("Posted WM_TEXMAP_BUTTON, with texmap id " << subtexmap_id);
-							}
-						}
-						}
-					}
-				}
-
-			}
-			case WM_CONTEXTMENU:
-			{
-				// Note(Peter): Allow for right click context menu when rightclicking 
-				// yarn texmaps, much like the way when clicking regular texmaps buttons
-				// handled by a paramblock. Is probably a a better way to get the same
-				// menu without, cannot find how though, this will do for now.
-				POINT ptScreen = {LOWORD(lParam), HIWORD(lParam)};
-				POINT ptClient = ptScreen;
-				ScreenToClient(hWnd, &ptClient);
-				HWND hWndChild  = RealChildWindowFromPoint(hWnd, ptClient); //Get handle to clicked child window
-				for(int i = 0; i < NUMBER_OF_YRN_TEXMAPS; i++) {
-					if (hWndChild == GetDlgItem(hWnd, texmapBtnIDCs[i])){
-						//We right clicked on a texture button!
-						int subtex_id = NUMBER_OF_FIXED_TEXMAPS + NUMBER_OF_YRN_TEXMAPS*sm->m_current_yarn_type + i;
-						Texmap *texmap = sm->GetSubTexmap(subtex_id);
-						if (!texmap) {
-							break;
-						}
-
-						HMENU hMenu = CreatePopupMenu();
-						LPCTSTR menuLabel = L"Clear\0";
-						AppendMenu(hMenu, MF_STRING, IDR_MENU_TEX_CLEAR, menuLabel);
-						int return_value = TrackPopupMenu(hMenu, TPM_LEFTALIGN + TPM_TOPALIGN + TPM_RETURNCMD + TPM_RIGHTBUTTON + TPM_NOANIMATION, ptScreen.x, ptScreen.y, 0, hWnd, 0);
-						if (return_value == IDR_MENU_TEX_CLEAR) {
-							//We clicked on Clear item in context menu
-							sm->SetSubTexmap(subtex_id,NULL);
-							SetThing(sm);
-						}
-					}
-				}
-			}
-		}
-		return FALSE;
-	}
-	void DeleteThis() {}
-	void SetThing(ReferenceTarget *m)
-	{
-		sm = (ThunderLoomMtl*)m;
-		update_yarn_type_combo();
-		if (sm->m_weave_parameters.pattern){
-			//Update yarn texmaps here so that buttons have correct text
-			//when returning from editing subtexmap.
-			UpdateYarnTexmaps(sm->m_current_yarn_type, sm->pblock, m_hWnd, 0);
-		}
-	}
-};
 
 /*===========================================================================*\
  |	Paramblock2 Descriptor
@@ -391,20 +333,10 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
     mtl_params, _T("Test mtl params"), 0,
     &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI + P_MULTIMAP, 0,
     //rollouts
-	2,
+	1,
+	//2,
     rollout_pattern,   IDD_BLENDMTL, IDS_PATTERN, 0, 0,
 		new PatternRolloutDlgProc(), 
-    rollout_yarn_type, IDD_YARN,     IDS_YARN, 0, 0,
-		new YarnRolloutDlgProc(), 
-    // pattern and geometry
-    yrn_color, _FT("color"), TYPE_RGBA, P_ANIMATABLE, 0,
-        p_default, Point3(0.3f,0.3f,0.3f),
-        p_ui, rollout_yarn_type, TYPE_COLORSWATCH,IDC_YARNCOLOR_SWATCH,
-    PB_END,
-    mtl_yarn_type, _FT("yarn_type"), TYPE_INT, P_ANIMATABLE, 0,
-        p_default, 0,
-        p_ui, rollout_yarn_type, TYPE_INT_COMBOBOX, IDC_YARNTYPE_COMBO, 0,
-    PB_END,
     mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 1.f,
         p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
@@ -415,6 +347,9 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
         p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
     PB_END,
+    mtl_dummy, _FT("dummy"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 1.f,
+    PB_END,
     mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
         p_default, FALSE,
         p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
@@ -424,55 +359,202 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
 		p_range, 0.0f, 10.f,
 		p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULARNOISE_EDIT, IDC_SPECULARNOISE_SPIN, 0.1f,
     PB_END,
-    yrn_umax, _FT("bend"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 0.5,
-        p_range, 0.0f, 1.f,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_UMAX_EDIT, IDC_UMAX_SPIN, 0.1f,
-    PB_END,
-    yrn_psi, _FT("twist"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 0.5,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_PSI_EDIT, IDC_PSI_SPIN, 0.1f,
-    PB_END,
-    //Lighting params
-    yrn_specular_strength, _FT("specular"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default,		1.f,
-        p_range,		0.0f, 1.f,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_SPECULAR_EDIT, IDC_SPECULAR_SPIN, 0.1f,
-    PB_END,
-    yrn_delta_x, _FT("highligtWidth"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 0.5f,
-        p_range, 0.0f, 1.f,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_DELTAX_EDIT, IDC_DELTAX_SPIN, 0.1f,
-    PB_END,
-    yrn_alpha, _FT("alpha"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 0.05,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_ALPHA_EDIT, IDC_ALPHA_SPIN, 0.1f,
-    PB_END,
-    yrn_beta, _FT("beta"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 4.f,
-        p_ui, rollout_yarn_type, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_BETA_EDIT, IDC_BETA_SPIN, 0.1f,
-    PB_END,
-	mtl_texmap_diffuse, _T("diffuseMap"), TYPE_TEXMAP, 0, 0, 
-		p_subtexno, 0,
-		p_ui, rollout_pattern, TYPE_TEXMAPBUTTON, IDC_TEX_DIFFUSE_BUTTON,
-    PB_END,
-	mtl_texmap_specular, _T("specularMap"), TYPE_TEXMAP, 0, 0, 
-		p_subtexno, 1,
-		p_ui, rollout_pattern, TYPE_TEXMAPBUTTON, IDC_TEX_SPECULAR_BUTTON,
-    PB_END,
-    texmaps, _T("diffuseMapList"), TYPE_TEXMAP_TAB, 0, P_VARIABLE_SIZE, 0,
+    texmaps, _T("yarnmaplist"), TYPE_TEXMAP_TAB, 0, P_VARIABLE_SIZE, 0,
 		//no ui, for the array
 		//handled through Proc
     PB_END,
 PB_END
 );									 
 
+INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    int id = LOWORD(wParam);
+    switch (msg) 
+    {
+        case WM_INITDIALOG:{ 
+            YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)lParam;
+            SetWindowLongPtr(hWnd,GWLP_USERDATA,(LONG_PTR)data);
+
+            wcWeaveParameters params = data->sm->m_weave_parameters;
+			if(params.pattern){
+				YarnType yarn_type=params.pattern->yarn_types[data->yarn_type];
+				//NOTE(Vidar): Setup spinners
+				#define YARN_TYPE_PARAM(A,B){\
+					HWND spinner_hwnd = GetDlgItem(hWnd, IDC_##B##_SPIN);\
+					HWND edit_hwnd = GetDlgItem(hWnd, IDC_##B##_EDIT);\
+					ISpinnerControl * s = GetISpinner(spinner_hwnd);\
+					s->LinkToEdit(edit_hwnd, EDITTYPE_FLOAT);\
+					s->SetLimits(0.f, 1.f, FALSE);\
+					s->SetScale(0.01f);\
+					s->SetValue(yarn_type.A, FALSE);\
+					ReleaseISpinner(s);\
+					if(data->yarn_type >= 0){\
+						uint8_t enabled=yarn_type.A##_enabled;\
+						Button_SetCheck(\
+                            GetDlgItem(hWnd,IDC_##B##_OVERRIDE),enabled);\
+						EnableWindow(spinner_hwnd,enabled);\
+						EnableWindow(edit_hwnd,enabled);\
+					}\
+				}
+				YARN_TYPE_PARAMETERS
+				#undef YARN_TYPE_PARAM
+
+				for(int i=0; i<NUMBER_OF_YRN_TEXMAPS; i++){
+					int subtexmap_id=
+						NUMBER_OF_FIXED_TEXMAPS+
+						data->yarn_type*
+						NUMBER_OF_YRN_TEXMAPS+i;
+					Texmap *texmap=data->sm->GetSubTexmap(subtexmap_id);
+					wchar_t *caption=L"";
+					if(texmap){
+						caption=L"M";
+					}
+					HWND btn_hwnd = GetDlgItem(hWnd,texmapBtnIDCs[i]);
+					SetWindowText(btn_hwnd,caption);
+				}
+
+				//NOTE(Vidar): Setup color picker
+					HWND swatch_hwnd=GetDlgItem(hWnd,IDC_YARNCOLOR_SWATCH);
+				IColorSwatch *swatch=GetIColorSwatch(swatch_hwnd);
+				Color col(yarn_type.color[0],yarn_type.color[1],
+					yarn_type.color[2]);
+				swatch->SetColor(col);
+				ReleaseIColorSwatch(swatch);
+				if(data->yarn_type>=0){
+					uint8_t enabled=yarn_type.color_enabled;
+					Button_SetCheck(GetDlgItem(hWnd,IDC_COLOR_OVERRIDE),enabled);
+					EnableWindow(swatch_hwnd,enabled);
+				}
+			}
+            break;
+        }
+        case WM_DESTROY:
+            break;
+
+		#define GET_YARN_TYPE\
+			YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)\
+				GetWindowLong(hWnd,GWLP_USERDATA);\
+			YarnType * yarn_type = &data->sm->m_weave_parameters.pattern\
+					->yarn_types[data->yarn_type];
+			 //NOTE(Vidar): Hack to update the preview ball
+		#define UPDATE_BALL\
+            data->sm->pblock->SetValue(mtl_dummy,0,0.5f);
+
+	    //NOTE(Vidar): Update checkbox
+        case WM_COMMAND: {
+            switch(HIWORD(wParam)){
+                case BN_CLICKED:{
+					GET_YARN_TYPE
+                    switch(id){
+
+						#define YARN_TYPE_PARAM(A,B) case IDC_##B##_OVERRIDE:{\
+							HWND spin_hwnd = GetDlgItem(hWnd,IDC_##B##_SPIN);\
+							HWND edit_hwnd = GetDlgItem(hWnd,IDC_##B##_EDIT);\
+							bool check = Button_GetCheck((HWND)lParam);\
+							EnableWindow(spin_hwnd,check);\
+							EnableWindow(edit_hwnd,check);\
+							yarn_type->A##_enabled = check;\
+							break;\
+						}
+                        YARN_TYPE_PARAMETERS
+						#undef YARN_TYPE_PARAM
+
+                        case IDC_COLOR_OVERRIDE:{
+                            HWND swatch_hwnd =
+                                GetDlgItem(hWnd,IDC_YARNCOLOR_SWATCH);
+                            bool check = Button_GetCheck((HWND)lParam);
+                            EnableWindow(swatch_hwnd,check);
+                            yarn_type->color_enabled = check;
+                            break;
+                        }
+						//NOTE(Vidar): Texmap buttons
+						default: {
+							if(data->sm->m_weave_parameters.pattern) {
+								for(int i = 0; i < NUMBER_OF_YRN_TEXMAPS; i++) {
+									if (LOWORD(wParam) == texmapBtnIDCs[i]
+										&& HIWORD(wParam) == BN_CLICKED){
+										//set mtl!
+										int subtexmap_id=
+											NUMBER_OF_FIXED_TEXMAPS+
+											data->yarn_type*
+											NUMBER_OF_YRN_TEXMAPS+i;
+										//User pressed Texmap button for ith submap
+										PostMessage(data->sm->m_hwMtlEdit,
+											WM_TEXMAP_BUTTON,subtexmap_id,
+											(LPARAM)data->sm);
+									}
+								}
+							}
+						}
+                    }
+					UPDATE_BALL;
+                    break;
+                }
+            }
+        }
+	    //NOTE(Vidar): Update float parameters
+        case CC_SPINNER_CHANGE: {
+			GET_YARN_TYPE
+            ISpinnerControl *spinner = (ISpinnerControl*)lParam;
+            switch(id){
+				#define YARN_TYPE_PARAM(yarntype_name,idc_name)\
+					case IDC_##idc_name##_SPIN:\
+					yarn_type->yarntype_name = spinner->GetFVal(); break;
+                YARN_TYPE_PARAMETERS
+				#undef YARN_TYPE_PARAM
+            }
+			UPDATE_BALL
+            break;
+        }
+	    //NOTE(Vidar): Update color parameters
+        case CC_COLOR_CHANGE:{
+			GET_YARN_TYPE
+            IColorSwatch *swatch = (IColorSwatch*)lParam;
+            COLORREF col = swatch->GetColor();
+            yarn_type->color[0] = (float)GetRValue(col)/255.f;
+            yarn_type->color[1] = (float)GetGValue(col)/255.f;
+            yarn_type->color[2] = (float)GetBValue(col)/255.f;
+			UPDATE_BALL
+            break;
+         }
+		case WM_CONTEXTMENU:
+		{
+			GET_YARN_TYPE
+			ThunderLoomMtl *sm=data->sm;
+			// Note(Peter): Allow for right click context menu when rightclicking 
+			// yarn texmaps, much like the way when clicking regular texmaps buttons
+			// handled by a paramblock. Is probably a a better way to get the same
+			// menu without, cannot find how though, this will do for now.
+			POINT ptScreen={LOWORD(lParam), HIWORD(lParam)};
+			POINT ptClient=ptScreen;
+			ScreenToClient(hWnd,&ptClient);
+			HWND hWndChild=RealChildWindowFromPoint(hWnd,ptClient); //Get handle to clicked child window
+			for(int i=0; i<NUMBER_OF_YRN_TEXMAPS; i++){
+				HWND btn_hwnd=GetDlgItem(hWnd,texmapBtnIDCs[i]);
+				if(hWndChild==btn_hwnd){
+					//We right clicked on a texture button!
+					int subtex_id=NUMBER_OF_FIXED_TEXMAPS+NUMBER_OF_YRN_TEXMAPS*data->yarn_type+i;
+					Texmap *texmap=sm->GetSubTexmap(subtex_id);
+					if(!texmap){
+						break;
+					}
+
+					HMENU hMenu=CreatePopupMenu();
+					LPCTSTR menuLabel=L"Clear\0";
+					AppendMenu(hMenu,MF_STRING,IDR_MENU_TEX_CLEAR,menuLabel);
+					int return_value=TrackPopupMenu(hMenu,TPM_LEFTALIGN+TPM_TOPALIGN+TPM_RETURNCMD+TPM_RIGHTBUTTON+TPM_NOANIMATION,ptScreen.x,ptScreen.y,0,hWnd,0);
+					if(return_value==IDR_MENU_TEX_CLEAR){
+						//We clicked on Clear item in context menu
+						sm->SetSubTexmap(subtex_id,NULL);
+						SetWindowText(btn_hwnd,L"");
+					}
+				}
+			}
+			UPDATE_BALL;
+		}
+    }
+    return FALSE;
+}
 
 /*===========================================================================*\
  |	Constructor and Reset systems
@@ -480,23 +562,27 @@ PB_END
 \*===========================================================================*/
 
 void ThunderLoomMtl::Reset() {
+    m_i_mtl_params = 0;
 	m_weave_parameters.pattern = 0;
 	ivalid.SetEmpty();
 	thunderLoomDesc.Reset(this);
 }
 
 ThunderLoomMtl::ThunderLoomMtl(BOOL loading) {
+    m_i_mtl_params = 0;
 	pblock=NULL;
 	ivalid.SetEmpty();
 	thunderLoomDesc.MakeAutoParamBlocks(this);
 	Reset();
 }
 
+
 ParamDlg* ThunderLoomMtl::CreateParamDlg(HWND hwMtlEdit, IMtlParams *imp) {
 	m_hwMtlEdit = hwMtlEdit;
 	m_imp = imp;
 	IAutoMParamDlg* masterDlg
 		= thunderLoomDesc.CreateParamDlgs(hwMtlEdit, imp, this);
+    m_i_mtl_params = imp;
 	masterDlg->SetThing(this);
 	return masterDlg;
 }
@@ -546,69 +632,35 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 			if (m_weave_parameters.pattern) {
 				ParamID changing_param = pblock->LastNotifyParamID();
 				thunder_loom_param_blk_desc.InvalidateUI(changing_param);
-				YarnType *yarn_type = m_weave_parameters.pattern->yarn_types +
-					m_current_yarn_type;
 
 				//TODO(Vidar): Not sure about the TimeValue... using 0 for now
-				switch (changing_param) {
-				case mtl_yarn_type:
-				{
-					int sel;
-					pblock->GetValue(mtl_yarn_type, 0, sel, ivalid);
-					m_current_yarn_type = sel;
-					//Select has changed.
-					pblock->GetMParamDlg()->GetDlg(0)->SetThing(this);
-					//map->Invalidate();
-					// TODO(Peter): move UpdateYarnTypeParameters into setThing?
-					UpdateYarnTypeParameters(sel, pblock,
-						&m_weave_parameters, 0);
-					break;
+				switch(changing_param){
+					case mtl_realworld:
+					{
+						int realworld;
+						pblock->GetValue(mtl_realworld,0,realworld,ivalid);
+						m_weave_parameters.realworld_uv=realworld;
+						break;
+					}
+					case mtl_uscale:
+					{
+						pblock->GetValue(mtl_uscale,0,m_weave_parameters.uscale,
+							ivalid);
+						break;
+					}
+					case mtl_vscale:
+					{
+						pblock->GetValue(mtl_vscale,0,m_weave_parameters.vscale,
+							ivalid);
+						break;
+					}
+					case mtl_intensity_fineness:
+					{
+						pblock->GetValue(mtl_intensity_fineness,0,m_weave_parameters.intensity_fineness,
+							ivalid);
+						break;
+					}
 				}
-				case yrn_color:
-				{
-					Color c;
-					pblock->GetValue(yrn_color, 0, c,
-						ivalid);
-					float * col = m_weave_parameters.pattern->
-						yarn_types[m_current_yarn_type].color;
-					col[0] = c.r;
-					col[1] = c.g;
-					col[2] = c.b;
-					break;
-				}
-				case mtl_realworld:
-				{
-					int realworld;
-					pblock->GetValue(mtl_realworld, 0, realworld, ivalid);
-					m_weave_parameters.realworld_uv = realworld;
-					break;
-				}
-				case mtl_uscale:
-				{
-					pblock->GetValue(mtl_uscale, 0, m_weave_parameters.uscale,
-						ivalid);
-					break;
-				}
-				case mtl_vscale:
-				{
-					pblock->GetValue(mtl_vscale, 0, m_weave_parameters.vscale,
-						ivalid);
-					break;
-				}
-				case mtl_intensity_fineness:
-				{
-					pblock->GetValue(mtl_intensity_fineness, 0, m_weave_parameters.intensity_fineness,
-						ivalid);
-					break;
-				}
-
-				//yarn params
-#define YARN_TYPE_PARAM(param) case yrn_##param: pblock->GetValue(yrn_##param,0,\
-					yarn_type->param,ivalid); break;
-				YARN_TYPE_PARAMETERS
-
-				}
-
 			}
 			break;
 		}
@@ -629,12 +681,12 @@ int ThunderLoomMtl::NumSubTexmaps() {
 Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
 	switch (i)
 	{
-		case 0:
+		/*case 0:
 			return pblock->GetTexmap(mtl_texmap_diffuse);
 			break;
 		case 1:
 			return pblock->GetTexmap(mtl_texmap_specular);
-			break;
+			break;*/
 		default:
 			if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
 				return pblock->GetTexmap(texmaps, 0, i-NUMBER_OF_FIXED_TEXMAPS);
@@ -648,12 +700,13 @@ Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
 void ThunderLoomMtl::SetSubTexmap(int i, Texmap* m) {
 	switch (i)
 	{
+		/*
 		case 0:
 			pblock->SetValue(mtl_texmap_diffuse, 0, m);
 			break;
 		case 1:
 			pblock->SetValue(mtl_texmap_specular, 0, m);
-			break;
+			break;*/
 		default:
 			if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
 				pblock->SetValue(texmaps, 0, m, i-NUMBER_OF_FIXED_TEXMAPS);
@@ -663,25 +716,20 @@ void ThunderLoomMtl::SetSubTexmap(int i, Texmap* m) {
 }
 
 TSTR ThunderLoomMtl::GetSubTexmapSlotName(int i) {
-	switch(i) {
+	/*switch(i) {
 		case 0: return L"Main Diffuse Map";
 		case 1: return L"Main Specular Map";
-	}
+	}*/
 
-	//if not main texmap, then yarntexmap
-	wchar_t *texstr;
-	wchar_t str[80];
-	wcscpy (str,L"Yarn ");
 	int yrntexmap_id = i - NUMBER_OF_FIXED_TEXMAPS;
 	switch(yrntexmap_id % NUMBER_OF_YRN_TEXMAPS) {
-#define YARN_TYPE_TEXMAP(param) case yrn_texmaps_##param: texstr = L#param;break;
+#define YARN_TYPE_TEXMAP(param) case yrn_texmaps_##param: return L#param;
 		YARN_TYPE_TEXMAP_PARAMETERS
-		
+#undef YARN_TYPE_TEXMAP
 		default:
 			return L"";
 	}
-	wcscat(str,texstr);
-	return str;
+	return L"";
 }
 
 TSTR ThunderLoomMtl::GetSubTexmapTVName(int i) {
@@ -844,14 +892,14 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 
 	wcFinalizeWeaveParameters(&m_weave_parameters);
 
-	//Gather texmap pointers for use in vray, gathering here to avoid including paramblock2.h in eval function.
-	//Not gathering in newBSDF since that gets called for every sample.
-	DBOUT("Gathering texmaps!")
-	if (this->m_weave_parameters.pattern) {
-		int ntexmaps = NUMBER_OF_FIXED_TEXMAPS + NUMBER_OF_YRN_TEXMAPS * this->m_weave_parameters.pattern->num_yarn_types;
-		m_tmp_alltexmaps = (Texmap**)calloc(ntexmaps,sizeof(Texmap*));
-		for (int i = 0; i < ntexmaps; i++) {
-			m_tmp_alltexmaps[i] = GetSubTexmap(i);
+	if(m_weave_parameters.pattern){
+		for(int i=0;i<m_weave_parameters.pattern->num_yarn_types;i++){
+			YarnType *yarn_type=&m_weave_parameters.pattern->yarn_types[i];
+		#define YARN_TYPE_TEXMAP(param,A)\
+			yarn_type->param##_texmap= GetSubTexmap(NUMBER_OF_FIXED_TEXMAPS+\
+				NUMBER_OF_YRN_TEXMAPS*i +yrn_texmaps_##param);
+			YARN_TYPE_TEXMAP_PARAMETERS
+		#undef YARN_TYPE_TEXMAP
 		}
 	}
 
@@ -860,9 +908,6 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 }
 
 void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
-	if (this->m_weave_parameters.pattern) {
-		free(m_tmp_alltexmaps);
-	}
 	bsdfPool.freeMem();
 	renderChannels.freeMem();
 }
@@ -870,7 +915,7 @@ void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
 VR::BSDFSampler* ThunderLoomMtl::newBSDF(const VR::VRayContext &rc, VR::VRenderMtlFlags flags) {
 	MyBlinnBSDF *bsdf=bsdfPool.newBRDF(rc);
 	if (!bsdf) return NULL;
-	bsdf->init(rc, &m_weave_parameters, m_tmp_alltexmaps);
+	bsdf->init(rc, &m_weave_parameters);
 	return bsdf;
 }
 

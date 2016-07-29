@@ -80,14 +80,14 @@ static void unload_dlls()
 void
 EvalDiffuseFunc
 (const VUtils::VRayContext &rc,
-    wcWeaveParameters *weave_parameters, Texmap **texmaps,
-	VUtils::Color *diffuse_color, YarnType *yarn_type);
+    wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
+	YarnType *yarn_type);
 #endif
 
 #ifndef DYNAMIC
 void
 EvalSpecularFunc
 ( const VUtils::VRayContext &rc, const VUtils::Vector &direction,
-    wcWeaveParameters *weave_parameters, Texmap **texmaps, VUtils::Matrix nm,
+    wcWeaveParameters *weave_parameters, VUtils::Matrix nm,
     VUtils::Color *reflection_color);
 #endif

@@ -21,7 +21,7 @@ protected:
 public:
 
 	// Initialization
-	void init(const VRayContext &rc, wcWeaveParameters *weave_parameters, Texmap **texmaps);
+	void init(const VRayContext &rc, wcWeaveParameters *weave_parameters);
 
 	// From BRDFSampler
 	Vector getDiffuseNormal(const VR::VRayContext &rc);

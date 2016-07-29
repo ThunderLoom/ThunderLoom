@@ -24,10 +24,9 @@ using namespace VUtils;
 // one calling eval(). In this function we can do all the work that is common
 // throughout all directions, such as computing the diffuse color.
 void
-MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters, Texmap **texmaps) {
+MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters) {
     m_weave_parameters = weave_parameters;
-	m_texmaps = texmaps;
-    EvalDiffuseFunc(rc,weave_parameters,texmaps,&diffuse_color,&m_yarn_type);
+    EvalDiffuseFunc(rc,weave_parameters,&diffuse_color,&m_yarn_type);
     orig_backside = rc.rayresult.realBack;
 
 	// Set the normals to use for lighting
@@ -61,6 +60,9 @@ VUtils::Color MyBaseBSDF::getDiffuseColor(VUtils::Color &lightColor) {
 }
 VUtils::Color MyBaseBSDF::getLightMult(VUtils::Color &lightColor) {
     float s = m_yarn_type.specular_strength;
+    if(!m_yarn_type.specular_strength_enabled){
+        s = m_weave_parameters->pattern->yarn_types[0].specular_strength;
+    }
     VUtils::Color ret = (diffuse_color + VUtils::Color(s,s,s)) * lightColor;
     lightColor.makeZero();
     return ret;
@@ -93,7 +95,7 @@ VUtils::Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction,
         VUtils::Color reflect_color;
         //TODO(Vidar):Better importance sampling... Cosine weighted for now
         float probReflection=cs;
-		EvalSpecularFunc(rc,direction,m_weave_parameters,m_texmaps,nm,&reflect_color);
+		EvalSpecularFunc(rc,direction,m_weave_parameters,nm,&reflect_color);
 
         //NOTE(Vidar): Multiple importance sampling factor
         float weight = getReflectionWeight(probLight,probReflection);
@@ -130,6 +132,9 @@ VRayContext* MyBaseBSDF::getNewContext(const VRayContext &rc, int &samplerID, in
 	if (2==doDiffuse) return NULL;
 
     float s = m_yarn_type.specular_strength;
+    if(!m_yarn_type.specular_strength_enabled){
+        s = m_weave_parameters->pattern->yarn_types[0].specular_strength;
+    }
     VUtils::Color reflect_filter = VUtils::Color(s,s,s);
 	VRayContext &nrc=rc.newSpawnContext(2, reflect_filter, RT_REFLECT | RT_GLOSSY | RT_ENVIRONMENT, normal);
 

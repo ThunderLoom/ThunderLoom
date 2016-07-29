@@ -459,21 +459,27 @@ Pattern *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h,
         PatternEntry *entries =
             (PatternEntry*)calloc((*w)*(*h),sizeof(PatternEntry));
         YarnType *yarn_types =
-            (YarnType*)calloc(data->num_colors,sizeof(YarnType));
+            (YarnType*)calloc(data->num_colors+1,sizeof(YarnType));
 
-        for(c=0;c<data->num_colors;c++){
-            yarn_types[c].color[0] = data->colors[c*3+0];
-            yarn_types[c].color[1] = data->colors[c*3+1];
-            yarn_types[c].color[2] = data->colors[c*3+2];
+		yarn_types[0]=default_yarn_type;
+        for(c=1;c<data->num_colors+1;c++){
+            yarn_types[c].color[0] = data->colors[(c-1)*3+0];
+            yarn_types[c].color[1] = data->colors[(c-1)*3+1];
+            yarn_types[c].color[2] = data->colors[(c-1)*3+2];
+			yarn_types[c].color_enabled=1;
+		#define YARN_TYPE_PARAM(A,B)\
+            yarn_types[c].A = default_yarn_type.A;\
+            yarn_types[c].A##_enabled = 0;
+			YARN_TYPE_PARAMETERS
+		#undef YARN_TYPE_PARAM
         }
         for(y=0;y<*h;y++){
             for(x=0;x<*w;x++){
                 uint32_t v = data->threading[x];
                 uint32_t u = data->treadling[y];
                 uint8_t warp_above = data->tieup[u+v*data->num_treadles];
-                uint32_t yarn_type = warp_above ? data->warp.colors[x]
-                    : data->weft.colors[y];
-                float *col = data->colors + yarn_type*3;
+                uint32_t yarn_type = (warp_above ? data->warp.colors[x]
+                    : data->weft.colors[y])+1;
                 uint32_t index = x+y*(*w);
                 entries[index].warp_above = warp_above;
                 entries[index].yarn_type = yarn_type;
@@ -481,7 +487,7 @@ Pattern *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h,
         }
 		pattern = (Pattern*)calloc(1, sizeof(Pattern));
         pattern->entries = entries;
-		pattern->num_yarn_types = data->num_colors;
+		pattern->num_yarn_types = data->num_colors+1;
         pattern->yarn_types = yarn_types;
     }
     return pattern;

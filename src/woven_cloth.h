@@ -66,6 +66,7 @@ typedef struct
     float uv_x, uv_y;       // Texture coordinates
     float wi_x, wi_y, wi_z; // Incident direction 
     float wo_x, wo_y, wo_z; // Outgoing direction
+	void *context;          // User data sent to callbacks
 } wcIntersectionData;
 
 // These are used to load a weaving pattern from a file
