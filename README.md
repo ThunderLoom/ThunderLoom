@@ -1,4 +1,5 @@
-ThunderLoom, a shader for woven cloth
+Practical offline rendering of woven cloth
+
 STAG paper 16
 
 Although the code will be released publicly within short, this is not the final
