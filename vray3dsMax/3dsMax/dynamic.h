@@ -11,11 +11,11 @@
 #include "imtl.h"
 
 typedef void (*EVALDIFFUSEFUNC)(const VUtils::VRayContext &rc,
-    wcWeaveParameters *weave_parameters, Texmap **texmaps,
+    wcWeaveParameters *weave_parameters,
 	VUtils::Color *diffuse_color, YarnType *yarn_type);
 
 typedef void (*EVALSPECULARFUNC)( const VUtils::VRayContext &rc, const VUtils::Vector &direction,
-    wcWeaveParameters *weave_parameters, Texmap **texmaps, VUtils::Matrix nm,
+    wcWeaveParameters *weave_parameters, VUtils::Matrix nm,
     VUtils::Color *reflection_color);
 
 /*typedef void (*EVALFUNC)(const VUtils::VRayContext &rc, const Vector &direction,
