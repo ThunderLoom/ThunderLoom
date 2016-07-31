@@ -1,0 +1,7 @@
+This is a modifed version of the mtsblend plugin for blender 
+(https://www.mitsuba-renderer.org/tracker/projects/mtsblend).
+This plugin allows mitsuba to be used as a renderer in blender and also
+exposes mitsuba materials to the blender user interface.
+
+This modifed versions adds an entry and registers simple controls for the
+woven cloth material that is implemented in mitsubadir/src/bsdfs.
