@@ -3,11 +3,7 @@
 #define REALWORLD_UV_WIF_TO_MM 10.0
 #include "wif/wif.cpp"
 #include "wif/ini.cpp"
-#include "str2d.h"
 #endif
-
-#include "perlin.h"
-#include "halton.h"
 
 // For M_PI etc.
 #ifndef _USE_MATH_DEFINES
@@ -21,20 +17,17 @@ typedef struct
     float x,y,z,w;
 } wcVector;
 
-WC_PREFIX
 static wcVector wcvector(float x, float y, float z)
 {
     wcVector ret = {x,y,z,0.f};
     return ret;
 }
 
-WC_PREFIX
 static float wcVector_magnitude(wcVector v)
 {
     return sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
 }
 
-WC_PREFIX
 static wcVector wcVector_normalize(wcVector v)
 {
     wcVector ret;
@@ -45,13 +38,11 @@ static wcVector wcVector_normalize(wcVector v)
     return ret;
 }
 
-WC_PREFIX
 static float wcVector_dot(wcVector a, wcVector b)
 {
     return a.x*b.x + a.y*b.y + a.z*b.z;
 }
 
-WC_PREFIX
 static wcVector wcVector_cross(wcVector a, wcVector b)
 {
     wcVector ret;
@@ -61,7 +52,6 @@ static wcVector wcVector_cross(wcVector a, wcVector b)
     return ret;
 }
 
-WC_PREFIX
 static wcVector wcVector_add(wcVector a, wcVector b)
 {
     wcVector ret;
@@ -73,7 +63,28 @@ static wcVector wcVector_add(wcVector a, wcVector b)
 
 // -- //
 
-WC_PREFIX
+//atof equivalent function wich is not dependent
+//on local. Heavily inspired by inplementation in K & R.
+static double str2d(char s[]) {
+    double val, power;
+    int i, sign;
+
+    for (i = 0; isspace(s[i]); i++)
+        ;
+    sign = (s[i] == '-') ? -1 : 1;
+    if (s[i] == '+' || s[i] == '-')
+        i++;
+    for (val = 0.0; isdigit(s[i]); i++)
+        val = 10.0 * val + (s[i] - '0');
+    if (s[i] == '.')
+        i++;
+    for (power = 1.0; isdigit(s[i]); i++) {
+        val = 10.0 * val + (s[i] - '0');
+        power *= 10.0;
+    }
+    return sign * val / power;
+}
+
 static float wcClamp(float x, float min, float max)
 {
     return (x < min) ? min : (x > max) ? max : x;
@@ -81,7 +92,6 @@ static float wcClamp(float x, float min, float max)
 
 /* Tiny Encryption Algorithm by David Wheeler and Roger Needham */
 /* Taken from mitsuba source code. */
-WC_PREFIX
 static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds)
 {
 	uint32_t sum = 0;
@@ -96,7 +106,6 @@ static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds)
 }
 
 //From Mitsuba
-WC_PREFIX
 static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds)
 {
     /* Trick from MTGP: generate an uniformly distributed
@@ -109,7 +118,6 @@ static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds)
     return x.f - 1.0f;
 }
 
-WC_PREFIX
 void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x,
         float *p_y, float *p_z)
 {
@@ -136,7 +144,6 @@ void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x,
     *p_z = sqrtf(1.0f - (*p_x)*(*p_x) - (*p_y)*(*p_y));
 }
 
-WC_PREFIX
 void sample_uniform_hemisphere(float sample_x, float sample_y, float *p_x,
         float *p_y, float *p_z)
 {
@@ -148,7 +155,6 @@ void sample_uniform_hemisphere(float sample_x, float sample_y, float *p_x,
     *p_z = sinf(phi);
 }
 
-WC_PREFIX
 void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
         const wcWeaveParameters *params,wcIntersectionData *intersection_data)
 {
@@ -184,8 +190,26 @@ void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
 }
 
 
+static const int halton_4_base[] = {2, 3, 5, 7};
+static const float halton_4_base_inv[] =
+        {1.f/2.f, 1.f/3.f, 1.f/5.f, 1.f/7.f};
 
-WC_PREFIX
+//Sets the elements of val to the n-th 4-dimensional point
+//in the Halton sequence
+static void halton_4(int n, float val[]){
+    int j;
+    for(j=0;j<4;j++){
+        float f = 1.f;
+        int i = n;
+        val[j] = 0.f;
+        while(i>0){
+            f = f * halton_4_base_inv[j];
+            val[j] = val[j] + f * (i % halton_4_base[j]);
+            i = i / halton_4_base[j];
+        }
+    }
+}
+
 void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 {
     //Calculate normalization factor for the specular reflection
@@ -255,7 +279,6 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 }
 
                                                                                                              
-WC_PREFIX
 static Pattern *build_pattern_from_data(uint8_t *warp_above,
 	uint32_t *yarn_type, YarnType *yarn_types, uint32_t num_yarn_types,
 	uint32_t w, uint32_t h)
@@ -280,130 +303,17 @@ static Pattern *build_pattern_from_data(uint8_t *warp_above,
 
 #ifndef WC_NO_FILES
 
-WC_PREFIX
-static char * find_next_newline(char * buffer)
-{
-    char *r = buffer;
-    while(*r != 0 && *r != '\n'){
-        r++;
-    }
-    return r;
-}
-
-WC_PREFIX
-static char * read_color_from_weave_string(char *string, float * color)
-{
-    char *s = string;
-    for(int i=0;i<3;i++){
-        int a = atoi(s);
-        s = find_next_newline(s+1);
-        color[i] = (float)a/255.f;
-    }
-    return find_next_newline(find_next_newline(s)+1)+1;
-}
-
-WC_PREFIX
-static char * read_dimensions_from_weave_string(char *string,
-        float * thicknessw, float * thicknessh)
-{
-    char *s = string;
-    
-    *thicknessw = (float)str2d(s);
-    s = find_next_newline(s+1);
-    *thicknessh = (float)str2d(s);
-    s = find_next_newline(s+1);
-    
-    return find_next_newline(find_next_newline(s)+1)+1;
-}
-
-
-WC_PREFIX
-static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
-    uint32_t *pattern_height, float *pattern_realwidth,
-    float *pattern_realheight, Pattern **pattern)
-{
-    //A Weave file has 2-three sets of color
-    //2-two sets of thickness and spacing in cm
-    //a pattern matrix
-
-    float warp_color[3], weft_color[3], 
-          warp_thickness, weft_thickness;
-    s = read_color_from_weave_string(s,warp_color);
-    s = read_color_from_weave_string(s,weft_color);
-    s = read_dimensions_from_weave_string(s, &warp_thickness, &weft_thickness);
-
-    char * t = find_next_newline(s);
-    *pattern_width = t - s;
-    int i = 0;
-    int num_chars = 0;
-    while(s[i] != 0) {
-        if(s[i] == '0' || s[i] == '1'){
-            num_chars++;
-        }
-        i++;
-    }
-    *pattern_height = num_chars/(*pattern_width);
-
-    *pattern = (Pattern*)calloc(1,sizeof(Pattern));
-    (*pattern)->entries = (PatternEntry*)calloc(num_chars,sizeof(PatternEntry));
-    (*pattern)->yarn_types = (YarnType*)calloc(2,sizeof(YarnType));
-    (*pattern)->num_yarn_types = 2;
-    memcpy((*pattern)->yarn_types[0].color, warp_color,3*sizeof(float));
-    memcpy((*pattern)->yarn_types[1].color, weft_color,3*sizeof(float));
-    
-    *pattern_realwidth = REALWORLD_UV_WIF_TO_MM
-        * (*pattern_width * (warp_thickness)); 
-    *pattern_realheight = REALWORLD_UV_WIF_TO_MM
-        * (*pattern_height * (weft_thickness)); 
-   
-    i = 0;
-    int ii =0;
-    while(s[i] != 0) {
-        if(s[i] == '0' || s[i] == '1'){
-            if(s[i] == '1'){
-                (*pattern)->entries[ii].warp_above = 1;
-                (*pattern)->entries[ii].yarn_type  = 0;
-            }else{
-                (*pattern)->entries[ii].yarn_type  = 1;
-            }
-            ii++;
-        }
-        i++;
-    }
-}
-
-WC_PREFIX
+//NOTE(Vidar): In case we add support for more file formats
 void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename)
 {
-    if(strlen(filename) > 4){
-        if(strcmp(filename+strlen(filename)-4,".wif") == 0){
-            wcWeavePatternFromWIF(params,filename);
-        } else {
-            wcWeavePatternFromWeaveFile(params,filename);
-        }
-    } else{
-        params->pattern_height = params->pattern_width = 0;
-        params->pattern = 0;
-    }
+    wcWeavePatternFromWIF(params,filename);
 }
-
-WC_PREFIX
 void wcWeavePatternFromFile_wchar(wcWeaveParameters *params,
     const wchar_t *filename)
 {
-    if(wcslen(filename) > 4){
-        if(wcscmp(filename+wcslen(filename)-4,L".wif") == 0){
-            wcWeavePatternFromWIF_wchar(params,filename);
-        } else {
-            wcWeavePatternFromWeaveFile_wchar(params,filename);
-        }
-    }else{
-        params->pattern_height = params->pattern_width = 0;
-        params->pattern = 0;
-    }
+    wcWeavePatternFromWIF_wchar(params,filename);
 }
 
-WC_PREFIX
 void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
 {
     WeaveData *data = wif_read(filename);
@@ -414,7 +324,6 @@ void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
     wcFinalizeWeaveParameters(params);
 }
 
-WC_PREFIX
 void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
         const wchar_t *filename)
 {
@@ -425,55 +334,8 @@ void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
     wif_free_weavedata(data);
     wcFinalizeWeaveParameters(params);
 }
-
-WC_PREFIX
-static void weave_pattern_from_weave_file(wcWeaveParameters *params,
-    FILE *f)
-{
-    fseek (f , 0 , SEEK_END);
-    long lSize = ftell (f);
-    rewind (f);
-    char *buffer = (char*) calloc (lSize+1,sizeof(char));
-    if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
-    fread (buffer,1,lSize,f);
-    read_pattern_from_weave_string(buffer, 
-            &params->pattern_width, &params->pattern_height,
-            &params->pattern_realwidth, &params->pattern_realheight,
-            &params->pattern);
-    wcFinalizeWeaveParameters(params);
-}
-
-WC_PREFIX
-void wcWeavePatternFromWeaveFile(wcWeaveParameters *params,
-    const char *filename)
-{
-    FILE *f = fopen(filename,"rt");
-    if(f){
-        weave_pattern_from_weave_file(params,f);
-        fclose(f);
-    }else{
-        params->pattern_width = params->pattern_height = 0;
-    }
-}
-
-WC_PREFIX
-void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
-    const wchar_t *filename)
-{
-#ifdef _WIN32
-    FILE *f = _wfopen(filename, L"rt");
-    if(f){
-        weave_pattern_from_weave_file(params,f);
-        fclose(f);
-    }else{
-        params->pattern_width = params->pattern_height = 0;
-		params->pattern = 0;
-    }
-#endif
-}
 #endif
 
-WC_PREFIX
 void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *warp_above,
 	uint32_t *yarn_type, YarnType *yarn_types, uint32_t num_yarn_types,
 	uint32_t pattern_width, uint32_t pattern_height)
@@ -485,7 +347,6 @@ void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *warp_above,
 	wcFinalizeWeaveParameters(params);
 }
 
-WC_PREFIX
 void wcFreeWeavePattern(wcWeaveParameters *params)
 {
     if(params->pattern){
@@ -499,7 +360,6 @@ void wcFreeWeavePattern(wcWeaveParameters *params)
     }
 }
 
-WC_PREFIX
 static float intensityVariation(wcPatternData pattern_data,
     const wcWeaveParameters *params)
 {
@@ -533,51 +393,6 @@ static float intensityVariation(wcPatternData pattern_data,
     return log_xi < 10.f ? log_xi : 10.f;
 }
 
-WC_PREFIX
-static float yarnVariation(wcPatternData pattern_data, 
-        const wcWeaveParameters *params)
-{
-
-    float variation = 1.f;
-
-    uint32_t tindex_x = pattern_data.total_index_x;
-    uint32_t tindex_y = pattern_data.total_index_y;
-
-    //Switch X and Y for warp, so that we have the yarn going along y
-    if(!pattern_data.warp_above){
-        float tmp = tindex_x;
-        tindex_x = tindex_y;
-        tindex_y = tmp;
-    }
-
-    //We want to vary the intesity along the yarn.
-    //For a parallel yarn we want a diffrent variation. 
-    //Use a large xscale to make the values different.
-
-    float amplitude = params->yarnvar_amplitude;
-    float xscale = params->yarnvar_xscale;
-    float yscale = params->yarnvar_yscale;
-    int octaves = params->yarnvar_octaves;
-    float persistance = params->yarnvar_persistance; //paramter
-
-    float x_noise = (tindex_x/(float)params->pattern_width) * xscale;
-    //NOTE(Vidar): Should it really be pattern_width here too? Ask Peter...
-    float y_noise = (tindex_y + (pattern_data.y/2.f + 0.5))
-        /(float)params->pattern_width * yscale;
-
-    variation = octavePerlin(x_noise, y_noise, 0,
-            octaves, persistance) * amplitude + 1.f;
-
-    return wcClamp(variation, 0.f, 1.f);
-
-    //NOTE(Peter): Right now there is perlin on both warp and weft.
-    //Would be useful to specify only warp or weft. Or even better, 
-    //if a yarn_type definition is made, 
-    // define noise parmeters for a certain yarn. along with other 
-    // yarn properties.
-}
-
-WC_PREFIX
 static void calculateLengthOfSegment(uint8_t warp_above, uint32_t pattern_x,
                 uint32_t pattern_y, uint32_t *steps_left,
                 uint32_t *steps_right,  uint32_t pattern_width,
@@ -617,7 +432,6 @@ static void calculateLengthOfSegment(uint8_t warp_above, uint32_t pattern_x,
     } while(*incremented_coord != initial_coord);
 }
 
-WC_PREFIX
 static float vonMises(float cos_x, float b) {
     // assumes a = 0, b > 0 is a concentration parameter.
     float I0, absB = fabsf(b);
@@ -637,7 +451,6 @@ static float vonMises(float cos_x, float b) {
     return expf(b * cos_x) / (2 * M_PI * I0);
 }
 
-WC_PREFIX
 wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         const wcWeaveParameters *params)
 {
@@ -737,7 +550,6 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     return ret_data;
 }
 
-WC_PREFIX
 float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
     wcPatternData data, const wcWeaveParameters *params)
 {
@@ -827,7 +639,6 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
     return reflection;
 }
 
-WC_PREFIX
 float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     wcPatternData data, const wcWeaveParameters *params)
 {
@@ -916,7 +727,6 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     return reflection;
 }
 
-WC_PREFIX
 wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
         wcPatternData data, const wcWeaveParameters *params)
 {
@@ -940,7 +750,6 @@ wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
     return color;
 }
 
-WC_PREFIX
 float wcEvalSpecular(wcIntersectionData intersection_data,
         wcPatternData data, const wcWeaveParameters *params)
 {
