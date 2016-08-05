@@ -1,10 +1,5 @@
-#include "stdafx.h"
+//#include "stdafx.h"
 #include "dynamic.h"
-#include "dbgprint.h"
-#include "vraybase.h"
-#include "vrayinterface.h"
-#include "vraycore.h"
-#include "vrayrenderer.h"
 #include "shadedata_new.h"
 #include "woven_cloth.h"
 
@@ -21,11 +16,12 @@ EvalDiffuseFunc
 #endif
 (const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
-	YarnType* yarn_type)
+	YarnType* yarn_type, int* yarn_type_id)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
         *diffuse_color = VUtils::Color(1.f,1.f,0.f);
 		*yarn_type = default_yarn_type;
+		*yarn_type_id = 0;
         return;
     }
     wcIntersectionData intersection_data;
@@ -44,6 +40,7 @@ EvalDiffuseFunc
 
     wcPatternData pattern_data = wcGetPatternData(intersection_data,
         weave_parameters);
+	*yarn_type_id = pattern_data.yarn_type;
 	*yarn_type = weave_parameters->pattern->yarn_types[pattern_data.yarn_type];
     float specular_strength = yarn_type_get_specular_strength(weave_parameters->
         pattern,pattern_data.yarn_type,&sc);

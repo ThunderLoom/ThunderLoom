@@ -101,83 +101,71 @@ END
 // Dialog
 //
 
-IDD_BLENDMTL DIALOGEX 0, 0, 218, 58
+IDD_BLENDMTL DIALOGEX 0, 0, 218, 46
 STYLE DS_SETFONT | WS_CHILD | WS_VISIBLE
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
+    CONTROL         "Custom2",IDC_USCALE_EDIT,"CustEdit",0x0,61,28,22,10
+    CONTROL         "Custom2",IDC_VSCALE_EDIT,"CustEdit",WS_TABSTOP,117,28,21,10
+    CONTROL         "",IDC_REALWORLD_CHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,198,28,16,10
     LTEXT           "Thunder Loom version xx",IDC_VERSION,4,4,119,8
-    LTEXT           "uscale",IDC_USCALE_LABEL,21,28,22,8
-    CONTROL         "Custom2",IDC_USCALE_EDIT,"CustEdit",0x0,47,28,27,10
-    CONTROL         "Custom3",IDC_USCALE_SPIN,"SpinnerControl",WS_TABSTOP,75,28,7,10
-    LTEXT           "vscale",IDC_VSCALE_LABEL,89,28,22,8
-    CONTROL         "Custom2",IDC_VSCALE_EDIT,"CustEdit",WS_TABSTOP,113,28,25,10
+    LTEXT           "Tiling:",IDC_USCALE_LABEL,21,28,20,8
+    CONTROL         "Custom3",IDC_USCALE_SPIN,"SpinnerControl",WS_TABSTOP,85,28,7,10
+    LTEXT           "V",IDC_VSCALE_LABEL,101,28,8,8
     CONTROL         "Custom3",IDC_VSCALE_SPIN,"SpinnerControl",0x0,140,28,7,10
     CONTROL         "Load WIF file",IDC_WIFFILE_BUTTON,"CustButton",WS_TABSTOP,64,14,83,11
-    LTEXT           "realworld",IDC_REALWORLD_LABEL,153,28,29,8
-    CONTROL         "",IDC_REALWORLD_CHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,28,16,10
-    LTEXT           "Specular noise",IDC_SPECNOISE_LABEL,19,44,48,8
-    CONTROL         "Custom2",IDC_SPECULARNOISE_EDIT,"CustEdit",WS_TABSTOP,145,42,44,10
-    CONTROL         "Custom3",IDC_SPECULARNOISE_SPIN,"SpinnerControl",0x0,190,42,6,10
+    LTEXT           "Realworld",IDC_REALWORLD_LABEL,164,29,32,8
+    LTEXT           "U",IDC_VSCALE_LABEL4,48,29,8,8
 END
 
-IDD_YARN DIALOGEX 0, 0, 219, 55
+IDD_YARN DIALOGEX 0, 0, 219, 44
 STYLE DS_SETFONT | WS_CHILD | WS_VISIBLE
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    CONTROL         "Custom2",IDC_UMAX_EDIT,"CustEdit",WS_TABSTOP,45,10,23,10
-    CONTROL         "Custom2",IDC_PSI_EDIT,"CustEdit",WS_TABSTOP,106,10,26,10
-    CONTROL         "Custom2",IDC_SPECULAR_EDIT,"CustEdit",WS_TABSTOP,45,23,23,10
-    CONTROL         "Custom2",IDC_DELTAX_EDIT,"CustEdit",WS_TABSTOP,168,23,21,10
-    CONTROL         "Custom2",IDC_ALPHA_EDIT,"CustEdit",WS_TABSTOP,45,36,23,10
-    CONTROL         "Custom2",IDC_BETA_EDIT,"CustEdit",WS_TABSTOP,106,36,25,10
-    CONTROL         "Custom1",IDC_YARNCOLOR_SWATCH,"ColorSwatch",0x0,174,9,16,12
-    LTEXT           "specular",IDC_STATIC,12,24,28,8
-    CONTROL         "Custom3",IDC_SPECULAR_SPIN,"SpinnerControl",0x0,68,23,7,10
-    LTEXT           "bend",IDC_UMAX_LABEL,13,11,17,8
-    CONTROL         "Custom3",IDC_UMAX_SPIN,"SpinnerControl",0x0,68,10,7,10
-    LTEXT           "twist",IDC_PSI_LABEL,85,11,15,8
-    CONTROL         "Custom3",IDC_PSI_SPIN,"SpinnerControl",0x0,131,10,7,10
-    LTEXT           "highlight width",IDC_DELTAX_LABEL,118,24,46,8
-    CONTROL         "Custom3",IDC_DELTAX_SPIN,"SpinnerControl",0x0,190,23,7,10
-    LTEXT           "alpha",IDC_ALPHA_LABEL,12,37,18,8
-    CONTROL         "Custom3",IDC_ALPHA_SPIN,"SpinnerControl",0x0,68,36,7,10
-    LTEXT           "beta",IDC_ALPHA_LABEL2,85,37,15,8
-    CONTROL         "Custom3",IDC_BETA_SPIN,"SpinnerControl",0x0,128,36,7,10
-    LTEXT           "color",IDC_STATIC,150,11,16,8
-    CONTROL         "",IDC_YRN_TEX_SPECULAR_BUTTON,"CustButton",WS_TABSTOP,80,23,11,10
-    LTEXT           "yarn size",IDC_YRN_TEX_SIZE_LABEL,144,37,28,8
-    CONTROL         "",IDC_YRN_TEX_SIZE_BUTTON,"CustButton",WS_TABSTOP,177,36,13,10
-    CONTROL         "",IDC_YRN_TEX_DIFFUSE_BUTTON,"CustButton",WS_TABSTOP,190,10,12,10
+    LTEXT           "Specular",IDC_STATIC,112,4,29,8
+    LTEXT           "Bend",IDC_UMAX_LABEL,11,31,18,8
+    LTEXT           "Twist",IDC_PSI_LABEL,112,31,18,8
+    LTEXT           "Highlight width",IDC_DELTAX_LABEL,112,18,47,8
+    LTEXT           "Diffuse color",IDC_STATIC,11,4,40,8
+    LTEXT           "Specular noise",IDC_STATIC,11,18,48,8
+    CONTROL         "Custom2",IDC_UMAX_EDIT,"CustEdit",WS_TABSTOP,71,30,26,10
+    CONTROL         "Custom2",IDC_PSI_EDIT,"CustEdit",WS_TABSTOP,174,30,23,10
+    CONTROL         "Custom2",IDC_SPECULAR_EDIT,"CustEdit",WS_TABSTOP,174,4,23,10
+    CONTROL         "Custom2",IDC_SPECULAR_NOISE_EDIT,"CustEdit",WS_TABSTOP,71,17,26,10
+    CONTROL         "Custom2",IDC_DELTAX_EDIT,"CustEdit",WS_TABSTOP,174,17,23,10
+    CONTROL         "Custom1",IDC_YARNCOLOR_SWATCH,"ColorSwatch",0x0,71,3,16,12
+    CONTROL         "Custom3",IDC_SPECULAR_SPIN,"SpinnerControl",0x0,197,4,7,10
+    CONTROL         "Custom3",IDC_UMAX_SPIN,"SpinnerControl",0x0,97,30,7,10
+    CONTROL         "Custom3",IDC_PSI_SPIN,"SpinnerControl",0x0,197,30,7,10
+    CONTROL         "Custom3",IDC_DELTAX_SPIN,"SpinnerControl",0x0,197,17,7,10
+    CONTROL         "Custom2",IDC_YRN_TEX_SPECULAR_BUTTON,"CustButton",WS_TABSTOP,205,4,12,10
+    CONTROL         "",IDC_YRN_TEX_DIFFUSE_BUTTON,"CustButton",WS_TABSTOP,90,4,14,10
+    CONTROL         "Custom3",IDC_SPECULAR_NOISE_SPIN,"SpinnerControl",0x0,97,17,7,10
 END
 
-IDD_YARN_TYPE DIALOGEX 0, 0, 220, 54
+IDD_YARN_TYPE DIALOGEX 0, 0, 220, 47
 STYLE DS_SETFONT | WS_CHILD | WS_VISIBLE
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    CONTROL         "bend",IDC_UMAX_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,9,32,10
-    CONTROL         "Custom2",IDC_UMAX_EDIT,"CustEdit",WS_TABSTOP,47,9,23,10
-    CONTROL         "twist",IDC_PSI_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,86,9,30,10
-    CONTROL         "Custom2",IDC_PSI_EDIT,"CustEdit",WS_TABSTOP,115,9,22,10
-    CONTROL         "color",IDC_COLOR_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,151,9,31,10
-    CONTROL         "specular",IDC_SPECULAR_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,24,43,10
-    CONTROL         "Custom2",IDC_SPECULAR_EDIT,"CustEdit",WS_TABSTOP,47,24,23,10
-    CONTROL         "highlight width",IDC_DELTAX_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,115,24,61,10
-    CONTROL         "Custom2",IDC_DELTAX_EDIT,"CustEdit",WS_TABSTOP,183,24,21,10
-    CONTROL         "alpha",IDC_ALPHA_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,38,33,10
-    CONTROL         "Custom2",IDC_ALPHA_EDIT,"CustEdit",WS_TABSTOP,47,38,23,10
-    CONTROL         "beta",IDC_BETA_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,85,38,30,10
-    CONTROL         "Custom2",IDC_BETA_EDIT,"CustEdit",WS_TABSTOP,115,38,22,10
-    CONTROL         "Custom1",IDC_YARNCOLOR_SWATCH,"ColorSwatch",0x0,182,8,16,12
-    CONTROL         "Custom3",IDC_SPECULAR_SPIN,"SpinnerControl",0x0,72,24,7,10
-    CONTROL         "Custom3",IDC_UMAX_SPIN,"SpinnerControl",0x0,71,9,7,10
-    CONTROL         "Custom3",IDC_PSI_SPIN,"SpinnerControl",0x0,137,9,7,10
-    CONTROL         "Custom3",IDC_DELTAX_SPIN,"SpinnerControl",0x0,205,24,7,10
-    CONTROL         "Custom3",IDC_ALPHA_SPIN,"SpinnerControl",0x0,72,38,7,10
-    CONTROL         "Custom3",IDC_BETA_SPIN,"SpinnerControl",0x0,137,38,7,10
-    CONTROL         "Custom2",IDC_YRN_TEX_SPECULAR_BUTTON,"CustButton",WS_TABSTOP,86,24,14,10
-    LTEXT           "yarn size",IDC_YRN_TEX_SIZE_LABEL,152,39,28,8
-    CONTROL         "",IDC_YRN_TEX_SIZE_BUTTON2,"CustButton",WS_TABSTOP,189,38,13,10
-    CONTROL         "",IDC_YRN_TEX_DIFFUSE_BUTTON,"CustButton",WS_TABSTOP,198,9,14,10
+    CONTROL         "bend",IDC_UMAX_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,30,32,10
+    CONTROL         "Custom2",IDC_UMAX_EDIT,"CustEdit",WS_TABSTOP,71,30,26,10
+    CONTROL         "twist",IDC_PSI_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,112,30,30,10
+    CONTROL         "Custom2",IDC_PSI_EDIT,"CustEdit",WS_TABSTOP,176,30,22,10
+    CONTROL         "Diffuse color",IDC_COLOR_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,4,55,10
+    CONTROL         "Specular strength",IDC_SPECULAR_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,112,4,39,10
+    CONTROL         "Custom2",IDC_SPECULAR_EDIT,"CustEdit",WS_TABSTOP,176,4,22,10
+    CONTROL         "Highlight noise",IDC_SPECULAR_NOISE_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,17,60,10
+    CONTROL         "Custom2",IDC_SPECULAR_NOISE_EDIT,"CustEdit",WS_TABSTOP,71,17,26,10
+    CONTROL         "Highlight width",IDC_DELTAX_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,112,17,64,10
+    CONTROL         "Custom2",IDC_DELTAX_EDIT,"CustEdit",WS_TABSTOP,176,17,22,10
+    CONTROL         "Custom1",IDC_YARNCOLOR_SWATCH,"ColorSwatch",0x0,71,3,16,12
+    CONTROL         "Custom3",IDC_SPECULAR_SPIN,"SpinnerControl",0x0,198,4,7,10
+    CONTROL         "Custom3",IDC_UMAX_SPIN,"SpinnerControl",0x0,97,30,7,10
+    CONTROL         "Custom3",IDC_PSI_SPIN,"SpinnerControl",0x0,198,30,7,10
+    CONTROL         "Custom3",IDC_DELTAX_SPIN,"SpinnerControl",0x0,198,17,7,10
+    CONTROL         "Custom2",IDC_YRN_TEX_SPECULAR_BUTTON,"CustButton",WS_TABSTOP,206,4,12,10
+    CONTROL         "",IDC_YRN_TEX_DIFFUSE_BUTTON,"CustButton",WS_TABSTOP,90,4,14,10
+    CONTROL         "Custom3",IDC_SPECULAR_NOISE_SPIN,"SpinnerControl",0x0,97,17,7,10
 END
 
 
@@ -198,42 +186,42 @@ BEGIN
         VERTGUIDE, 190
         VERTGUIDE, 196
         TOPMARGIN, 4
-        BOTTOMMARGIN, 54
+        BOTTOMMARGIN, 40
+        HORZGUIDE, 33
     END
 
     IDD_YARN, DIALOG
     BEGIN
         LEFTMARGIN, 4
-        RIGHTMARGIN, 215
-        VERTGUIDE, 12
-        VERTGUIDE, 45
-        VERTGUIDE, 68
-        VERTGUIDE, 85
-        VERTGUIDE, 106
-        VERTGUIDE, 131
-        VERTGUIDE, 190
+        RIGHTMARGIN, 217
+        VERTGUIDE, 11
+        VERTGUIDE, 71
+        VERTGUIDE, 97
+        VERTGUIDE, 112
+        VERTGUIDE, 174
+        VERTGUIDE, 197
         TOPMARGIN, 4
-        BOTTOMMARGIN, 51
-        HORZGUIDE, 15
-        HORZGUIDE, 28
-        HORZGUIDE, 41
+        BOTTOMMARGIN, 40
+        HORZGUIDE, 9
+        HORZGUIDE, 22
+        HORZGUIDE, 35
     END
 
     IDD_YARN_TYPE, DIALOG
     BEGIN
         LEFTMARGIN, 4
-        RIGHTMARGIN, 212
-        VERTGUIDE, 47
-        VERTGUIDE, 70
-        VERTGUIDE, 78
-        VERTGUIDE, 86
-        VERTGUIDE, 115
-        VERTGUIDE, 137
+        RIGHTMARGIN, 218
+        VERTGUIDE, 11
+        VERTGUIDE, 71
+        VERTGUIDE, 97
+        VERTGUIDE, 112
+        VERTGUIDE, 176
+        VERTGUIDE, 198
         TOPMARGIN, 3
-        BOTTOMMARGIN, 50
-        HORZGUIDE, 14
-        HORZGUIDE, 29
-        HORZGUIDE, 43
+        BOTTOMMARGIN, 43
+        HORZGUIDE, 9
+        HORZGUIDE, 22
+        HORZGUIDE, 35
     END
 END
 #endif    // APSTUDIO_INVOKED

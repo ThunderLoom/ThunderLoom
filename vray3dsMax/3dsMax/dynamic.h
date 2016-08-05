@@ -9,6 +9,9 @@
 #include "dbgprint.h"
 #include "woven_cloth.h"
 #include "imtl.h"
+#include "object.h"
+#include "render.h"
+#include "shadedata_new.h"
 
 typedef void (*EVALDIFFUSEFUNC)(const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters,
@@ -81,7 +84,7 @@ void
 EvalDiffuseFunc
 (const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
-	YarnType *yarn_type);
+	YarnType *yarn_type, int *yarn_type_id);
 #endif
 
 #ifndef DYNAMIC

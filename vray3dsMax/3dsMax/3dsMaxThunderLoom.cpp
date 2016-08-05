@@ -1,6 +1,15 @@
 //3dsMaxThunderLoom.cpp
 // This file sets up and registers the 3dsMax plugin.
 
+//The paramblock version
+const int PLUGIN_VERSION_HIGH=1;
+const int PLUGIN_VERSION_LOW=00;
+//This is the plugin version * 100
+const int PLUGIN_VERSION= PLUGIN_VERSION_HIGH*100 + PLUGIN_VERSION_LOW;
+
+// Check http://docs.autodesk.com/3DSMAX/16/ENU/3ds-Max-SDK-Programmer-Guide/index.html?url=files/GUID-F35959BB-2660-492F-B082-56304C70293A.htm,topicNumber=d30e52807
+// When adding new parameters
+
 #include "dynamic.h"
 
 #include "max.h"
@@ -214,6 +223,10 @@ public:
 			case WM_INITDIALOG:
 			{
 				update_yarn_type_rollups();
+				wchar_t buffer[256];
+				swprintf(buffer,L"Thunder Loom version %d.%02d",PLUGIN_VERSION_HIGH,
+					PLUGIN_VERSION_LOW);
+				SetWindowText(GetDlgItem(hWnd,IDC_VERSION),buffer);
 				break;
 			}
 			case WM_DESTROY:
@@ -316,13 +329,45 @@ public:
 
 enum {rollout_pattern, rollout_yarn_type};
 
-//Set up paramblock to handle storing values and managing ui elements for us
 static ParamBlockDesc2 thunder_loom_param_blk_desc(
     mtl_params, _T("Test mtl params"), 0,
-    &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI + P_MULTIMAP, 0,
+    &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI + P_MULTIMAP + P_VERSION,
+	PLUGIN_VERSION, 0,
     //rollouts
 	1,
 	//2,
+    rollout_pattern,   IDD_BLENDMTL, IDS_PATTERN, 0, 0,
+		new PatternRolloutDlgProc(), 
+    mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 1.f,
+        p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_USCALE_EDIT, IDC_USCALE_SPIN, 0.1f,
+    PB_END,
+    mtl_vscale, _FT("vscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 1.f,
+        p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
+    PB_END,
+    mtl_dummy, _FT("dummy"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 1.f,
+    PB_END,
+    mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
+        p_default, FALSE,
+        p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
+    PB_END,
+    texmaps, _T("yarnmaplist"), TYPE_TEXMAP_TAB, 0, P_VARIABLE_SIZE, 0,
+		//no ui, for the array
+		//handled through Proc
+    PB_END,
+PB_END
+);									 
+
+/*//Set up paramblock to handle storing values and managing ui elements for us
+static ParamBlockDesc2 thunder_loom_param_blk_desc(
+    mtl_params, _T("Test mtl params"), 0,
+    &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI + P_VERSION,
+	PLUGIN_VERSION,
+	1,
     rollout_pattern,   IDD_BLENDMTL, IDS_PATTERN, 0, 0,
 		new PatternRolloutDlgProc(), 
     mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
@@ -353,6 +398,7 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
     PB_END,
 PB_END
 );									 
+*/
 
 INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -370,18 +416,20 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				#define YARN_TYPE_PARAM(A,B){\
 					HWND spinner_hwnd = GetDlgItem(hWnd, IDC_##B##_SPIN);\
 					HWND edit_hwnd = GetDlgItem(hWnd, IDC_##B##_EDIT);\
-					ISpinnerControl * s = GetISpinner(spinner_hwnd);\
-					s->LinkToEdit(edit_hwnd, EDITTYPE_FLOAT);\
-					s->SetLimits(0.f, 1.f, FALSE);\
-					s->SetScale(0.01f);\
-					s->SetValue(yarn_type.A, FALSE);\
-					ReleaseISpinner(s);\
-					if(data->yarn_type >= 0){\
-						uint8_t enabled=yarn_type.A##_enabled;\
-						Button_SetCheck(\
-                            GetDlgItem(hWnd,IDC_##B##_OVERRIDE),enabled);\
-						EnableWindow(spinner_hwnd,enabled);\
-						EnableWindow(edit_hwnd,enabled);\
+					if(spinner_hwnd && edit_hwnd){\
+						ISpinnerControl * s=GetISpinner(spinner_hwnd);\
+						s->LinkToEdit(edit_hwnd,EDITTYPE_FLOAT);\
+						s->SetLimits(0.f,1.f,FALSE);\
+						s->SetScale(0.01f);\
+						s->SetValue(yarn_type.A,FALSE);\
+						ReleaseISpinner(s);\
+						if(data->yarn_type>=0){\
+							uint8_t enabled=yarn_type.A##_enabled;\
+							Button_SetCheck(\
+								GetDlgItem(hWnd,IDC_##B##_OVERRIDE),enabled);\
+							EnableWindow(spinner_hwnd,enabled);\
+							EnableWindow(edit_hwnd,enabled);\
+						}\
 					}\
 				}
 				YARN_TYPE_PARAMETERS
@@ -646,12 +694,6 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 							ivalid);
 						break;
 					}
-					case mtl_intensity_fineness:
-					{
-						pblock->GetValue(mtl_intensity_fineness,0,m_weave_parameters.intensity_fineness,
-							ivalid);
-						break;
-					}
 				}
 			}
 			break;
@@ -671,48 +713,20 @@ int ThunderLoomMtl::NumSubTexmaps() {
 }
 
 Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
-	switch (i)
-	{
-		/*case 0:
-			return pblock->GetTexmap(mtl_texmap_diffuse);
-			break;
-		case 1:
-			return pblock->GetTexmap(mtl_texmap_specular);
-			break;*/
-		default:
-			if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
-				return pblock->GetTexmap(texmaps, 0, i-NUMBER_OF_FIXED_TEXMAPS);
-			} else {
-				return NULL;
-			}
-			break;
+	if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
+		return pblock->GetTexmap(texmaps, 0, i-NUMBER_OF_FIXED_TEXMAPS);
+	} else {
+		return NULL;
 	}
 }
 
 void ThunderLoomMtl::SetSubTexmap(int i, Texmap* m) {
-	switch (i)
-	{
-		/*
-		case 0:
-			pblock->SetValue(mtl_texmap_diffuse, 0, m);
-			break;
-		case 1:
-			pblock->SetValue(mtl_texmap_specular, 0, m);
-			break;*/
-		default:
-			if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
-				pblock->SetValue(texmaps, 0, m, i-NUMBER_OF_FIXED_TEXMAPS);
-			}
-			break;
+	if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
+		pblock->SetValue(texmaps, 0, m, i-NUMBER_OF_FIXED_TEXMAPS);
 	}
 }
 
 TSTR ThunderLoomMtl::GetSubTexmapSlotName(int i) {
-	/*switch(i) {
-		case 0: return L"Main Diffuse Map";
-		case 1: return L"Main Specular Map";
-	}*/
-
 	int yrntexmap_id = i - NUMBER_OF_FIXED_TEXMAPS;
 	switch(yrntexmap_id % NUMBER_OF_YRN_TEXMAPS) {
 #define YARN_TYPE_TEXMAP(param) case yrn_texmaps_##param: return L#param;
@@ -735,24 +749,29 @@ TSTR ThunderLoomMtl::GetSubTexmapTVName(int i) {
 #define MTL_HDR_CHUNK 0x4000
 #define YARN_TYPE_CHUNK 0x0200
 
-IOResult ThunderLoomMtl::Save(ISave *isave) { 
+IOResult ThunderLoomMtl::Save(ISave *isave)
+{
 	IOResult res;
 	isave->BeginChunk(MTL_HDR_CHUNK);
-	res = MtlBase::Save(isave);
-	if (res!=IO_OK) return res;
+	res=MtlBase::Save(isave);
+	if(res!=IO_OK) return res;
 	isave->EndChunk();
 	isave->BeginChunk(YARN_TYPE_CHUNK);
 	//NOTE(Vidar):Save yarn types
 	ULONG nb;
+	isave->Write((unsigned char*)&PLUGIN_VERSION,
+		sizeof(int),&nb);
 	isave->Write((unsigned char*)&m_weave_parameters,
-		sizeof(wcWeaveParameters), &nb);
-	Pattern *pattern = m_weave_parameters.pattern;
-	isave->Write((unsigned char*)pattern, sizeof(Pattern), &nb);
-	isave->Write((unsigned char*)pattern->yarn_types,
-		sizeof(YarnType)*pattern->num_yarn_types, &nb);
-	isave->Write((unsigned char*)pattern->entries,
-		sizeof(PatternEntry)*m_weave_parameters.pattern_width
-		*m_weave_parameters.pattern_height, &nb);
+		sizeof(wcWeaveParameters),&nb);
+	Pattern *pattern=m_weave_parameters.pattern;
+	if(pattern){
+		isave->Write((unsigned char*)pattern,sizeof(Pattern),&nb);
+		isave->Write((unsigned char*)pattern->yarn_types,
+			sizeof(YarnType)*pattern->num_yarn_types,&nb);
+		isave->Write((unsigned char*)pattern->entries,
+			sizeof(PatternEntry)*m_weave_parameters.pattern_width
+			*m_weave_parameters.pattern_height,&nb);
+	}
     isave->EndChunk();
 	return IO_OK;
 }	
@@ -769,24 +788,29 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 				break;
             case YARN_TYPE_CHUNK:
 			{
+				int version;
+				iload->Read((unsigned char*)&version,
+					sizeof(int), &nb);
 				//NOTE(Vidar):Load m_weave_parameters
 				int num_yarn_types;
 				wcWeaveParameters params;
 				iload->Read((unsigned char*)&params,
 					sizeof(wcWeaveParameters), &nb);
-				Pattern *pattern = (Pattern*)calloc(1, sizeof(Pattern));
-				iload->Read((unsigned char*)pattern,
-					sizeof(Pattern), &nb);
-				pattern->yarn_types = (YarnType*)calloc(pattern->num_yarn_types,
-					sizeof(YarnType));
-				iload->Read((unsigned char*)pattern->yarn_types,
-					pattern->num_yarn_types * sizeof(YarnType), &nb);
-				int num_entries = params.pattern_width * params.pattern_height;
-				pattern->entries = (PatternEntry*)calloc(num_entries,
-					sizeof(PatternEntry));
-				iload->Read((unsigned char*)pattern->entries,
-					num_entries * sizeof(PatternEntry), &nb);
-				params.pattern = pattern;
+				if(params.pattern){
+					Pattern *pattern=(Pattern*)calloc(1,sizeof(Pattern));
+					iload->Read((unsigned char*)pattern,
+						sizeof(Pattern),&nb);
+					pattern->yarn_types=(YarnType*)calloc(pattern->num_yarn_types,
+						sizeof(YarnType));
+					iload->Read((unsigned char*)pattern->yarn_types,
+						pattern->num_yarn_types*sizeof(YarnType),&nb);
+					int num_entries=params.pattern_width * params.pattern_height;
+					pattern->entries=(PatternEntry*)calloc(num_entries,
+						sizeof(PatternEntry));
+					iload->Read((unsigned char*)pattern->entries,
+						num_entries*sizeof(PatternEntry),&nb);
+					params.pattern = pattern;
+				}
 				m_weave_parameters = params;
 				break;
 			}
@@ -807,6 +831,24 @@ RefTargetHandle ThunderLoomMtl::Clone(RemapDir &remap) {
 	BaseClone(this, mnew, remap);
 	mnew->ReplaceReference(0, remap.CloneRef(pblock));
 	mnew->ivalid.SetEmpty();	
+	//TODO(Vidar):Copy parameters...
+	mnew->m_weave_parameters=m_weave_parameters;
+	if(m_weave_parameters.pattern){
+		Pattern *pattern;
+		pattern=(Pattern*)calloc(1,sizeof(Pattern));
+		*pattern=*m_weave_parameters.pattern;
+		pattern->yarn_types=(YarnType*)calloc(pattern->num_yarn_types,
+			sizeof(YarnType));
+		memcpy(pattern->yarn_types,m_weave_parameters.pattern->yarn_types,
+			pattern->num_yarn_types*sizeof(YarnType));
+		int num_entries=m_weave_parameters.pattern_width *
+			m_weave_parameters.pattern_height;
+		pattern->entries=(PatternEntry*)calloc(num_entries,
+			sizeof(PatternEntry));
+		memcpy(pattern->entries,m_weave_parameters.pattern->entries,
+			num_entries*sizeof(PatternEntry));
+		mnew->m_weave_parameters.pattern=pattern;
+	}
 	return (RefTargetHandle) mnew;
 }
 

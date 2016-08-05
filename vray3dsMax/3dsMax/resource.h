@@ -58,6 +58,7 @@
 #define IDC_REALWORLD_LABEL             1025
 #define IDC_REALWORLD_CHECK             1026
 #define IDC_UMAX_LABEL                  1027
+#define IDC_VSCALE_LABEL4               1027
 #define IDC_VSCALE_LABEL2               1028
 #define IDC_PSI_LABEL                   1029
 #define IDC_VSCALE_LABEL3               1030
@@ -114,7 +115,6 @@
 #define IDD_BLENDMTL2                   1081
 #define IDC_YRN_TEX_DIFFUSE_LABEL       1082
 #define IDD_YARN_TYPE                   1083
-#define IDC_SPECULAR__OVERRIDE          1084
 #define IDC_SPECULAR_OVERRIDE           1085
 #define IDC_ALPHA_OVERRIDE              1086
 #define IDC_BETA_OVERRIDE               1087
@@ -124,6 +124,9 @@
 #define IDC_YRN_TEX_SIZE_BUTTON2        1091
 #define sp_texmap_blend_mult2           1092
 #define IDC_YRN_TEX_DIFFUSE_LABEL2      1093
+#define IDC_SPECULAR_NOISE_EDIT         1094
+#define IDC_SPECULAR_NOISE_SPIN         1095
+#define IDC_SPECULAR_NOISE_OVERRIDE     1096
 #define sp_texmap_blend_mult3           1094
 #define sp_texmap_blend_mult4           1095
 #define sp_texmap_blend_mult5           1096
@@ -169,9 +172,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        110
+#define _APS_NEXT_RESOURCE_VALUE        112
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1134
+#define _APS_NEXT_CONTROL_VALUE         1196
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

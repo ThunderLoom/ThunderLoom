@@ -1,11 +1,6 @@
 //More Vray specific things. Implements methods for the BSDFSampler interface.
 
 #include "dynamic.h"
-#include "vraybase.h"
-#include "vrayinterface.h"
-#include "vraycore.h"
-#include "vrayrenderer.h"
-#include "imtl.h"
 #include "helper.h"
 
 #include "VrayThunderLoomBRDF.h"
@@ -26,8 +21,20 @@ using namespace VUtils;
 void
 MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters) {
     m_weave_parameters = weave_parameters;
-    EvalDiffuseFunc(rc,weave_parameters,&diffuse_color,&m_yarn_type);
+    EvalDiffuseFunc(rc,weave_parameters,&diffuse_color,&m_yarn_type,
+		&m_yarn_type_id);
     orig_backside = rc.rayresult.realBack;
+
+    const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);
+	VR::VRayInterface &vri=const_cast<VR::VRayInterface&>(vri_const);
+	ShadeContext &sc=static_cast<ShadeContext&>(vri);
+	if(m_weave_parameters->pattern){
+		m_specular_strength=yarn_type_get_specular_strength(
+			m_weave_parameters->pattern, m_yarn_type_id,&sc);
+	}
+	else{
+		m_specular_strength=default_yarn_type.specular_strength;
+	}
 
 	// Set the normals to use for lighting
 	normal=rc.rayresult.normal;
@@ -60,10 +67,7 @@ VUtils::Color MyBaseBSDF::getDiffuseColor(VUtils::Color &lightColor) {
 }
 VUtils::Color MyBaseBSDF::getLightMult(VUtils::Color &lightColor) {
 	//TODO(Vidar): Use getter instead, to handle textures...
-    float s = m_yarn_type.specular_strength;
-    if(!m_yarn_type.specular_strength_enabled){
-        s = m_weave_parameters->pattern->yarn_types[0].specular_strength;
-    }
+	float s=m_specular_strength;
     VUtils::Color ret = (diffuse_color + VUtils::Color(s,s,s)) * lightColor;
     lightColor.makeZero();
     return ret;
@@ -132,10 +136,7 @@ VRayContext* MyBaseBSDF::getNewContext(const VRayContext &rc, int &samplerID, in
     //doDiffuse == 2 => only diffuse
 	if (2==doDiffuse) return NULL;
 
-    float s = m_yarn_type.specular_strength;
-    if(!m_yarn_type.specular_strength_enabled){
-        s = m_weave_parameters->pattern->yarn_types[0].specular_strength;
-    }
+	float s=m_specular_strength;
     VUtils::Color reflect_filter = VUtils::Color(s,s,s);
 	VRayContext &nrc=rc.newSpawnContext(2, reflect_filter, RT_REFLECT | RT_GLOSSY | RT_ENVIRONMENT, normal);
 

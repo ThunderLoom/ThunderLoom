@@ -36,7 +36,8 @@ typedef struct
 	YARN_TYPE_PARAM(alpha, ALPHA)\
 	YARN_TYPE_PARAM(beta, BETA)\
 	YARN_TYPE_PARAM(delta_x, DELTAX)\
-	YARN_TYPE_PARAM(specular_strength, SPECULAR)
+	YARN_TYPE_PARAM(specular_strength, SPECULAR)\
+	YARN_TYPE_PARAM(specular_noise, SPECULAR_NOISE)
 
 typedef struct
 {
@@ -63,6 +64,7 @@ YarnType default_yarn_type =
 	4.f,   //beta
 	0.3f,  //delta_x
 	0.4f,  //specular_strength
+	0.f,  //specular_noise
 	0.3f, 0.3f, 0.3f,  //color
     1,1,1,1,1,1,1, // Everything enabled
 	0,             // No texmaps...

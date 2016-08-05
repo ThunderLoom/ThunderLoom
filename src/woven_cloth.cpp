@@ -196,9 +196,12 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 
 		float highest_result = 0.f;
 
-		// Temporarily disable intensity variation...
-		float tmp_intensity_fineness = params->intensity_fineness;
-		params->intensity_fineness = 0.f;
+		// Temporarily disable speuclar noise...
+		float tmp_specular_noise[WC_MAX_YARN_TYPES];
+		for(int i=0;i<params->pattern->num_yarn_types;i++){
+			tmp_specular_noise[i] = params->pattern->yarn_types[i].specular_noise;
+			params->pattern->yarn_types[i].specular_noise = 0.f;
+		}
 
 		// Normalize by the largest reflection across all uv coords and
 		// incident directions
@@ -250,7 +253,9 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 			params->specular_normalization =
 				(float)nDirectionSamples / highest_result;
 		}
-		params->intensity_fineness = tmp_intensity_fineness;
+		for(int i=0;i<params->pattern->num_yarn_types;i++){
+			params->pattern->yarn_types[i].specular_noise = tmp_specular_noise[i];
+		}
 	}
 }
 
@@ -500,12 +505,11 @@ void wcFreeWeavePattern(wcWeaveParameters *params)
 }
 
 WC_PREFIX
-static float intensityVariation(wcPatternData pattern_data,
-    const wcWeaveParameters *params)
+static float intensityVariation(wcPatternData pattern_data)
 {
-    if(params->intensity_fineness < 0.001f){
-        return 1.f;
-    }
+	//NOTE(Vidar): a fineness of 3 seems to work fine...
+	float intensity_fineness=3.f;
+
     // have index to make a grid of finess*fineness squares 
     // of which to have the same brightness variations.
 
@@ -524,9 +528,9 @@ static float intensityVariation(wcPatternData pattern_data,
     float centery = tindex_y - (pattern_data.y*0.5f)*pattern_data.length;
     
     uint32_t r1 = (uint32_t) ((centerx + tindex_x) 
-            * params->intensity_fineness);
+            * intensity_fineness);
     uint32_t r2 = (uint32_t) ((centery + tindex_y) 
-            * params->intensity_fineness);
+            * intensity_fineness);
     
     float xi = sampleTEASingle(r1, r2, 8);
     float log_xi = -logf(xi);
@@ -960,8 +964,14 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
         //Staple yarn
         reflection = wcEvalStapleSpecular(intersection_data, data, params); 
     }
-	return reflection * params->specular_normalization
-        * intensityVariation(data, params);
+	float specular_noise=yarn_type_get_specular_noise(params->pattern,
+		data.yarn_type,intersection_data.context);
+	float noise=1.f;
+    if(specular_noise > 0.001f){
+		float iv = intensityVariation(data);
+		noise=(1.f-specular_noise)+specular_noise * iv;
+    }
+	return reflection * params->specular_normalization * noise;
 }
 
 wcColor wcShade(wcIntersectionData intersection_data,
