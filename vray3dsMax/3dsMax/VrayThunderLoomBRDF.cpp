@@ -59,6 +59,7 @@ VUtils::Color MyBaseBSDF::getDiffuseColor(VUtils::Color &lightColor) {
     return ret;
 }
 VUtils::Color MyBaseBSDF::getLightMult(VUtils::Color &lightColor) {
+	//TODO(Vidar): Use getter instead, to handle textures...
     float s = m_yarn_type.specular_strength;
     if(!m_yarn_type.specular_strength_enabled){
         s = m_weave_parameters->pattern->yarn_types[0].specular_strength;

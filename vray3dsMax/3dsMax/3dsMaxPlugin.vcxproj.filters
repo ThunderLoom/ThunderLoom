@@ -71,4 +71,9 @@
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="notes.txt">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

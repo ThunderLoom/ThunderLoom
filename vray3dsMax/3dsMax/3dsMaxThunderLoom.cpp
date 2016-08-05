@@ -142,27 +142,6 @@ ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
  |	UI stuff
 \*===========================================================================*/
 
-static void UpdateYarnTexmaps(int yarn_type_id, IParamBlock2 *pblock, HWND hWnd, TimeValue t)
-{
-	for (int i = yarn_type_id*NUMBER_OF_YRN_TEXMAPS;
-		i < (yarn_type_id+1)*NUMBER_OF_YRN_TEXMAPS; i++) {
-		int texmap_id = i % NUMBER_OF_YRN_TEXMAPS;
-		Texmap *texmap = pblock->GetTexmap(texmaps, 0, i); //0 is main diffuse
-		std::wostringstream str;
-
-		if (texmap) {
-			MSTR s; texmap->GetClassName(s);
-			str << "Map (" << s << ")";
-		} else {
-			str << "None";
-		}
-
-		HWND hCtrl = GetDlgItem( hWnd, texmapBtnIDCs[texmap_id]);
-		ICustButton *button = GetICustButton(hCtrl);
-		button->SetText(str.str().c_str());
-	}
-}
-
 struct YarnTypeDlgProcData
 {
     ThunderLoomMtl *sm;
@@ -197,18 +176,19 @@ public:
 						calloc(1,sizeof(YarnTypeDlgProcData));
 					data->sm=sm;
 					data->yarn_type=i;
+					bool open=sm->m_yarn_type_rollup_open[i];
 					if(i==0){
 						//NOTE(Vidar): Common yarn rollout
 						rollups[0]=sm->m_i_mtl_params->AddRollupPage(
 							hInstance,MAKEINTRESOURCE(IDD_YARN),YarnTypeDlgProc,
 							L"Common Yarn Settings",
-							(LPARAM)data,0);
+							(LPARAM)data,open ? 0 : APPENDROLL_CLOSED);
 					} else{
 						wchar_t buffer[128];
 						wsprintf(buffer,L"Yarn type %d",i);
 						rollups[i]=sm->m_i_mtl_params->AddRollupPage(hInstance,
 							MAKEINTRESOURCE(IDD_YARN_TYPE),YarnTypeDlgProc,buffer,
-							(LPARAM)data,APPENDROLL_CLOSED);
+							(LPARAM)data,open ? 0 : APPENDROLL_CLOSED);
 					}
 				}
 			}
@@ -237,6 +217,10 @@ public:
 				break;
 			}
 			case WM_DESTROY:
+				for(int i=0;i<num_rollups;i++){
+					bool open=sm->m_i_mtl_params->IsRollupPanelOpen(rollups[i]);
+					sm->m_yarn_type_rollup_open[i]=open;
+				}
 				if(rollups){
 					free(rollups);
 				}
@@ -281,6 +265,10 @@ public:
 										sm->m_weave_parameters.vscale,
 										sm->ivalid);
 									Pattern *pattern=sm->m_weave_parameters.pattern;
+									sm->m_yarn_type_rollup_open[0]=1;
+									for(int i=1;i<pattern->num_yarn_types;i++){
+										sm->m_yarn_type_rollup_open[i]=0;
+									}
 									if(pattern){
 										//TODO(Peter): Test this with more complicate wif files!
 										//Set count for subtexmaps
@@ -428,17 +416,20 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
             break;
         }
-        case WM_DESTROY:
-            break;
 
 		#define GET_YARN_TYPE\
 			YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)\
-				GetWindowLong(hWnd,GWLP_USERDATA);\
+				GetWindowLongPtr(hWnd,GWLP_USERDATA);\
 			YarnType * yarn_type = &data->sm->m_weave_parameters.pattern\
 					->yarn_types[data->yarn_type];
 			 //NOTE(Vidar): Hack to update the preview ball
 		#define UPDATE_BALL\
             data->sm->pblock->SetValue(mtl_dummy,0,0.5f);
+
+        case WM_DESTROY:
+		{
+			break;
+		}
 
 	    //NOTE(Vidar): Update checkbox
         case WM_COMMAND: {
@@ -547,6 +538,7 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						//We clicked on Clear item in context menu
 						sm->SetSubTexmap(subtex_id,NULL);
 						SetWindowText(btn_hwnd,L"");
+						RedrawWindow(hWnd,NULL,NULL,RDW_INVALIDATE);
 					}
 				}
 			}

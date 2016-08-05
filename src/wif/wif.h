@@ -25,6 +25,7 @@ typedef struct
 {
     uint8_t warp_above;
     uint8_t yarn_type; //NOTE(Vidar): We're limited to 256 yarn types now,
+#define WC_MAX_YARN_TYPES 256
                        //should be ok, right?
 }PatternEntry;
 

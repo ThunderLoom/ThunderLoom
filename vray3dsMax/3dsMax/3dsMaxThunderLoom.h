@@ -87,8 +87,8 @@ public:
 
 	Interval ivalid;
     wcWeaveParameters m_weave_parameters;
-    bool *m_yarn_type_overrides;
     IMtlParams *m_i_mtl_params;
+    bool m_yarn_type_rollup_open[WC_MAX_YARN_TYPES];
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	//ref 0
