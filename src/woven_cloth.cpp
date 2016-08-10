@@ -188,8 +188,8 @@ void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
 WC_PREFIX
 void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 {
-    //Calculate normalization factor for the specular reflection
 	if (params->pattern) {
+    //Calculate normalization factor for the specular reflection
 		size_t nLocationSamples = 100;
 		size_t nDirectionSamples = 1000;
 		params->specular_normalization = 1.f;
@@ -712,9 +712,11 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     float x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x)
             + steps_left_weft)/w;
 
-    //Rescale x and y to [-1,1]
+    //Rescale x, y to [-1,1], w,v scaled by 2
     x = x*2.f - 1.f;
     y = y*2.f - 1.f;
+    w = w*2.f;
+    l = l*2.f;
 
     //Switch X and Y for warp, so that we always have the yarn
     // cylinder going along the y axis
@@ -726,6 +728,11 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         w = l;
         l = tmp2;
     }
+
+    //apply yarnSize variation!
+    // size factor should be in interval [0,1]
+    w *= yarn_type_get_yarnsize(params->pattern, current_point.yarn_type,
+            intersection_data.context);
   
     //return the results
     wcPatternData ret_data;
@@ -953,6 +960,10 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
     // to work better numerically. 
     float reflection = 0.f;
     if(params->pattern == 0){
+        return 0.f;
+    }
+    if(fabs(data.x) > (data.width/2.f)){
+        //yarn is thin. We did not hit it.
         return 0.f;
     }
     float psi = yarn_type_get_psi(params->pattern, data.yarn_type,

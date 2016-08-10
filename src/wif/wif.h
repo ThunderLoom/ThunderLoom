@@ -31,6 +31,7 @@ typedef struct
 
 //NOTE(Vidar):These are the yarn type parameters (except color)
 #define YARN_TYPE_PARAMETERS\
+	YARN_TYPE_PARAM(yarnsize, SIZE)\
 	YARN_TYPE_PARAM(umax, UMAX)\
 	YARN_TYPE_PARAM(psi, PSI)\
 	YARN_TYPE_PARAM(alpha, ALPHA)\
@@ -58,6 +59,7 @@ typedef struct
 static const
 YarnType default_yarn_type =
 {
+	1.0f,  //size
 	0.5f,  //umax
 	0.5f,  //psi
 	0.05f, //alpha
@@ -94,7 +96,7 @@ enum {
 #define YARN_TYPE_TEXMAP_PARAMETERS\
 	YARN_TYPE_TEXMAP(color,DIFFUSE)\
 	YARN_TYPE_TEXMAP(specular_strength,SPECULAR)\
-	//YARN_TYPE_TEXMAP(yarnsize)
+	YARN_TYPE_TEXMAP(yarnsize,SIZE)
 enum {
 #define YARN_TYPE_TEXMAP(param,A) yrn_texmaps_##param,
 	YARN_TYPE_TEXMAP_PARAMETERS

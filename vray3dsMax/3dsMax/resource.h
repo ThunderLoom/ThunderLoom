@@ -47,12 +47,16 @@
 #define IDC_UMAX_OVERRIDE               1014
 #define IDC_SPECULAR_SPIN               1015
 #define IDC_USCALE_SPIN                 1016
+#define IDC_SIZE_OVERRIDE               1016
 #define IDC_VSCALE_EDIT                 1017
 #define IDC_VSCALE_SPIN                 1018
 #define IDC_UMAX_EDIT                   1019
 #define IDC_UMAX_SPIN                   1020
 #define IDC_VERSION                     1021
+#define IDC_SIZE_EDIT                   1021
 #define IDC_PATTERN_GROUP               1022
+#define IDC_UMAX_SPIN2                  1022
+#define IDC_SIZE_SPIN                   1022
 #define IDC_USCALE_LABEL                1023
 #define IDC_VSCALE_LABEL                1024
 #define IDC_REALWORLD_LABEL             1025
@@ -89,6 +93,7 @@
 #define IDC_WIFFILE_BUTTON              1055
 #define IDC_YRN_TEX_SPECULAR_BUTTON     1056
 #define ed_texmap_blend_mult5           1057
+#define IDC_YRN_TEX_SPECULAR_BUTTON2    1057
 #define IDC_YARNTYPE_COMBO              1058
 #define cs_blend6                       1059
 #define IDC_YARNTYPE_LABEL              1060
@@ -125,10 +130,10 @@
 #define sp_texmap_blend_mult2           1092
 #define IDC_YRN_TEX_DIFFUSE_LABEL2      1093
 #define IDC_SPECULAR_NOISE_EDIT         1094
-#define IDC_SPECULAR_NOISE_SPIN         1095
-#define IDC_SPECULAR_NOISE_OVERRIDE     1096
 #define sp_texmap_blend_mult3           1094
+#define IDC_SPECULAR_NOISE_SPIN         1095
 #define sp_texmap_blend_mult4           1095
+#define IDC_SPECULAR_NOISE_OVERRIDE     1096
 #define sp_texmap_blend_mult5           1096
 #define sp_texmap_blend_mult6           1097
 #define sp_texmap_blend_mult7           1098
