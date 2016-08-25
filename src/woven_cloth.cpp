@@ -189,28 +189,58 @@ WC_PREFIX
 void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 {
 	if (params->pattern) {
-    //Generate offset matrix for the yarns in the pattern.
-    /*
-    {
-        //each element in this matrix contains the distance in uv coordiantes
-        //to the beginning of each yarn in the pattern. This is used to allow
-        //for yarn types with different sizes.
+    //Generate distance matrix for the yarns in the pattern.
+    /*{
+        //each element in this matrix contains the distance in pattern indicies
+        //to the beginning of each yarnsegment in the pattern.
+        //The distance are floats that allow for yarn types with different sizes.
+        //
+        //These distances take varying yarn sizes into account!
+        //This way only one lookup is required duiring rendering. 
 
-
-        //Get correct scaling for uv coordinates. Using info about tiling and realworld.
         //Loop through each entry in pattern matrix.
         //Look up yarn type and its corresponding size.
-        //Use that size value as a factor to change the default yarn size, specified by the wif file.
-        //
-        //Warn user when yarn scales are set in such a way that yarns wont add. (messing upp pattern.)
-        //
+        //Use that size value as a factor to change the yarn size 
+        
         //get pattern info
         uint32_t w = pattern->pattern_width;
         uint32_t h = pattern->pattern_height;
-        float* offsets = (float*)calloc((w)*(h),sizeof(float));
+        float* segment_distances = (float*)calloc((w)*(h),sizeof(float));
         for(y=0;y<h;y++){
             for(x=0;x<w;x++){
-                offsets[x+y*w].warp_above = warp_above[x+y*w];
+                PatternEntry current_point = params->pattern->
+                    entries[x + y*params->pattern_width];
+                
+                //for each element in pattern matrix
+                //Calculate the size of the segment
+                uint32_t steps_left_warp = 0, steps_right_warp = 0;
+                uint32_t steps_left_weft = 0, steps_right_weft = 0;
+                if (current_point.warp_above) {
+                    calculateLengthOfSegment(current_point.warp_above, x,
+                            y, &steps_left_warp, &steps_right_warp,
+                            params->pattern_width, params->pattern_height,
+                            params->pattern->entries);
+                } else{
+                    calculateLengthOfSegment(current_point.warp_above, x,
+                            y, &steps_left_weft, &steps_right_weft,
+                            params->pattern_width, params->pattern_height,
+                            params->pattern->entries);
+                }
+
+                //Look at crossing neighbors, 
+                //Use their yarnsize to increase distances a bit.
+                if (current_point.warp_above) {
+                    //look at pm y
+                } else{
+                    //look at pm x
+                }
+
+                //segment_distances[x+y*w].warp_above = 
+                
+
+
+                //Look at crossing neighbors, Use their yarnsize to increase distances a bit.
+
             }
         }
         
@@ -675,6 +705,14 @@ static float vonMises(float cos_x, float b) {
 }
 
 WC_PREFIX
+void lookupPatternEntry(PatternEntry* entry, const wcWeaveParameters* params, const uint8_t x, const uint8_t y) {
+    //function to get pattern entry. Takes care of coordinate wrapping!
+    uint8_t tmpx = (uint8_t)fmod(x,(float)params->pattern_width);
+    uint8_t tmpy = (uint8_t)fmod(y,(float)params->pattern_height);
+    *entry = params->pattern->entries[tmpx + tmpy*params->pattern_width];
+}
+
+WC_PREFIX
 wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         const wcWeaveParameters *params)
 {
@@ -728,20 +766,19 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     //If not look up ajascent pattern and use that!
 
     //verify that we are on the yarn!
-    float x_margin; //amount of free width space in cell.
-    float y_margin;
+    float x_offset; //amount of free width space in cell.
+    float y_offset;
+    {
     float yarnsize = params->pattern->
         yarn_types[current_point.yarn_type].yarnsize;
     if (current_point.warp_above) {
         float x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x));
+        x_offset = x;
         x = x*2.f - 1.f;
         if (fabsf(x) > yarnsize) {
             //The yarn is thin! We have hit outside it!
+
             int8_t dir = (x > 0) ? 1 : -1;
-            
-            //amount of free space to beginning of yarn
-            x_margin = (x + 1.f)/2.f - yarnsize;
-            x_margin *= dir;
             
             //NOTE(Peter): Which one to take though, the one to the left or 
             //the one to the right? What if there are none? 
@@ -750,62 +787,25 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             //Get nearest weft yarn.
             PatternEntry pattern_entry = current_point;
             uint8_t i = 0;
-            //(change to do while)
             while (pattern_entry.warp_above) {
                 i++;
                 //move to next pattern entry in direction dir
-                //TODO(peter): wrap or check so that we do not go out of bounds!
-                pattern_entry = params->pattern->entries[(pattern_x + i*dir) +
-                    pattern_y*params->pattern_width];        
+                lookupPatternEntry(&pattern_entry, params, (pattern_x + i*dir), pattern_y);
             }
             current_point = pattern_entry;
 
             //set pattern_x to the nearest weft so that it can be
             //calculated correctly.
+            //
+            //TODO(This will prob. not work for something other than plain weave.)
+            // If there should be, two parallell warps for example.
             pattern_x = pattern_x + i*dir;
-
-            //need variable for offset and margin...
-            //get width amount that was missing so
-            //that it can be added to the weft length.
-
         }
     }
     /*else {
-        float y = ((v_repeat*(float)(params->pattern_height) - (float)pattern_y));
-        y = y*2.f - 1.f;
-        if (fabsf(y) > params->pattern->
-                yarn_types[current_point.yarn_type].yarnsize) {
-            //The yarn is thin! We have hit outside it!
-            //amount of free space
-            y_margin = (y + 1.f)/2.f;
-
-            //NOTE(Peter): Which one to take though, the one to the left or 
-            //the one to the right? What if there are none? 
-            //Always parallel warps?
-
-            //Get nearest warp yarn.
-            PatternEntry pattern_entry = current_point;
-            int8_t dir = (y > 0) ? 1 : -1;
-            uint8_t i = 0;
-            //(change to do while)
-            while (!pattern_entry.warp_above) {
-                i++;
-                //move to next pattern entry in direction dir
-                //TODO(peter): wrap or check so that we do not go out of bounds!
-                pattern_entry = params->pattern->entries[pattern_x +
-                    (pattern_y + i*dir)*params->pattern_width];
-            }
-            current_point = pattern_entry;
-
-            //set pattern_x to the nearest weft so that it can be
-            //calculated correctly.
-            pattern_y = pattern_y + i*dir;
-
-            //need variable for offset and margin...
-            //get width amount that was missing so
-            //that it can be added to the weft length.
-        }
+        //same for wefts!!!
     }*/
+    }
 
     //Calculate the size of the segment
     uint32_t steps_left_warp = 0, steps_right_warp = 0;
@@ -821,19 +821,51 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             params->pattern_width, params->pattern_height,
             params->pattern->entries);
     }
+    
+    //Look at the crossing yarns at the ends of the yarn segment,
+    //Use their yarnsize to increase length of the current one a bit.
+    //TODO also make current one shorter. If need be.
+    float offset_x_left = 0;
+    float offset_x_right = 0;
+	float tmp_offset = 0;
+    if (current_point.warp_above) {
+        //look at pm y
+
+		//self size
+		//offset_x_right = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize);
+		offset_x_left = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
+		offset_x_right = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
+		//tmp_offset = -1.f*offset_x_left;
+    } else{
+        //left
+        PatternEntry pattern_entry;
+        lookupPatternEntry(&pattern_entry, params,
+                (pattern_x - steps_left_weft - 1), pattern_y);        
+        float tmp_yarnsize = params->pattern->
+            yarn_types[pattern_entry.yarn_type].yarnsize;
+        offset_x_left = (1.f-tmp_yarnsize);
+        //right
+        lookupPatternEntry(&pattern_entry, params,
+                (pattern_x + steps_left_weft + 1), pattern_y);        
+        tmp_yarnsize = params->pattern->
+            yarn_types[pattern_entry.yarn_type].yarnsize;
+        offset_x_right = (1.f-tmp_yarnsize);
+
+		//Self size
+    }
 
     //Yarn-segment-local coordinates.
     float l = (steps_left_warp + steps_right_warp + 1.f);
     float y = ((v_repeat*(float)(params->pattern_height) - (float)pattern_y)
             + steps_left_warp)/l;
 
-    float w = (steps_left_weft + steps_right_weft + 1.f);
-    float x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x)
+	float w = (steps_left_weft + steps_right_weft + 1.f + offset_x_left + offset_x_right);
+    float x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x + offset_x_left + tmp_offset)
             + steps_left_weft)/w;
     //Add/remove margins comming from thin yarns.
     //warp
-    w += (1-yarnsize);
-    x += (1.f-x_margin);
+    //w += (1-yarnsize);
+    //x += (1.f-x_margin);
     //weft... TODO
    // l += y_margin;
     //y += (1.f-y_margin);
@@ -855,10 +887,11 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         l = tmp2;
     }
 
+    //TODO
     //apply yarnSize variation!
     // size factor should be in interval [0,1]
-    w *= yarn_type_get_yarnsize(params->pattern, current_point.yarn_type,
-            intersection_data.context);
+    //w *= yarn_type_get_yarnsize(params->pattern, current_point.yarn_type,
+    //     intersection_data.context);
   
     //return the results
     wcPatternData ret_data;
@@ -1088,10 +1121,10 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
     if(params->pattern == 0){
         return 0.f;
     }
-    if(fabs(data.x) > (data.width/2.f)){
-        //yarn is thin. We did not hit it.
-        return 0.f;
-    }
+    //if(fabs(data.x) > (data.width/2.f)){
+    //    //yarn is thin. We did not hit it.
+    //    return 0.f;
+    //}
     float psi = yarn_type_get_psi(params->pattern, data.yarn_type,
 		intersection_data.context);
     if (psi <= 0.001f) {
@@ -1124,4 +1157,4 @@ wcColor wcShade(wcIntersectionData intersection_data,
     ret.g = ret.g*(1.f-specular_strength) + specular_strength*spec;
     ret.b = ret.b*(1.f-specular_strength) + specular_strength*spec;
     return ret;
-}
+    }
