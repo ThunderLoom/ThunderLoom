@@ -15,7 +15,7 @@
 
 typedef void (*EVALDIFFUSEFUNC)(const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters,
-	VUtils::Color *diffuse_color, YarnType *yarn_type);
+	VUtils::Color *diffuse_color, YarnType *yarn_type, int *yarn_type_id);
 
 typedef void (*EVALSPECULARFUNC)( const VUtils::VRayContext &rc, const VUtils::Vector &direction,
     wcWeaveParameters *weave_parameters, VUtils::Matrix nm,
