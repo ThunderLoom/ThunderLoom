@@ -19,6 +19,7 @@ protected:
 	Texmap **m_texmaps;
 	YarnType m_yarn_type;
 	int m_yarn_type_id;
+	int m_yarn_hit;
 	float m_specular_strength; //The texture modulated specular strength
 
 public:

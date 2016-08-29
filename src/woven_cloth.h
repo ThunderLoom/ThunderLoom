@@ -97,6 +97,7 @@ typedef struct
     float x, y; //position within segment (in yarn local coordiantes). 
     uint32_t total_index_x, total_index_y; //index for elements (not yarn local coordinates). TODO(Peter): perhaps a better name would be good?
     uint8_t warp_above; 
+    uint8_t yarn_hit; //True if we hit a yarn. False if we hit space inbetween. 
 } wcPatternData;
 
 WC_PREFIX

@@ -707,8 +707,8 @@ static float vonMises(float cos_x, float b) {
 WC_PREFIX
 void lookupPatternEntry(PatternEntry* entry, const wcWeaveParameters* params, const uint8_t x, const uint8_t y) {
     //function to get pattern entry. Takes care of coordinate wrapping!
-    uint8_t tmpx = (uint8_t)fmod(x,(float)params->pattern_width);
-    uint8_t tmpy = (uint8_t)fmod(y,(float)params->pattern_height);
+    uint32_t tmpx = (uint32_t)fmod(x,(float)params->pattern_width);
+    uint32_t tmpy = (uint32_t)fmod(y,(float)params->pattern_height);
     *entry = params->pattern->entries[tmpx + tmpy*params->pattern_width];
 }
 
@@ -766,45 +766,75 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     //If not look up ajascent pattern and use that!
 
     //verify that we are on the yarn!
-    float x_offset; //amount of free width space in cell.
-    float y_offset;
+    uint8_t yarn_hit = 0;
     {
     float yarnsize = params->pattern->
         yarn_types[current_point.yarn_type].yarnsize;
+    float x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x));
+    float y = ((v_repeat*(float)(params->pattern_height) - (float)pattern_y));
+    x = x*2.f - 1.f;
+    y = y*2.f - 1.f;
     if (current_point.warp_above) {
-        float x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x));
-        x_offset = x;
-        x = x*2.f - 1.f;
-        if (fabsf(x) > yarnsize) {
+        if (fabsf(x) <= yarnsize) {
+            yarn_hit = 1;
+        } else {
             //The yarn is thin! We have hit outside it!
-
             int8_t dir = (x > 0) ? 1 : -1;
-            
-            //NOTE(Peter): Which one to take though, the one to the left or 
-            //the one to the right? What if there are none? 
-            //Always parallel warps?
-            
-            //Get nearest weft yarn.
+            //Get adjascent weft yarn.
             PatternEntry pattern_entry = current_point;
             uint8_t i = 0;
             while (pattern_entry.warp_above) {
                 i++;
-                //move to next pattern entry in direction dir
                 lookupPatternEntry(&pattern_entry, params, (pattern_x + i*dir), pattern_y);
             }
-            current_point = pattern_entry;
+            //check that adjascent weft yarn is large enough aswell!
+            if (fabs(y) <= params->pattern->
+                    yarn_types[pattern_entry.yarn_type].yarnsize) {
+                current_point = pattern_entry;
+                pattern_x = (uint32_t)fmod((pattern_x + i*dir),(float)params->pattern_width);
+                yarn_hit = 1;
+            }
+
+            //NOTE(Peter): Which one to take though, the one to the left or 
+            //the one to the right? What if there are none? 
+            //Always parallel warps?
 
             //set pattern_x to the nearest weft so that it can be
             //calculated correctly.
             //
             //TODO(This will prob. not work for something other than plain weave.)
             // If there should be, two parallell warps for example.
-            pattern_x = pattern_x + i*dir;
+        }
+    } else { //weft above
+        if (fabsf(y) <= yarnsize) {
+            yarn_hit = 1;
+        } else {
+            //The yarn is thin! We have hit outside it!
+            int8_t dir = (y > 0) ? 1 : -1;
+            //Get nearest warp yarn.
+            PatternEntry pattern_entry = current_point;
+            uint8_t i = 0;
+            while (!pattern_entry.warp_above) {
+                i++;
+                lookupPatternEntry(&pattern_entry, params, pattern_x, (pattern_y + i*dir));
+            }
+            //check that nearest warp yarn is large enough aswell!
+            if (fabs(x) <= params->pattern->
+                    yarn_types[pattern_entry.yarn_type].yarnsize) {
+                current_point = pattern_entry;
+                pattern_y = (uint32_t)fmod((pattern_y + i*dir),(float)params->pattern_height);
+                yarn_hit = 1;
+            }
         }
     }
-    /*else {
-        //same for wefts!!!
-    }*/
+    }
+
+    if (!yarn_hit) {
+        //No hit, No need to do more calculations.
+        //return the results
+        wcPatternData ret_data;
+        ret_data.yarn_hit = 0;
+        return ret_data;
     }
 
     //Calculate the size of the segment
@@ -827,15 +857,27 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     //TODO also make current one shorter. If need be.
     float offset_x_left = 0;
     float offset_x_right = 0;
-	float tmp_offset = 0;
+    float offset_y_left = 0;
+    float offset_y_right = 0;
     if (current_point.warp_above) {
         //look at pm y
+        //left
+        PatternEntry pattern_entry;
+        lookupPatternEntry(&pattern_entry, params, pattern_x,
+                (pattern_y - steps_left_warp - 1));        
+        float tmp_yarnsize = params->pattern->
+            yarn_types[pattern_entry.yarn_type].yarnsize;
+        offset_y_left = (1.f-tmp_yarnsize);
+        //right
+        lookupPatternEntry(&pattern_entry, params, pattern_x,
+                (pattern_y + steps_left_warp + 1));        
+        tmp_yarnsize = params->pattern->
+            yarn_types[pattern_entry.yarn_type].yarnsize;
+        offset_x_right = (1.f-tmp_yarnsize);
 
 		//self size
-		//offset_x_right = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize);
 		offset_x_left = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
 		offset_x_right = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
-		//tmp_offset = -1.f*offset_x_left;
     } else{
         //left
         PatternEntry pattern_entry;
@@ -852,15 +894,17 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         offset_x_right = (1.f-tmp_yarnsize);
 
 		//Self size
+		offset_y_left = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
+		offset_y_right = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
     }
 
     //Yarn-segment-local coordinates.
-    float l = (steps_left_warp + steps_right_warp + 1.f);
-    float y = ((v_repeat*(float)(params->pattern_height) - (float)pattern_y)
+    float l = (steps_left_warp + steps_right_warp + 1.f + offset_y_left + offset_y_right);
+    float y = ((v_repeat*(float)(params->pattern_height) - (float)pattern_y + offset_y_left)
             + steps_left_warp)/l;
 
 	float w = (steps_left_weft + steps_right_weft + 1.f + offset_x_left + offset_x_right);
-    float x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x + offset_x_left + tmp_offset)
+    float x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x + offset_x_left)
             + steps_left_weft)/w;
     //Add/remove margins comming from thin yarns.
     //warp
@@ -895,6 +939,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
   
     //return the results
     wcPatternData ret_data;
+	ret_data.yarn_hit = yarn_hit;
 	ret_data.yarn_type = current_point.yarn_type;
     ret_data.length = l; 
     ret_data.width  = w; 
@@ -1092,6 +1137,13 @@ wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
 {
     float value = intersection_data.wi_z;
 
+    if (!data.yarn_hit){
+        //We have not hit a yarn. Return background...
+        wcColor color = {1.f, 0.f, 1.f};
+        return color;
+    }
+
+
 	YarnType *yarn_type = params->pattern->yarn_types + data.yarn_type;
     if(!yarn_type->color_enabled){
         yarn_type = &params->pattern->yarn_types[0];
@@ -1121,10 +1173,10 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
     if(params->pattern == 0){
         return 0.f;
     }
-    //if(fabs(data.x) > (data.width/2.f)){
-    //    //yarn is thin. We did not hit it.
-    //    return 0.f;
-    //}
+    if(!data.yarn_hit){
+        //have not hit a yarn...
+        return 0.f;
+    }
     float psi = yarn_type_get_psi(params->pattern, data.yarn_type,
 		intersection_data.context);
     if (psi <= 0.001f) {
