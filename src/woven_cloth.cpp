@@ -281,6 +281,7 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 				pattern_data.length = 1.f;
 				pattern_data.width = 1.f;
 				pattern_data.warp_above = 0;
+				pattern_data.yarn_hit = 1; //TODO: Verify that this is okay (always hit)
 				pattern_data.yarn_type = yarn_type;
 				wcIntersectionData intersection_data;
 				intersection_data.context=0;
@@ -1137,15 +1138,8 @@ wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
 {
     float value = intersection_data.wi_z;
 
-    if (!data.yarn_hit){
-        //We have not hit a yarn. Return background...
-        wcColor color = {1.f, 0.f, 1.f};
-        return color;
-    }
-
-
 	YarnType *yarn_type = params->pattern->yarn_types + data.yarn_type;
-    if(!yarn_type->color_enabled){
+    if(!yarn_type->color_enabled || !data.yarn_hit){
         yarn_type = &params->pattern->yarn_types[0];
     }
 
@@ -1159,6 +1153,7 @@ wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
 			&color.r);
 		color.r*=value; color.g*=value; color.b*=value;
 	}
+
     return color;
 }
 

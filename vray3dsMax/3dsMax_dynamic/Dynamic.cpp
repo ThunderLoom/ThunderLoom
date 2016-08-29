@@ -2,6 +2,7 @@
 #include "dynamic.h"
 #include "shadedata_new.h"
 #include "woven_cloth.h"
+#include "../3dsMax/helper.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -22,6 +23,7 @@ EvalDiffuseFunc
         *diffuse_color = VUtils::Color(1.f,1.f,0.f);
 		*yarn_type = default_yarn_type;
 		*yarn_type_id = 0;
+		//*yarn_hit = 0;
         return;
     }
     wcIntersectionData intersection_data;
@@ -42,11 +44,14 @@ EvalDiffuseFunc
         weave_parameters);
 	float specular_strength = 0;
 	*yarn_hit = pattern_data.yarn_hit;
+	
 	if (pattern_data.yarn_hit) {
 		*yarn_type_id = pattern_data.yarn_type;
 		*yarn_type = weave_parameters->pattern->yarn_types[pattern_data.yarn_type];
 		specular_strength = yarn_type_get_specular_strength(weave_parameters->
         pattern,pattern_data.yarn_type,&sc);
+	} else {
+		DBOUT("NO yarn_hit in evalSDiffuse");
 	}
     wcColor d = 
         wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
@@ -63,16 +68,24 @@ eval_specular
 EvalSpecularFunc
 #endif
 ( const VUtils::VRayContext &rc, const VUtils::Vector &direction,
-    wcWeaveParameters *weave_parameters, VUtils::Matrix nm, const int yarn_hit,
+    wcWeaveParameters *weave_parameters, VUtils::Matrix nm, int yarn_hit,
     VUtils::Color *reflection_color)
 {
-    if(weave_parameters->pattern == 0 || !yarn_hit){ //Invalid pattern
+    if(weave_parameters->pattern == 0){ //Invalid pattern
 		float s = 0.1f;
 		reflection_color->r = s;
 		reflection_color->g = s;
 		reflection_color->b = s;
 		return;
     }
+	if(!yarn_hit) {
+		DebugPrint(L"NO HIT in EvalSpecularFunc \n");
+		float s = 0;
+		reflection_color->r = s;
+		reflection_color->g = s;
+		reflection_color->b = s;
+		return;
+	}
     wcIntersectionData intersection_data;
    
     const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);

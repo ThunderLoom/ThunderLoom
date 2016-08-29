@@ -1,4 +1,4 @@
-LIBRARY   vrayblinnmtl_dynamic.dll
+LIBRARY   thunderLoom_dynamic.dll
 EXPORTS
    eval_diffuse			@1
    eval_specular		@2

@@ -29,6 +29,7 @@ MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters) {
 	VR::VRayInterface &vri=const_cast<VR::VRayInterface&>(vri_const);
 	ShadeContext &sc=static_cast<ShadeContext&>(vri);
 	if(!m_yarn_hit) {
+		DebugPrint(L"NO HIT in init bsdf \n");
 		m_specular_strength = 0;
 	} else if(m_weave_parameters->pattern) {
 		m_specular_strength=yarn_type_get_specular_strength(
