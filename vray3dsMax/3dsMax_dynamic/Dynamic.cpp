@@ -50,8 +50,6 @@ EvalDiffuseFunc
 		*yarn_type = weave_parameters->pattern->yarn_types[pattern_data.yarn_type];
 		specular_strength = yarn_type_get_specular_strength(weave_parameters->
         pattern,pattern_data.yarn_type,&sc);
-	} else {
-		DBOUT("NO yarn_hit in evalSDiffuse");
 	}
     wcColor d = 
         wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
@@ -79,7 +77,6 @@ EvalSpecularFunc
 		return;
     }
 	if(!yarn_hit) {
-		DebugPrint(L"NO HIT in EvalSpecularFunc \n");
 		float s = 0;
 		reflection_color->r = s;
 		reflection_color->g = s;

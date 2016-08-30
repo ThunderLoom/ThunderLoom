@@ -9,6 +9,8 @@
 #include "perlin.h"
 #include "halton.h"
 
+#include "../vray3dsMax/3dsMax/helper.h"
+
 // For M_PI etc.
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
@@ -768,6 +770,8 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
 
     //verify that we are on the yarn!
     uint8_t yarn_hit = 0;
+    float extenstion_offset_warp = 0;
+    float extenstion_offset_weft = 0;
     {
     float yarnsize = params->pattern->
         yarn_types[current_point.yarn_type].yarnsize;
@@ -835,6 +839,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         //return the results
         wcPatternData ret_data;
         ret_data.yarn_hit = 0;
+        ret_data.yarn_type = 0;
         return ret_data;
     }
 
@@ -855,12 +860,21 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     
     //Look at the crossing yarns at the ends of the yarn segment,
     //Use their yarnsize to increase length of the current one a bit.
-    //TODO also make current one shorter. If need be.
     float offset_x_left = 0;
     float offset_x_right = 0;
+    float offset_x = 0;
     float offset_y_left = 0;
     float offset_y_right = 0;
+    float offset_y = 0;
     if (current_point.warp_above) {
+        //TODO(Peter): Find more general way to handle this!
+        if ((v_repeat)*(float)(params->pattern_height) <= 0.5 && pattern_y == (params->pattern_height-1)) {
+            offset_y = (float)(params->pattern_height);
+        }
+        if ((1.f - v_repeat)*(float)(params->pattern_height) <= 0.5 && pattern_y == 0) {
+            offset_y = -1.f*(float)(params->pattern_height);
+        }
+
         //look at pm y
         //left
         PatternEntry pattern_entry;
@@ -868,52 +882,54 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
                 (pattern_y - steps_left_warp - 1));        
         float tmp_yarnsize = params->pattern->
             yarn_types[pattern_entry.yarn_type].yarnsize;
-        offset_y_left = (1.f-tmp_yarnsize);
+        offset_y_left = (1.f-tmp_yarnsize)/2.f;
         //right
         lookupPatternEntry(&pattern_entry, params, pattern_x,
                 (pattern_y + steps_left_warp + 1));        
         tmp_yarnsize = params->pattern->
             yarn_types[pattern_entry.yarn_type].yarnsize;
-        offset_x_right = (1.f-tmp_yarnsize);
+            //offset_y_right = (1.f-tmp_yarnsize)/2.f;
+            offset_y_right = (1.f-tmp_yarnsize)/2.f;
 
 		//self size
 		offset_x_left = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
 		offset_x_right = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
     } else{
+        //TODO(Peter): Find more general way to handle this!
+        if ((u_repeat)*(float)(params->pattern_width) <= 0.5 && pattern_x == (params->pattern_width-1)) {
+            offset_x = (float)(params->pattern_width);
+        }
+        if ((1.f - u_repeat)*(float)(params->pattern_width) <= 0.5 && pattern_x == 0) {
+            offset_x = -1.f*(float)(params->pattern_width);
+        }
+
         //left
         PatternEntry pattern_entry;
         lookupPatternEntry(&pattern_entry, params,
                 (pattern_x - steps_left_weft - 1), pattern_y);        
         float tmp_yarnsize = params->pattern->
             yarn_types[pattern_entry.yarn_type].yarnsize;
-        offset_x_left = (1.f-tmp_yarnsize);
+        offset_x_left = (1.f-tmp_yarnsize)/2.f;
         //right
         lookupPatternEntry(&pattern_entry, params,
                 (pattern_x + steps_left_weft + 1), pattern_y);        
         tmp_yarnsize = params->pattern->
             yarn_types[pattern_entry.yarn_type].yarnsize;
-        offset_x_right = (1.f-tmp_yarnsize);
+        offset_x_right = (1.f-tmp_yarnsize)/2.f;
 
 		//Self size
 		offset_y_left = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
 		offset_y_right = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
     }
-
+    
     //Yarn-segment-local coordinates.
     float l = (steps_left_warp + steps_right_warp + 1.f + offset_y_left + offset_y_right);
-    float y = ((v_repeat*(float)(params->pattern_height) - (float)pattern_y + offset_y_left)
+    float y = (((v_repeat)*(float)(params->pattern_height) + offset_y - (float)pattern_y + offset_y_left)
             + steps_left_warp)/l;
 
 	float w = (steps_left_weft + steps_right_weft + 1.f + offset_x_left + offset_x_right);
-    float x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x + offset_x_left)
+    float x = (((u_repeat)*(float)(params->pattern_width) + offset_x - (float)pattern_x + offset_x_left)
             + steps_left_weft)/w;
-    //Add/remove margins comming from thin yarns.
-    //warp
-    //w += (1-yarnsize);
-    //x += (1.f-x_margin);
-    //weft... TODO
-   // l += y_margin;
-    //y += (1.f-y_margin);
 
     //Rescale x, y to [-1,1], w,v scaled by 2
     x = x*2.f - 1.f;
@@ -932,12 +948,6 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         l = tmp2;
     }
 
-    //TODO
-    //apply yarnSize variation!
-    // size factor should be in interval [0,1]
-    //w *= yarn_type_get_yarnsize(params->pattern, current_point.yarn_type,
-    //     intersection_data.context);
-  
     //return the results
     wcPatternData ret_data;
 	ret_data.yarn_hit = yarn_hit;
