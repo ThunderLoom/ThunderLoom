@@ -787,13 +787,19 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             int8_t dir = (x > 0) ? 1 : -1;
             //Get adjascent weft yarn.
             PatternEntry pattern_entry = current_point;
+            uint8_t weft_flag = 1;
             uint8_t i = 0;
             while (pattern_entry.warp_above) {
                 i++;
                 lookupPatternEntry(&pattern_entry, params, (pattern_x + i*dir), pattern_y);
+                if (i > params->pattern_width) {
+                    //no adjascent wefts! Stop to prevent infinite loop!
+                    weft_flag = 0;
+                    break;
+                }
             }
             //check that adjascent weft yarn is large enough aswell!
-            if (fabs(y) <= params->pattern->
+            if (weft_flag && fabs(y) <= params->pattern->
                     yarn_types[pattern_entry.yarn_type].yarnsize) {
                 current_point = pattern_entry;
                 pattern_x = (uint32_t)fmod((pattern_x + i*dir),(float)params->pattern_width);
@@ -818,13 +824,19 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             int8_t dir = (y > 0) ? 1 : -1;
             //Get nearest warp yarn.
             PatternEntry pattern_entry = current_point;
+            uint8_t warp_flag = 1;
             uint8_t i = 0;
             while (!pattern_entry.warp_above) {
                 i++;
                 lookupPatternEntry(&pattern_entry, params, pattern_x, (pattern_y + i*dir));
+                if (i > params->pattern_width) {
+                    //no adjascent wefts! Stop to prevent infinite loop!
+                    warp_flag = 0;
+                    break;
+                }
             }
             //check that nearest warp yarn is large enough aswell!
-            if (fabs(x) <= params->pattern->
+            if (warp_flag && fabs(x) <= params->pattern->
                     yarn_types[pattern_entry.yarn_type].yarnsize) {
                 current_point = pattern_entry;
                 pattern_y = (uint32_t)fmod((pattern_y + i*dir),(float)params->pattern_height);
