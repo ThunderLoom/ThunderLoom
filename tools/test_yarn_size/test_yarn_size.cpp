@@ -246,7 +246,7 @@ static void test_extending_with_all_parallell_warps () {
     wcWeaveParameters params_2parallell;
     wcWeaveParameters *params;
     params = &params_2parallell;
-    params->realworld_uv = false;
+    params->realworld_uv = 0;
     params->uscale = params->vscale = 1.f;
     wcWeavePatternFromFile(params,"3parallellwarps.wif");
     params->pattern->yarn_types[1].yarnsize = 0.5;
@@ -293,7 +293,7 @@ static void test_extending_with_all_parallell_wefts () {
     wcWeaveParameters params_2parallell;
     wcWeaveParameters *params;
     params = &params_2parallell;
-    params->realworld_uv = false;
+    params->realworld_uv = 0;
     params->uscale = params->vscale = 1.f;
     wcWeavePatternFromFile(params,"3parallellwefts.wif");
     params->pattern->yarn_types[1].yarnsize = 0.5;
@@ -334,7 +334,7 @@ static void setup() {
 
     printf("Setup fullsize pattern... \n");
     wcWeaveParameters *params = &params_fullsize;
-    params->realworld_uv = false;
+    params->realworld_uv = 0;
     params->uscale = params->vscale = 1.f;
     printf("Params uscale: %f \n", params->uscale);
     printf("Params vscale: %f \n", params->vscale);
@@ -364,7 +364,7 @@ static void setup() {
     
     printf("Setup halfsize pattern... \n");
     params = &params_halfsize;
-    params->realworld_uv = false;
+    params->realworld_uv = 0;
     params->uscale = params->vscale = 1.f;
     printf("Params uscale: %f \n", params->uscale);
     printf("Params vscale: %f \n", params->vscale);

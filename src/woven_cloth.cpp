@@ -9,8 +9,6 @@
 #include "perlin.h"
 #include "halton.h"
 
-#include "../vray3dsMax/3dsMax/helper.h"
-
 // For M_PI etc.
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
@@ -770,8 +768,6 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
 
     //verify that we are on the yarn!
     uint8_t yarn_hit = 0;
-    float extenstion_offset_warp = 0;
-    float extenstion_offset_weft = 0;
     {
     float yarnsize = params->pattern->
         yarn_types[current_point.yarn_type].yarnsize;

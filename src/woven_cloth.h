@@ -112,8 +112,8 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
 
 WC_PREFIX
 void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *warp_above,
-    float *warp_color, float *weft_color, uint32_t pattern_width,
-    uint32_t pattern_height);
+	uint32_t *yarn_type, YarnType *yarn_types, uint32_t num_yarn_types,
+	uint32_t pattern_width, uint32_t pattern_height);
 /* wcWeavePatternFromFile calles one of the functions below depending on
  * file extension*/
 WC_PREFIX
