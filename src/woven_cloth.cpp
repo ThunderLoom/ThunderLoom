@@ -798,7 +798,8 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             if (weft_flag && fabs(y) <= params->pattern->
                     yarn_types[pattern_entry.yarn_type].yarnsize) {
                 current_point = pattern_entry;
-                pattern_x = (uint32_t)fmod((pattern_x + i*dir),(float)params->pattern_width);
+                pattern_x = (uint32_t)fabs(fmod(((int32_t)pattern_x + i*dir),
+                            (float)params->pattern_width));
                 yarn_hit = 1;
             }
 
@@ -835,8 +836,10 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             if (warp_flag && fabs(x) <= params->pattern->
                     yarn_types[pattern_entry.yarn_type].yarnsize) {
                 current_point = pattern_entry;
-                pattern_y = (uint32_t)fmod((pattern_y + i*dir),(float)params->pattern_height);
+                pattern_y = (uint32_t)fabs(fmod(((int32_t)pattern_y + i*dir),
+                            (float)params->pattern_height));
                 yarn_hit = 1;
+
             }
         }
     }
@@ -938,7 +941,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
 	float w = (steps_left_weft + steps_right_weft + 1.f + offset_x_left + offset_x_right);
     float x = (((u_repeat)*(float)(params->pattern_width) + offset_x - (float)pattern_x + offset_x_left)
             + steps_left_weft)/w;
-
+    
     //Rescale x, y to [-1,1], w,v scaled by 2
     x = x*2.f - 1.f;
     y = y*2.f - 1.f;

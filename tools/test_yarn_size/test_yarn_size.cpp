@@ -123,6 +123,7 @@ static void test_extending_warp_segments_at_weave_pattern_border() {
     intersection_data.uv_y = 0.25 - 0.126;
     wcPatternData pattern_data = wcGetPatternData(intersection_data, params);
     assert(pattern_data.width == 1.f);
+
     assert(pattern_data.length == 3.f);
     assert(pattern_data.warp_above == 1);
     assert(pattern_data.x == 0.f);
