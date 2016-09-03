@@ -759,15 +759,27 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     uint32_t pattern_x = (uint32_t)(u_repeat*(float)(params->pattern_width));
     uint32_t pattern_y = (uint32_t)(v_repeat*(float)(params->pattern_height));
 
-
     PatternEntry current_point = params->pattern->entries[pattern_x +
         pattern_y*params->pattern_width];        
+    
+    //TODO(Peter): clean up this
+    PatternEntry original_point = current_point;
+    uint32_t original_pattern_x = pattern_x;
+    uint32_t original_pattern_y = pattern_y;
     
     //NOTE(Peter); look up current yarn. Use yarn size. Check if on yarn or not.
     //If not look up ajascent pattern and use that!
 
     //verify that we are on the yarn!
+    float cell_x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x));
+    float cell_y = ((v_repeat*(float)(params->pattern_height) - (float)pattern_y));
     uint8_t yarn_hit = 0;
+    uint8_t orignal_parallel_warp = 0;
+    uint8_t orignal_parallel_weft = 0;
+    //TODO(Peter): To avoid having so many flags for the different cases
+    //Maybe we should have a build a new type struct with all the yarn segment
+    //related paramaters which gets filled here. Then passed to eval diffuse and
+    //evalSpecular. Makes testing easier too!
     {
     float yarnsize = params->pattern->
         yarn_types[current_point.yarn_type].yarnsize;
@@ -788,6 +800,11 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             while (pattern_entry.warp_above) {
                 i++;
                 lookupPatternEntry(&pattern_entry, params, (pattern_x + i*dir), pattern_y);
+                //Set parallel flag if thread directly adjescent also is a warp
+                if (i == 1 && pattern_entry.warp_above) {
+                    orignal_parallel_warp = 1;
+                }
+
                 if (i > params->pattern_width) {
                     //no adjascent wefts! Stop to prevent infinite loop!
                     weft_flag = 0;
@@ -811,7 +828,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             //calculated correctly.
             //
             //TODO(This will prob. not work for something other than plain weave.)
-            // If there should be, two parallell warps for example.
+            // If there should be, two parallel warps for example.
         }
     } else { //weft above
         if (fabsf(y) <= yarnsize) {
@@ -826,6 +843,11 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             while (!pattern_entry.warp_above) {
                 i++;
                 lookupPatternEntry(&pattern_entry, params, pattern_x, (pattern_y + i*dir));
+                //Set parallel flag if thread directly adjescent also is a weft
+                if (i == 1 && !pattern_entry.warp_above) {
+                    orignal_parallel_warp = 1;
+                }
+
                 if (i > params->pattern_width) {
                     //no adjascent wefts! Stop to prevent infinite loop!
                     warp_flag = 0;
@@ -932,15 +954,47 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
 		offset_y_left = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
 		offset_y_right = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
     }
-    
+
+    //+1 on l and w only if we are on an actual warp resp weft.
+    float add_current_to_length = 1;
+    float add_current_to_width = 1;
+    if (orignal_parallel_weft) {
+        add_current_to_length = 0;
+        offset_y += (cell_y > 0.5) ? -1 : 0;
+        pattern_y = original_pattern_y;
+    }
+    if (orignal_parallel_warp) {
+        add_current_to_width = 0;
+        pattern_x = original_pattern_x;
+        offset_x += (cell_x > 0.5) ? -1 : 0;
+        steps_left_weft=0;
+        steps_right_weft=0;
+    }
+
     //Yarn-segment-local coordinates.
-    float l = (steps_left_warp + steps_right_warp + 1.f + offset_y_left + offset_y_right);
+    float l = (steps_left_warp + steps_right_warp + add_current_to_length + offset_y_left + offset_y_right);
     float y = (((v_repeat)*(float)(params->pattern_height) + offset_y - (float)pattern_y + offset_y_left)
             + steps_left_warp)/l;
 
-	float w = (steps_left_weft + steps_right_weft + 1.f + offset_x_left + offset_x_right);
+	float w = (steps_left_weft + steps_right_weft + add_current_to_width + offset_x_left + offset_x_right);
     float x = (((u_repeat)*(float)(params->pattern_width) + offset_x - (float)pattern_x + offset_x_left)
             + steps_left_weft)/w;
+
+
+    /* Debug
+     * printf("orignal_parallel_weft: %d, orignal_parallel_warp: %d\n", orignal_parallel_weft, orignal_parallel_warp);
+    printf("add_current_to_length: %f, add_current_to_width: %f\n", add_current_to_length, add_current_to_width);
+    printf("steps_left_warp: %d, steps_right_warp: %d\n", steps_left_warp, steps_right_warp);
+    printf("steps_left_weft: %d, steps_right_weft: %d\n", steps_left_weft, steps_right_weft);
+    printf("offset_y_left: %f, offset_y_right: %f\n", offset_y_left, offset_y_right);
+    printf("offset_x_left: %f, offset_x_right: %f\n", offset_x_left, offset_x_right);
+    printf("offset_x: %f, offset_y: %f\n", offset_x, offset_y);
+    printf("v_repeat: %f, u_repeat: %f\n", v_repeat, u_repeat);
+    printf("u_repeat*(float)(params->pattern_width): %f, u_repeat: %f\n", (u_repeat)*(float)(params->pattern_width), u_repeat);
+    printf("u_repeat*(float)(params->pattern_width): %f, u_repeat: %f\n", (u_repeat)*(float)(params->pattern_width), u_repeat);
+    printf("pattern_x: %d, pattern_y: %d\n", pattern_x, pattern_y);
+    printf("tmp x: %f, y: %f\n", x, y);
+    printf("tmp w: %f, l: %f\n", w, l);*/
     
     //Rescale x, y to [-1,1], w,v scaled by 2
     x = x*2.f - 1.f;
@@ -962,6 +1016,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     //return the results
     wcPatternData ret_data;
 	ret_data.yarn_hit = yarn_hit;
+	ret_data.ext_between_parallel = orignal_parallel_warp || orignal_parallel_weft;
 	ret_data.yarn_type = current_point.yarn_type;
     ret_data.length = l; 
     ret_data.width  = w; 
@@ -1003,8 +1058,15 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
     //calculate yarn tangent.
 
     float reflection = 0.f;
-    float umax = yarn_type_get_umax(params->pattern,data.yarn_type,
-		intersection_data.context);
+    float umax;
+    if (data.ext_between_parallel){
+        //if segment is extension between to parallel yarns -> bend = 0
+        umax = 0.001;
+    } else {
+        umax = yarn_type_get_umax(params->pattern,data.yarn_type,
+                intersection_data.context);
+    }
+    
     if (fabsf(specular_u) < umax){
         // Make normal for highlights, uses v and specular_u
         wcVector highlight_normal = wcVector_normalize(wcvector(sinf(v),
@@ -1110,8 +1172,14 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
 
         float delta_x = yarn_type_get_delta_x(params->pattern,data.yarn_type,
 			intersection_data.context);
-        float umax = yarn_type_get_umax(params->pattern,data.yarn_type,
-			intersection_data.context);
+        float umax;
+        if (data.ext_between_parallel){
+            //if segment is extension between to parallel yarns -> bend = 0
+            umax = 0.001;
+        } else {
+            umax = yarn_type_get_umax(params->pattern,data.yarn_type,
+                    intersection_data.context);
+        }
 
         //Clamp specular_x
         specular_x = specular_x < 1.f - delta_x ? specular_x :

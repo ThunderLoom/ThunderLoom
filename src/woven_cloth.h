@@ -98,6 +98,7 @@ typedef struct
     uint32_t total_index_x, total_index_y; //index for elements (not yarn local coordinates). TODO(Peter): perhaps a better name would be good?
     uint8_t warp_above; 
     uint8_t yarn_hit; //True if we hit a yarn. False if we hit space inbetween. 
+    uint8_t ext_between_parallel; //True if extensionis between to adjascent parallel yarns. -> bend should be zero
 } wcPatternData;
 
 WC_PREFIX
