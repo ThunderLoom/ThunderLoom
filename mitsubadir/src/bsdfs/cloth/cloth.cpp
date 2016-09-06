@@ -30,12 +30,16 @@
 
 #include <mitsuba/core/qmc.h>
 
+//Dummy texture eval functions for now.
+float wc_eval_texmap_mono(void *texmap, void *context) {
+    return 0.f;
+}
+void  wc_eval_texmap_color(void *texmap, void *context, float *col) {
+}
+
     MTS_NAMESPACE_BEGIN
 
     //TODO(Vidar): Write documentation
-
-    /*!\plugin{cloth}{Woven Cloth}
-     */
     class Cloth : public BSDF {
         public:
             Cloth(const Properties &props)
@@ -46,22 +50,11 @@
                     m_reflectance = new ConstantSpectrumTexture(props.getSpectrum(
                         props.hasProperty("reflectance") ? "reflectance"
                             : "diffuseReflectance", Spectrum(.5f)));
-                    m_weave_params.uscale = props.getFloat("utiling", 1.0f);
-                    m_weave_params.vscale = props.getFloat("vtiling", 1.0f);
 
-                    //yarn properties
-                    m_weave_params.umax = props.getFloat("umax", 0.7f);
-                    m_weave_params.psi = props.getFloat("psi", M_PI_2);
-                    
-                    //fiber properties
-                    m_weave_params.alpha = props.getFloat("alpha", 0.05f); //uniform scattering
-                    m_weave_params.beta = props.getFloat("beta", 2.0f); //forward scattering
-                    m_weave_params.delta_x = props.getFloat("deltaX", 0.5f); //deltaX for highlights (to be changed)
-
-                    //noise
-                    m_weave_params.intensity_fineness =
-                        props.getFloat("intensity_fineness", 0.0f);
-                    //yarnvar
+                    //Set main paramaters
+                    m_weave_params.uscale = props.getFloat("uscale", 1.f);
+                    m_weave_params.vscale = props.getFloat("vscale", 1.f);
+                    m_weave_params.realworld_uv = 0;
                     m_weave_params.yarnvar_amplitude =
                         props.getFloat("yarnvar_amplitude", 0.0f);
                     m_weave_params.yarnvar_xscale =
@@ -71,18 +64,16 @@
                     m_weave_params.yarnvar_persistance =
                         props.getFloat("yarnvar_persistance", 1.0f);
                     m_weave_params.yarnvar_octaves =
-                        props.getFloat("yarnvar_octaves", 1.0f); //Should be integer
-
-                    m_specular_strength = props.getFloat("specular_strength", 0.5f);
-
+                        props.getInteger("yarnvar_octaves", 1);
+                    
 #ifdef USE_WIFFILE
-                        // LOAD WIF FILE
-                        std::string wiffilename =
-                            Thread::getThread()->getFileResolver()->
+                    // LOAD WIF FILE
+                    std::string wiffilename =
+                        Thread::getThread()->getFileResolver()->
                         resolve(props.getString("wiffile")).string();
 
-                        wcWeavePatternFromWIF(&m_weave_params,
-                                wiffilename.c_str());
+                    wcWeavePatternFromWIF(&m_weave_params,
+                            wiffilename.c_str());
 #else
                     // Static pattern
                     // current: polyester pattern
@@ -94,8 +85,23 @@
                     float warp_color[] = { 0.7f, 0.7f, 0.7f};
                     float weft_color[] = { 0.7f, 0.7f, 0.7f};
                     wcWeavePatternFromData(&m_weave_params, warp_above,
-                        warp_color, weft_color, 3, 3);
+                            warp_color, weft_color, 3, 3);
 #endif
+
+                    //Default yarn paramters
+                    YarnType *yrn0 = &m_weave_params.pattern->yarn_types[0];
+                    yrn0->umax = props.getFloat("yrn0_bend", 0.5);
+                    yrn0->psi = props.getFloat("yrn0_psi", 0.5);
+                    yrn0->alpha = props.getFloat("yrn0_alpha", 0.5);
+                    yrn0->beta = props.getFloat("yrn0_beta", 0.5);
+                    yrn0->delta_x = props.getFloat("yrn0_delta_x", 0.5);
+                    yrn0->specular_strength = 
+                        props.getFloat("yrn0_specular_strength", 0.1f);
+                    yrn0->specular_noise = 
+                        props.getFloat("yrn0_specular_noise", 0.f);
+                    
+                    wcFinalizeWeaveParameters(&m_weave_params);
+
         }
 
         Cloth(Stream *stream, InstanceManager *manager)
@@ -106,7 +112,7 @@
                 configure();
             }
         ~Cloth() {
-            wif_free_pattern(m_weave_params.pattern_entry);
+            wcFreeWeavePattern(&m_weave_params);
         }
 
         void configure() {
@@ -124,8 +130,6 @@
         Frame getPerturbedFrame(wcPatternData data, Intersection its) const
         {
 			//Get the world space coordinate vectors going along the texture u&v
-            //TODO(Peter) Is it world space though!??!
-            //NOTE(Vidar) You're right, it's probably shading space... :S
             Float dDispDu = data.normal_x;
             Float dDispDv = data.normal_y;
             Vector dpdv = its.dpdv + its.shFrame.n * (
@@ -137,8 +141,7 @@
             //set frame
             Frame result;
             result.n = normalize(cross(dpdu, dpdv));
-            result.s = normalize(dpdu - result.n
-                    * dot(result.n, dpdu));
+            result.s = normalize(dpdu - result.n * dot(result.n, dpdu));
             result.t = cross(result.n, result.s);
 
             //Flip the normal if it points in the wrong direction
@@ -154,10 +157,16 @@
             intersection_data.uv_y = its.uv.y;
             wcPatternData pattern_data = wcGetPatternData(intersection_data,
                 &m_weave_params);
+            int yrntype = pattern_data.yarn_type;
+            Float sstrength=yarn_type_get_specular_strength(
+                        m_weave_params.pattern, yrntype, NULL);
+            wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
+                &m_weave_params);
             Spectrum col;
-            col.fromSRGB(pattern_data.color_r, pattern_data.color_g,
-                pattern_data.color_b);
-            return col * m_reflectance->eval(its);
+            col.fromSRGB((1.f-sstrength)*diffuse.r,
+                    (1.f-sstrength)*diffuse.g,
+                    (1.f-sstrength)*diffuse.b);
+            return col;
         }
 
         Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
@@ -169,11 +178,9 @@
             wcIntersectionData intersection_data;
             intersection_data.uv_x = bRec.its.uv.x;
             intersection_data.uv_y = bRec.its.uv.y;
-
             intersection_data.wi_x = bRec.wi.x;
             intersection_data.wi_y = bRec.wi.y;
             intersection_data.wi_z = bRec.wi.z;
-
             intersection_data.wo_x = bRec.wo.x;
             intersection_data.wo_y = bRec.wo.y;
             intersection_data.wo_z = bRec.wo.z;
@@ -183,7 +190,10 @@
             Intersection perturbed(bRec.its);
             perturbed.shFrame = getPerturbedFrame(pattern_data, bRec.its);
 
-            Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
+            //With normal displacement
+            //Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
+            //No normal displacement
+            Vector perturbed_wo = bRec.wo;
             float diffuse_mask = 1.f;
             //Diffuse will be black if the perturbed direction
             //lies below the surface
@@ -191,18 +201,19 @@
                 diffuse_mask = 0.f;
             }
 
-            Spectrum specular(m_specular_strength
-                * wcEvalSpecular(intersection_data,
+            int yrntype = pattern_data.yarn_type;
+            Float sstrength=yarn_type_get_specular_strength(
+                        m_weave_params.pattern, yrntype, NULL);
+            Spectrum specular(sstrength * wcEvalSpecular(intersection_data,
                     pattern_data, &m_weave_params));
-            Spectrum diffuse((1.f - m_specular_strength)
-                * wcEvalDiffuse(intersection_data,
-                    pattern_data, &m_weave_params));
+            wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
+                &m_weave_params);
             Spectrum col;
-            col.fromSRGB(pattern_data.color_r, pattern_data.color_g,
-                pattern_data.color_b);
-            return m_reflectance->eval(bRec.its) * diffuse_mask * 
-                col*diffuse*(INV_PI * Frame::cosTheta(perturbed_wo)) +
-                m_specular_strength*specular*Frame::cosTheta(bRec.wo);
+            col.fromSRGB((1.f-sstrength)*diffuse.r,
+                    (1.f-sstrength)*diffuse.g,
+                    (1.f-sstrength)*diffuse.b);
+            return diffuse_mask * col*(INV_PI * Frame::cosTheta(perturbed_wo)) +
+                specular * Frame::cosTheta(bRec.wo);
         }
 
         Float pdf(const BSDFSamplingRecord &bRec, EMeasure measure) const {
@@ -215,11 +226,9 @@
             wcIntersectionData intersection_data;
             intersection_data.uv_x = its.uv.x;
             intersection_data.uv_y = its.uv.y;
-
             intersection_data.wi_x = bRec.wi.x;
             intersection_data.wi_y = bRec.wi.y;
             intersection_data.wi_z = bRec.wi.z;
-
             intersection_data.wo_x = bRec.wo.x;
             intersection_data.wo_y = bRec.wo.y;
             intersection_data.wo_z = bRec.wo.z;
@@ -241,11 +250,9 @@
             wcIntersectionData intersection_data;
             intersection_data.uv_x = its.uv.x;
             intersection_data.uv_y = its.uv.y;
-
             intersection_data.wi_x = bRec.wi.x;
             intersection_data.wi_y = bRec.wi.y;
             intersection_data.wi_z = bRec.wi.z;
-
             intersection_data.wo_x = bRec.wo.x;
             intersection_data.wo_y = bRec.wo.y;
             intersection_data.wo_z = bRec.wo.z;
@@ -254,11 +261,12 @@
                     &m_weave_params);
             Intersection perturbed(its);
             perturbed.shFrame = getPerturbedFrame(pattern_data, its);
-
             bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
-
             bRec.wo = warp::squareToCosineHemisphere(sample);
-            Vector perturbed_wo = perturbed.toLocal(its.toWorld(bRec.wo));
+            //With normal displacement
+            //Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
+            //No normal displacement
+            Vector perturbed_wo = bRec.wo;
 
             bRec.sampledComponent = 0;
             bRec.sampledType = EDiffuseReflection;
@@ -270,17 +278,19 @@
                 diffuse_mask = Frame::cosTheta(perturbed_wo)/
                     Frame::cosTheta(bRec.wo);
             }
-            Spectrum specular(m_specular_strength
-                * wcEvalSpecular(intersection_data,
+            
+            int yrntype = pattern_data.yarn_type;
+            Float sstrength=yarn_type_get_specular_strength(
+                        m_weave_params.pattern, yrntype, NULL);
+            Spectrum specular(sstrength * wcEvalSpecular(intersection_data,
                     pattern_data, &m_weave_params));
-            Spectrum diffuse((1.f - m_specular_strength)
-                * wcEvalDiffuse(intersection_data,
-                    pattern_data, &m_weave_params));
+            wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
+                &m_weave_params);
             Spectrum col;
-            col.fromSRGB(pattern_data.color_r, pattern_data.color_g,
-                pattern_data.color_b);
-            return m_reflectance->eval(bRec.its) * diffuse_mask *
-                col*diffuse + m_specular_strength*specular;
+            col.fromSRGB((1.f-sstrength)*diffuse.r,
+                    (1.f-sstrength)*diffuse.g,
+                    (1.f-sstrength)*diffuse.b);
+            return diffuse_mask * col + specular;
         }
 
         Spectrum sample(BSDFSamplingRecord &bRec, Float &pdf, const Point2 &sample) const {
@@ -291,11 +301,9 @@
             wcIntersectionData intersection_data;
             intersection_data.uv_x = its.uv.x;
             intersection_data.uv_y = its.uv.y;
-
             intersection_data.wi_x = bRec.wi.x;
             intersection_data.wi_y = bRec.wi.y;
             intersection_data.wi_z = bRec.wi.z;
-
             intersection_data.wo_x = bRec.wo.x;
             intersection_data.wo_y = bRec.wo.y;
             intersection_data.wo_z = bRec.wo.z;
@@ -305,9 +313,11 @@
             Intersection perturbed(its);
             perturbed.shFrame = getPerturbedFrame(pattern_data, its);
             bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
-
             bRec.wo = warp::squareToCosineHemisphere(sample);
-            Vector perturbed_wo = perturbed.toLocal(its.toWorld(bRec.wo));
+            //With normal displacement
+            //Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
+            //No normal displacement
+            Vector perturbed_wo = bRec.wo;
             pdf = warp::squareToCosineHemispherePdf(bRec.wo);
 
             bRec.sampledComponent = 0;
@@ -320,17 +330,20 @@
                 diffuse_mask = Frame::cosTheta(perturbed_wo)/
                     Frame::cosTheta(bRec.wo);
             }
-            Spectrum specular(m_specular_strength
-                * wcEvalSpecular(intersection_data,
+
+            int yrntype = pattern_data.yarn_type;
+            Float sstrength=yarn_type_get_specular_strength(
+                        m_weave_params.pattern, yrntype, NULL);
+            //Log(EDebug, "SPECULARSTRENGTH \"%f\"", specular_strength);
+            Spectrum specular(sstrength * wcEvalSpecular(intersection_data,
                     pattern_data, &m_weave_params));
-            Spectrum diffuse((1.f - m_specular_strength)
-                * wcEvalDiffuse(intersection_data,
-                    pattern_data, &m_weave_params));
+            wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
+                &m_weave_params);
             Spectrum col;
-            col.fromSRGB(pattern_data.color_r, pattern_data.color_g,
-                pattern_data.color_b);
-            return m_reflectance->eval(bRec.its) * diffuse_mask *
-                col*diffuse + m_specular_strength*specular;
+            col.fromSRGB((1.f-sstrength)*diffuse.r,
+                    (1.f-sstrength)*diffuse.g,
+                    (1.f-sstrength)*diffuse.b);
+            return diffuse_mask * col + specular;
         }
 
         void addChild(const std::string &name, ConfigurableObject *child) {
@@ -363,9 +376,9 @@
         MTS_DECLARE_CLASS()
     private:
             ref<Texture> m_reflectance;
-            float m_specular_strength;
             wcWeaveParameters m_weave_params;
 };
+
 
 // ================ Hardware shader implementation ================
 
