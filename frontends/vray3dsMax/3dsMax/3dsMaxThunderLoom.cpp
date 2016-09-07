@@ -10,7 +10,7 @@ const int PLUGIN_VERSION= PLUGIN_VERSION_HIGH*100 + PLUGIN_VERSION_LOW;
 // Check http://docs.autodesk.com/3DSMAX/16/ENU/3ds-Max-SDK-Programmer-Guide/index.html?url=files/GUID-F35959BB-2660-492F-B082-56304C70293A.htm,topicNumber=d30e52807
 // When adding new parameters
 
-#include "dynamic.h"
+#include "Eval.h"
 
 #include "max.h"
 
@@ -23,11 +23,6 @@ const int PLUGIN_VERSION= PLUGIN_VERSION_HIGH*100 + PLUGIN_VERSION_LOW;
 #include <math.h>
 
 #include "helper.h"
-
-#ifdef DYNAMIC
-EVALSPECULARFUNC EvalSpecularFunc = 0;
-EVALDIFFUSEFUNC EvalDiffuseFunc = 0;
-#endif
 
 // no param block script access for VRay free
 // TODO(Peter): VRay free? Demo?
@@ -909,12 +904,6 @@ float ThunderLoomMtl::WireSize(int mtlNum, BOOL backFace) {
 
 void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	ivalid.SetInfinite();
-
-#ifdef DYNAMIC
-	unload_dlls();
-	EvalDiffuseFunc  = (EVALDIFFUSEFUNC) get_dynamic_func("eval_diffuse" );
-	EvalSpecularFunc = (EVALSPECULARFUNC)get_dynamic_func("eval_specular");
-#endif
 
 	//default values for the time being.
 	//these paramters will be removed later, is the plan

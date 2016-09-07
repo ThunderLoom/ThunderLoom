@@ -1,16 +1,9 @@
 //More Vray specific things. Implements methods for the BSDFSampler interface.
 
-#include "dynamic.h"
+#include "Eval.h"
 #include "helper.h"
 
 #include "VrayThunderLoomBRDF.h"
-
-#ifdef DYNAMIC
-// These eval functions are loaded in vrayblinn.cpp when ui is initialized
-// and gets used for the the eval method of the MyBaseBSDF class.
-extern EVALSPECULARFUNC EvalSpecularFunc;
-extern EVALDIFFUSEFUNC  EvalDiffuseFunc;
-#endif
 
 using namespace VUtils;
 

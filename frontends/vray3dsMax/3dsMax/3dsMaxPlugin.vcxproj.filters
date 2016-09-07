@@ -13,31 +13,25 @@
       <UniqueIdentifier>{fc1471ed-fc54-49c9-9b96-bbf34e389129}</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
     </Filter>
-    <Filter Include="ReadMe">
-      <UniqueIdentifier>{878de457-d9c2-4af1-a042-bd1c85b6630c}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\woven_cloth.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="3dsMaxThunderLoom.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DllEntry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\3dsMax_dynamic\Dynamic.cpp">
+    <ClCompile Include="VrayThunderLoomBRDF.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VrayThunderLoomBRDF.cpp">
+    <ClCompile Include="..\..\..\src\woven_cloth.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Eval.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="dynamic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -50,11 +44,9 @@
     <ClInclude Include="VrayThunderLoomBRDF.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Skeleton.txt">
-      <Filter>ReadMe</Filter>
-    </Text>
+    <ClInclude Include="Eval.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="plugin.def">
@@ -65,15 +57,5 @@
     <ResourceCompile Include="vrayblinnmtl.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="logo.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="notes.txt">
-      <Filter>Source Files</Filter>
-    </None>
   </ItemGroup>
 </Project>
