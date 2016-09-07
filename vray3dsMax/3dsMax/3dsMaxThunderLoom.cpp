@@ -142,27 +142,6 @@ ClassDesc* GetSkeletonMtlDesc() {return &thunderLoomDesc;}
  |	UI stuff
 \*===========================================================================*/
 
-static void UpdateYarnTexmaps(int yarn_type_id, IParamBlock2 *pblock, HWND hWnd, TimeValue t)
-{
-	for (int i = yarn_type_id*NUMBER_OF_YRN_TEXMAPS;
-		i < (yarn_type_id+1)*NUMBER_OF_YRN_TEXMAPS; i++) {
-		int texmap_id = i % NUMBER_OF_YRN_TEXMAPS;
-		Texmap *texmap = pblock->GetTexmap(texmaps, 0, i); //0 is main diffuse
-		std::wostringstream str;
-
-		if (texmap) {
-			MSTR s; texmap->GetClassName(s);
-			str << "Map (" << s << ")";
-		} else {
-			str << "None";
-		}
-
-		HWND hCtrl = GetDlgItem( hWnd, texmapBtnIDCs[texmap_id]);
-		ICustButton *button = GetICustButton(hCtrl);
-		button->SetText(str.str().c_str());
-	}
-}
-
 struct YarnTypeDlgProcData
 {
     ThunderLoomMtl *sm;
@@ -188,7 +167,7 @@ public:
 		}
 		free(rollups);
 		if(sm && sm->m_weave_parameters.pattern && sm->m_i_mtl_params){
-			num_rollups=sm->m_weave_parameters.pattern->num_yarn_types;
+			num_rollups=sm->m_weave_parameters.num_yarn_types;
 			rollups=(HWND*)calloc(num_rollups,sizeof(HWND));
 			if(sm && sm->m_weave_parameters.pattern){
 				//NOTE(Vidar): Create yarn type rollups
@@ -280,14 +259,11 @@ public:
 									sm->pblock->GetValue(mtl_vscale,0,
 										sm->m_weave_parameters.vscale,
 										sm->ivalid);
-									Pattern *pattern=sm->m_weave_parameters.pattern;
-									if(pattern){
-										//TODO(Peter): Test this with more complicate wif files!
-										//Set count for subtexmaps
-										sm->pblock->SetCount(texmaps,
-											pattern->num_yarn_types*
-											NUMBER_OF_YRN_TEXMAPS);
-									}
+                                    //TODO(Peter): Test this with more complicate wif files!
+                                    //Set count for subtexmaps
+                                    sm->pblock->SetCount(texmaps,
+                                        sm->m_weave_parameters.num_yarn_types*
+                                        NUMBER_OF_YRN_TEXMAPS);
 									map->Invalidate();
 									update_yarn_type_rollups();
 									//NOTE(Vidar): Hack to update the preview ball
@@ -376,56 +352,56 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             SetWindowLongPtr(hWnd,GWLP_USERDATA,(LONG_PTR)data);
 
             wcWeaveParameters params = data->sm->m_weave_parameters;
-			if(params.pattern){
-				YarnType yarn_type=params.pattern->yarn_types[data->yarn_type];
-				//NOTE(Vidar): Setup spinners
-				#define YARN_TYPE_PARAM(A,B){\
-					HWND spinner_hwnd = GetDlgItem(hWnd, IDC_##B##_SPIN);\
-					HWND edit_hwnd = GetDlgItem(hWnd, IDC_##B##_EDIT);\
-					ISpinnerControl * s = GetISpinner(spinner_hwnd);\
-					s->LinkToEdit(edit_hwnd, EDITTYPE_FLOAT);\
-					s->SetLimits(0.f, 1.f, FALSE);\
-					s->SetScale(0.01f);\
-					s->SetValue(yarn_type.A, FALSE);\
-					ReleaseISpinner(s);\
-					if(data->yarn_type >= 0){\
-						uint8_t enabled=yarn_type.A##_enabled;\
-						Button_SetCheck(\
-                            GetDlgItem(hWnd,IDC_##B##_OVERRIDE),enabled);\
-						EnableWindow(spinner_hwnd,enabled);\
-						EnableWindow(edit_hwnd,enabled);\
-					}\
-				}
-				YARN_TYPE_PARAMETERS
-				#undef YARN_TYPE_PARAM
+            wcYarnType yarn_type=params.yarn_types[data->yarn_type];
+            //NOTE(Vidar): Setup spinners
+            #define WC_FLOAT_PARAM(name){\
+                HWND spinner_hwnd = GetDlgItem(hWnd, IDC_##name##_SPIN);\
+                HWND edit_hwnd = GetDlgItem(hWnd, IDC_##name##_EDIT);\
+                ISpinnerControl * s = GetISpinner(spinner_hwnd);\
+                s->LinkToEdit(edit_hwnd, EDITTYPE_FLOAT);\
+                s->SetLimits(0.f, 1.f, FALSE);\
+                s->SetScale(0.01f);\
+                s->SetValue(yarn_type.name, FALSE);\
+                ReleaseISpinner(s);\
+                if(data->yarn_type >= 0){\
+                    uint8_t enabled=yarn_type.name##_enabled;\
+                    Button_SetCheck(\
+                        GetDlgItem(hWnd,IDC_##name##_OVERRIDE),enabled);\
+                    EnableWindow(spinner_hwnd,enabled);\
+                    EnableWindow(edit_hwnd,enabled);\
+                }\
+            }
+            //NOTE(Vidar): Setup color picker
+            #define WC_COLOR_PARAM(name){\
+            HWND swatch_hwnd=GetDlgItem(hWnd,IDC_##name##_SWATCH);\
+                IColorSwatch *swatch=GetIColorSwatch(swatch_hwnd);\
+                Color col(yarn_type.name.r,yarn_type.name.g,\
+                    yarn_type.name.b);\
+                swatch->SetColor(col);\
+                ReleaseIColorSwatch(swatch);\
+                if(data->yarn_type>=0){\
+                    uint8_t enabled=yarn_type.name##_enabled;\
+                    Button_SetCheck(GetDlgItem(hWnd,IDC_##name##_OVERRIDE),enabled);\
+                    EnableWindow(swatch_hwnd,enabled);\
+                }\
+            }
+            WC_YARN_PARAMETERS
+            #undef WC_FLOAT_PARAM
+            #undef WC_COLOR_PARAM
 
-				for(int i=0; i<NUMBER_OF_YRN_TEXMAPS; i++){
-					int subtexmap_id=
-						NUMBER_OF_FIXED_TEXMAPS+
-						data->yarn_type*
-						NUMBER_OF_YRN_TEXMAPS+i;
-					Texmap *texmap=data->sm->GetSubTexmap(subtexmap_id);
-					wchar_t *caption=L"";
-					if(texmap){
-						caption=L"M";
-					}
-					HWND btn_hwnd = GetDlgItem(hWnd,texmapBtnIDCs[i]);
-					SetWindowText(btn_hwnd,caption);
-				}
+            for(int i=0; i<NUMBER_OF_YRN_TEXMAPS; i++){
+                int subtexmap_id=
+                    data->yarn_type*
+                    NUMBER_OF_YRN_TEXMAPS+i;
+                Texmap *texmap=data->sm->GetSubTexmap(subtexmap_id);
+                wchar_t *caption=L"";
+                if(texmap){
+                    caption=L"M";
+                }
+                HWND btn_hwnd = GetDlgItem(hWnd,texmapBtnIDCs[i]);
+                SetWindowText(btn_hwnd,caption);
+            }
 
-				//NOTE(Vidar): Setup color picker
-					HWND swatch_hwnd=GetDlgItem(hWnd,IDC_YARNCOLOR_SWATCH);
-				IColorSwatch *swatch=GetIColorSwatch(swatch_hwnd);
-				Color col(yarn_type.color[0],yarn_type.color[1],
-					yarn_type.color[2]);
-				swatch->SetColor(col);
-				ReleaseIColorSwatch(swatch);
-				if(data->yarn_type>=0){
-					uint8_t enabled=yarn_type.color_enabled;
-					Button_SetCheck(GetDlgItem(hWnd,IDC_COLOR_OVERRIDE),enabled);
-					EnableWindow(swatch_hwnd,enabled);
-				}
-			}
             break;
         }
         case WM_DESTROY:
@@ -434,8 +410,8 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		#define GET_YARN_TYPE\
 			YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)\
 				GetWindowLong(hWnd,GWLP_USERDATA);\
-			YarnType * yarn_type = &data->sm->m_weave_parameters.pattern\
-					->yarn_types[data->yarn_type];
+			wcYarnType * yarn_type = &data->sm->m_weave_parameters.yarn_types[\
+                data->yarn_type];
 			 //NOTE(Vidar): Hack to update the preview ball
 		#define UPDATE_BALL\
             data->sm->pblock->SetValue(mtl_dummy,0,0.5f);
@@ -447,26 +423,26 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					GET_YARN_TYPE
                     switch(id){
 
-						#define YARN_TYPE_PARAM(A,B) case IDC_##B##_OVERRIDE:{\
-							HWND spin_hwnd = GetDlgItem(hWnd,IDC_##B##_SPIN);\
-							HWND edit_hwnd = GetDlgItem(hWnd,IDC_##B##_EDIT);\
+						#define WC_FLOAT_PARAM(name) case IDC_##name##_OVERRIDE:{\
+							HWND spin_hwnd = GetDlgItem(hWnd,IDC_##name##_SPIN);\
+							HWND edit_hwnd = GetDlgItem(hWnd,IDC_##name##_EDIT);\
 							bool check = Button_GetCheck((HWND)lParam);\
 							EnableWindow(spin_hwnd,check);\
 							EnableWindow(edit_hwnd,check);\
-							yarn_type->A##_enabled = check;\
+							yarn_type->name##_enabled = check;\
 							break;\
 						}
-                        YARN_TYPE_PARAMETERS
-						#undef YARN_TYPE_PARAM
+						#define WC_COLOR_PARAM(name) case IDC_##name##_OVERRIDE:{\
+							HWND swatch_hwnd = GetDlgItem(hWnd,IDC_##name##_SWATCH);\
+							bool check = Button_GetCheck((HWND)lParam);\
+							EnableWindow(swatch_hwnd,check);\
+							yarn_type->name##_enabled = check;\
+							break;\
+						}
+                        WC_YARN_PARAMETERS
+						#undef WC_FLOAT_PARAM
+						#undef WC_COLOR_PARAM
 
-                        case IDC_COLOR_OVERRIDE:{
-                            HWND swatch_hwnd =
-                                GetDlgItem(hWnd,IDC_YARNCOLOR_SWATCH);
-                            bool check = Button_GetCheck((HWND)lParam);
-                            EnableWindow(swatch_hwnd,check);
-                            yarn_type->color_enabled = check;
-                            break;
-                        }
 						//NOTE(Vidar): Texmap buttons
 						default: {
 							if(data->sm->m_weave_parameters.pattern) {
@@ -475,7 +451,6 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 										&& HIWORD(wParam) == BN_CLICKED){
 										//set mtl!
 										int subtexmap_id=
-											NUMBER_OF_FIXED_TEXMAPS+
 											data->yarn_type*
 											NUMBER_OF_YRN_TEXMAPS+i;
 										//User pressed Texmap button for ith submap
@@ -497,11 +472,13 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			GET_YARN_TYPE
             ISpinnerControl *spinner = (ISpinnerControl*)lParam;
             switch(id){
-				#define YARN_TYPE_PARAM(yarntype_name,idc_name)\
-					case IDC_##idc_name##_SPIN:\
-					yarn_type->yarntype_name = spinner->GetFVal(); break;
-                YARN_TYPE_PARAMETERS
-				#undef YARN_TYPE_PARAM
+				#define WC_FLOAT_PARAM(name)\
+					case IDC_##name##_SPIN:\
+					yarn_type->name = spinner->GetFVal(); break;
+                #define WC_COLOR_PARAM(name)
+                WC_YARN_PARAMETERS
+				#undef WC_FLOAT_PARAM
+				#undef WC_COLOR_PARAM
             }
 			UPDATE_BALL
             break;
@@ -511,9 +488,17 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			GET_YARN_TYPE
             IColorSwatch *swatch = (IColorSwatch*)lParam;
             COLORREF col = swatch->GetColor();
-            yarn_type->color[0] = (float)GetRValue(col)/255.f;
-            yarn_type->color[1] = (float)GetGValue(col)/255.f;
-            yarn_type->color[2] = (float)GetBValue(col)/255.f;
+            switch(id){
+                #define WC_FLOAT_PARAM(name)
+                #define WC_COLOR_PARAM(name)\
+                    case IDC_##name##_SWATCH:\
+                    yarn_type->name.r = (float)GetRValue(col)/255.f;\
+                    yarn_type->name.g = (float)GetGValue(col)/255.f;\
+                    yarn_type->name.b = (float)GetBValue(col)/255.f;
+                WC_YARN_PARAMETERS
+                #undef WC_FLOAT_PARAM
+                #undef WC_COLOR_PARAM
+            }
 			UPDATE_BALL
             break;
          }
@@ -533,7 +518,7 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				HWND btn_hwnd=GetDlgItem(hWnd,texmapBtnIDCs[i]);
 				if(hWndChild==btn_hwnd){
 					//We right clicked on a texture button!
-					int subtex_id=NUMBER_OF_FIXED_TEXMAPS+NUMBER_OF_YRN_TEXMAPS*data->yarn_type+i;
+					int subtex_id=NUMBER_OF_YRN_TEXMAPS*data->yarn_type+i;
 					Texmap *texmap=sm->GetSubTexmap(subtex_id);
 					if(!texmap){
 						break;
@@ -562,8 +547,9 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 \*===========================================================================*/
 
 void ThunderLoomMtl::Reset() {
+    //TODO(Vidar): Load default pattern...
+    memset(&m_weave_parameters,0,sizeof(wcWeaveParameters));
     m_i_mtl_params = 0;
-	m_weave_parameters.pattern = 0;
 	ivalid.SetEmpty();
 	thunderLoomDesc.Reset(this);
 }
@@ -671,57 +657,26 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 //texmaps
 
 int ThunderLoomMtl::NumSubTexmaps() {
-	if (this->m_weave_parameters.pattern) {
-		return NUMBER_OF_FIXED_TEXMAPS + this->m_weave_parameters.pattern->num_yarn_types*NUMBER_OF_YRN_TEXMAPS;
-	} else {
-		return NUMBER_OF_FIXED_TEXMAPS;
-	}
+    return this->m_weave_parameters.num_yarn_types*NUMBER_OF_YRN_TEXMAPS;
 }
 
 Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
-	switch (i)
-	{
-		/*case 0:
-			return pblock->GetTexmap(mtl_texmap_diffuse);
-			break;
-		case 1:
-			return pblock->GetTexmap(mtl_texmap_specular);
-			break;*/
-		default:
-			if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
-				return pblock->GetTexmap(texmaps, 0, i-NUMBER_OF_FIXED_TEXMAPS);
-			} else {
-				return NULL;
-			}
-			break;
-	}
+        if (i < NumSubTexmaps()) {
+            return pblock->GetTexmap(texmaps, 0, i);
+        } else {
+            return NULL;
+        }
 }
 
 void ThunderLoomMtl::SetSubTexmap(int i, Texmap* m) {
-	switch (i)
-	{
-		/*
-		case 0:
-			pblock->SetValue(mtl_texmap_diffuse, 0, m);
-			break;
-		case 1:
-			pblock->SetValue(mtl_texmap_specular, 0, m);
-			break;*/
-		default:
-			if (NumSubTexmaps() > NUMBER_OF_FIXED_TEXMAPS && i < NumSubTexmaps()) {
-				pblock->SetValue(texmaps, 0, m, i-NUMBER_OF_FIXED_TEXMAPS);
-			}
-			break;
-	}
+    if (i < NumSubTexmaps()) {
+        pblock->SetValue(texmaps, 0, m, i);
+    }
 }
 
 TSTR ThunderLoomMtl::GetSubTexmapSlotName(int i) {
-	/*switch(i) {
-		case 0: return L"Main Diffuse Map";
-		case 1: return L"Main Specular Map";
-	}*/
 
-	int yrntexmap_id = i - NUMBER_OF_FIXED_TEXMAPS;
+	int yrntexmap_id = i;
 	switch(yrntexmap_id % NUMBER_OF_YRN_TEXMAPS) {
 #define YARN_TYPE_TEXMAP(param) case yrn_texmaps_##param: return L#param;
 		YARN_TYPE_TEXMAP_PARAMETERS
@@ -754,11 +709,9 @@ IOResult ThunderLoomMtl::Save(ISave *isave) {
 	ULONG nb;
 	isave->Write((unsigned char*)&m_weave_parameters,
 		sizeof(wcWeaveParameters), &nb);
-	Pattern *pattern = m_weave_parameters.pattern;
-	isave->Write((unsigned char*)pattern, sizeof(Pattern), &nb);
-	isave->Write((unsigned char*)pattern->yarn_types,
-		sizeof(YarnType)*pattern->num_yarn_types, &nb);
-	isave->Write((unsigned char*)pattern->entries,
+    isave->Write((unsigned char*)m_weave_parameters.yarn_types,
+		sizeof(wcYarnType)*m_weave_parameters.num_yarn_types, &nb);
+    isave->Write((unsigned char*)m_weave_parameters.pattern,
 		sizeof(PatternEntry)*m_weave_parameters.pattern_width
 		*m_weave_parameters.pattern_height, &nb);
     isave->EndChunk();
@@ -782,19 +735,16 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 				wcWeaveParameters params;
 				iload->Read((unsigned char*)&params,
 					sizeof(wcWeaveParameters), &nb);
-				Pattern *pattern = (Pattern*)calloc(1, sizeof(Pattern));
-				iload->Read((unsigned char*)pattern,
-					sizeof(Pattern), &nb);
-				pattern->yarn_types = (YarnType*)calloc(pattern->num_yarn_types,
-					sizeof(YarnType));
-				iload->Read((unsigned char*)pattern->yarn_types,
-					pattern->num_yarn_types * sizeof(YarnType), &nb);
+				m_weave_parameters.yarn_types =
+                    (wcYarnType*)calloc(m_weave_parameters.num_yarn_types,
+					sizeof(wcYarnType));
+				iload->Read((unsigned char*)m_weave_parameters.yarn_types,
+					m_weave_parameters.num_yarn_types * sizeof(wcYarnType), &nb);
 				int num_entries = params.pattern_width * params.pattern_height;
-				pattern->entries = (PatternEntry*)calloc(num_entries,
+				m_weave_parameters.pattern = (PatternEntry*)calloc(num_entries,
 					sizeof(PatternEntry));
-				iload->Read((unsigned char*)pattern->entries,
+				iload->Read((unsigned char*)m_weave_parameters.pattern,
 					num_entries * sizeof(PatternEntry), &nb);
-				params.pattern = pattern;
 				m_weave_parameters = params;
 				break;
 			}
@@ -882,22 +832,14 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	EvalSpecularFunc = (EVALSPECULARFUNC)get_dynamic_func("eval_specular");
 #endif
 
-	//default values for the time being.
-	//these paramters will be removed later, is the plan
-	m_weave_parameters.yarnvar_amplitude = 0.f;
-	m_weave_parameters.yarnvar_xscale = 1.f;
-	m_weave_parameters.yarnvar_yscale = 1.f;
-	m_weave_parameters.yarnvar_persistance = 1.f;
-	m_weave_parameters.yarnvar_octaves = 1;
-
 	wcFinalizeWeaveParameters(&m_weave_parameters);
 
 	if(m_weave_parameters.pattern){
-		for(int i=0;i<m_weave_parameters.pattern->num_yarn_types;i++){
-			YarnType *yarn_type=&m_weave_parameters.pattern->yarn_types[i];
-		#define YARN_TYPE_TEXMAP(param,A)\
-			yarn_type->param##_texmap= GetSubTexmap(NUMBER_OF_FIXED_TEXMAPS+\
-				NUMBER_OF_YRN_TEXMAPS*i +yrn_texmaps_##param);
+		for(int i=0;i<m_weave_parameters.num_yarn_types;i++){
+			wcYarnType *yarn_type=&m_weave_parameters.yarn_types[i];
+		#define YARN_TYPE_TEXMAP(name)\
+			yarn_type->name##_texmap= GetSubTexmap(\
+				NUMBER_OF_YRN_TEXMAPS*i +yrn_texmaps_##name);
 			YARN_TYPE_TEXMAP_PARAMETERS
 		#undef YARN_TYPE_TEXMAP
 		}
@@ -913,6 +855,7 @@ void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
 }
 
 VR::BSDFSampler* ThunderLoomMtl::newBSDF(const VR::VRayContext &rc, VR::VRenderMtlFlags flags) {
+    return NULL;
 	MyBlinnBSDF *bsdf=bsdfPool.newBRDF(rc);
 	if (!bsdf) return NULL;
 	bsdf->init(rc, &m_weave_parameters);

@@ -16,7 +16,7 @@ protected:
 
     wcWeaveParameters *m_weave_parameters;
 	Texmap **m_texmaps;
-	YarnType m_yarn_type;
+	wcYarnType m_yarn_type;
 
 public:
 

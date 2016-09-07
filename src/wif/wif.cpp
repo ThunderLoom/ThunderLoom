@@ -429,16 +429,16 @@ void wif_free_weavedata(WeaveData *data)
 
 //NOTE(Vidar): This function takes the data which was read from the WIF file
 // and converts it to the data used by the shader
-Pattern *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h, 
-        float *rw, float *rh)
+void wif_get_pattern(wcWeaveParameters *param, WeaveData *data, uint32_t *w,
+    uint32_t *h, float *rw, float *rh)
 {
     uint32_t x,y;
-    Pattern *pattern = 0;
     if(data == 0){
         //NOTE(Vidar): The file was invalid...
         *w = 0;
         *h = 0;
-        return 0;
+        param->pattern = 0;
+        return;
     }
 
 	//Pattern width/height in num of elements
@@ -458,19 +458,20 @@ Pattern *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h,
         uint32_t c;
         PatternEntry *entries =
             (PatternEntry*)calloc((*w)*(*h),sizeof(PatternEntry));
-        YarnType *yarn_types =
-            (YarnType*)calloc(data->num_colors+1,sizeof(YarnType));
+        wcYarnType *yarn_types =
+            (wcYarnType*)calloc(data->num_colors+1,sizeof(wcYarnType));
 
 		yarn_types[0]=default_yarn_type;
         for(c=1;c<data->num_colors+1;c++){
-            yarn_types[c].color[0] = data->colors[(c-1)*3+0];
-            yarn_types[c].color[1] = data->colors[(c-1)*3+1];
-            yarn_types[c].color[2] = data->colors[(c-1)*3+2];
+            yarn_types[c].color.r = data->colors[(c-1)*3+0];
+            yarn_types[c].color.g = data->colors[(c-1)*3+1];
+            yarn_types[c].color.b = data->colors[(c-1)*3+2];
 			yarn_types[c].color_enabled=1;
-		#define YARN_TYPE_PARAM(A,B)\
-            yarn_types[c].A = default_yarn_type.A;\
-            yarn_types[c].A##_enabled = 0;
-			YARN_TYPE_PARAMETERS
+		#define WC_FLOAT_PARAM(name)\
+            yarn_types[c].name = default_yarn_type.name;\
+            yarn_types[c].name##_enabled = 0;
+		#define WC_COLOR_PARAM(name)
+            WC_YARN_PARAMETERS
 		#undef YARN_TYPE_PARAM
         }
         for(y=0;y<*h;y++){
@@ -485,12 +486,10 @@ Pattern *wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h,
                 entries[index].yarn_type = yarn_type;
             }
         }
-		pattern = (Pattern*)calloc(1, sizeof(Pattern));
-        pattern->entries = entries;
-		pattern->num_yarn_types = data->num_colors+1;
-        pattern->yarn_types = yarn_types;
+        param->pattern = entries;
+		param->num_yarn_types = data->num_colors+1;
+        param->yarn_types = yarn_types;
     }
-    return pattern;
 }
 
 void wif_free_pattern(PatternEntry *pattern)

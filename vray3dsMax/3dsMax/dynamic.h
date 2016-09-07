@@ -12,7 +12,7 @@
 
 typedef void (*EVALDIFFUSEFUNC)(const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters,
-	VUtils::Color *diffuse_color, YarnType *yarn_type);
+	VUtils::Color *diffuse_color, wcYarnType *yarn_type);
 
 typedef void (*EVALSPECULARFUNC)( const VUtils::VRayContext &rc, const VUtils::Vector &direction,
     wcWeaveParameters *weave_parameters, VUtils::Matrix nm,
@@ -81,7 +81,7 @@ void
 EvalDiffuseFunc
 (const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
-	YarnType *yarn_type);
+	wcYarnType *yarn_type);
 #endif
 
 #ifndef DYNAMIC

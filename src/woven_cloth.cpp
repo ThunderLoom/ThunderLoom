@@ -163,7 +163,7 @@ void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
     /*segment_u = asinf(x*sinf(params->umax));
         segment_v = asinf(y);*/
     //TODO(Vidar): Use a parameter for choosing model?
-    float segment_u = pattern_data->y*yarn_type_get_umax(params->pattern,
+    float segment_u = pattern_data->y*wc_yarn_type_get_umax(params,
         pattern_data->yarn_type,
 		intersection_data->context);
     float segment_v = pattern_data->x*M_PI_2;
@@ -226,7 +226,7 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 
 		// Normalize by the largest reflection across all uv coords and
 		// incident directions
-		for( uint32_t yarn_type = 0; yarn_type < params->pattern->num_yarn_types;
+		for( uint32_t yarn_type = 0; yarn_type < params->num_yarn_types;
 			yarn_type++){
 			for (size_t i = 0; i < nLocationSamples; i++) {
 				float result = 0.0f;
@@ -278,29 +278,6 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 	}
 }
 
-                                                                                                             
-static Pattern *build_pattern_from_data(uint8_t *warp_above,
-	uint32_t *yarn_type, YarnType *yarn_types, uint32_t num_yarn_types,
-	uint32_t w, uint32_t h)
-{
-    uint32_t x,y,c;
-    Pattern *pattern;
-    pattern = (Pattern*)calloc(1,sizeof(Pattern));
-    pattern->yarn_types = (YarnType*)calloc(num_yarn_types,sizeof(YarnType));
-	pattern->num_yarn_types = num_yarn_types;
-	for (c = 0; c < num_yarn_types; c++) {
-		pattern->yarn_types[c] = yarn_types[c];
-	}
-    pattern->entries = (PatternEntry*)calloc((w)*(h),sizeof(PatternEntry));
-    for(y=0;y<h;y++){
-        for(x=0;x<w;x++){
-            pattern->entries[x+y*w].warp_above = warp_above[x+y*w];
-            pattern->entries[x+y*w].yarn_type  =  yarn_type[x+y*w];
-        }
-    }
-    return pattern;
-}
-
 #ifndef WC_NO_FILES
 
 //NOTE(Vidar): In case we add support for more file formats
@@ -308,54 +285,44 @@ void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename)
 {
     wcWeavePatternFromWIF(params,filename);
 }
+#ifdef WC_WCHAR
 void wcWeavePatternFromFile_wchar(wcWeaveParameters *params,
     const wchar_t *filename)
 {
     wcWeavePatternFromWIF_wchar(params,filename);
 }
+#endif
 
 void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
 {
     WeaveData *data = wif_read(filename);
-    params->pattern = wif_get_pattern(data,
+    wif_get_pattern(params, data,
         &params->pattern_width, &params->pattern_height,
         &params->pattern_realwidth, &params->pattern_realheight);
     wif_free_weavedata(data);
     wcFinalizeWeaveParameters(params);
 }
 
+#ifdef WC_WCHAR
 void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
         const wchar_t *filename)
 {
     WeaveData *data = wif_read_wchar(filename);
-    params->pattern = wif_get_pattern(data,
+    wif_get_pattern(params, data,
         &params->pattern_width, &params->pattern_height,
         &params->pattern_realwidth, &params->pattern_realheight);
     wif_free_weavedata(data);
     wcFinalizeWeaveParameters(params);
 }
 #endif
-
-void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *warp_above,
-	uint32_t *yarn_type, YarnType *yarn_types, uint32_t num_yarn_types,
-	uint32_t pattern_width, uint32_t pattern_height)
-{
-	params->pattern_width  = pattern_width;
-	params->pattern_height = pattern_height;
-	params->pattern = build_pattern_from_data(warp_above,
-		yarn_type, yarn_types, num_yarn_types, pattern_width, pattern_height);
-	wcFinalizeWeaveParameters(params);
-}
+#endif
 
 void wcFreeWeavePattern(wcWeaveParameters *params)
 {
-    if(params->pattern){
-		if (params->pattern->yarn_types) {
-			free(params->pattern->yarn_types);
-		}
-		if (params->pattern->entries) {
-			free(params->pattern->entries);
-		}
+    if (params->yarn_types) {
+        free(params->yarn_types);
+    }
+    if (params->pattern) {
         free(params->pattern);
     }
 }
@@ -494,7 +461,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     uint32_t pattern_x = (uint32_t)(u_repeat*(float)(params->pattern_width));
     uint32_t pattern_y = (uint32_t)(v_repeat*(float)(params->pattern_height));
 
-    PatternEntry current_point = params->pattern->entries[pattern_x +
+    PatternEntry current_point = params->pattern[pattern_x +
         pattern_y*params->pattern_width];        
 
     //Calculate the size of the segment
@@ -504,12 +471,12 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         calculateLengthOfSegment(current_point.warp_above, pattern_x,
             pattern_y, &steps_left_warp, &steps_right_warp,
             params->pattern_width, params->pattern_height,
-            params->pattern->entries);
+            params->pattern);
     }else{
         calculateLengthOfSegment(current_point.warp_above, pattern_x,
             pattern_y, &steps_left_weft, &steps_right_weft,
             params->pattern_width, params->pattern_height,
-            params->pattern->entries);
+            params->pattern);
     }
 
     //Yarn-segment-local coordinates.
@@ -578,7 +545,7 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
     //calculate yarn tangent.
 
     float reflection = 0.f;
-    float umax = yarn_type_get_umax(params->pattern,data.yarn_type,
+    float umax = wc_yarn_type_get_umax(params,data.yarn_type,
 		intersection_data.context);
     if (fabsf(specular_u) < umax){
         // Make normal for highlights, uses v and specular_u
@@ -595,7 +562,7 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
         // our transformation TODO(Peter): Verify!
         //float specular_y = sinf(specular_u)/sinf(m_umax);
 
-        float delta_x = yarn_type_get_delta_x(params->pattern, data.yarn_type,
+        float delta_x = wc_yarn_type_get_delta_x(params, data.yarn_type,
 			intersection_data.context);
         //Clamp specular_y TODO(Peter): change name of m_delta_x to m_delta_h
         specular_y = specular_y < 1.f - delta_x ? specular_y :
@@ -612,9 +579,9 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
                 wcVector_magnitude(wcVector_add(wi,wo)) *
                 fabsf((wcVector_cross(highlight_tangent,H)).x));
 
-            float alpha = yarn_type_get_alpha(params->pattern, data.yarn_type,
+            float alpha = wc_yarn_type_get_alpha(params, data.yarn_type,
 				intersection_data.context);
-            float beta = yarn_type_get_beta(params->pattern, data.yarn_type,
+            float beta = wc_yarn_type_get_beta(params, data.yarn_type,
 				intersection_data.context);
             // --- Set fc
             float cos_x = -wcVector_dot(wi, wo);
@@ -655,7 +622,7 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     }
     wcVector H = wcVector_normalize(wcVector_add(wi, wo));
 
-    float psi = yarn_type_get_psi(params->pattern,data.yarn_type,
+    float psi = wc_yarn_type_get_psi(params,data.yarn_type,
 		intersection_data.context);
 
     float u = data.u;
@@ -682,9 +649,9 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
         // our transformation
         //float specular_x = sinf(specular_v);
 
-        float delta_x = yarn_type_get_delta_x(params->pattern,data.yarn_type,
+        float delta_x = wc_yarn_type_get_delta_x(params,data.yarn_type,
 			intersection_data.context);
-        float umax = yarn_type_get_umax(params->pattern,data.yarn_type,
+        float umax = wc_yarn_type_get_umax(params,data.yarn_type,
 			intersection_data.context);
 
         //Clamp specular_x
@@ -695,9 +662,9 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
 
         if (fabsf(specular_x - x) < delta_x) {
 
-            float alpha = yarn_type_get_alpha(params->pattern,data.yarn_type,
+            float alpha = wc_yarn_type_get_alpha(params,data.yarn_type,
 				intersection_data.context);
-            float beta  = yarn_type_get_beta( params->pattern,data.yarn_type,
+            float beta  = wc_yarn_type_get_beta( params,data.yarn_type,
 				intersection_data.context);
 
             // --- Set Gv
@@ -732,19 +699,19 @@ wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
 {
     float value = intersection_data.wi_z;
 
-	YarnType *yarn_type = params->pattern->yarn_types + data.yarn_type;
+	wcYarnType *yarn_type = params->yarn_types + data.yarn_type;
     if(!yarn_type->color_enabled){
-        yarn_type = &params->pattern->yarn_types[0];
+        yarn_type = &params->yarn_types[0];
     }
 
     wcColor color = {
-        yarn_type->color[0] * value,
-        yarn_type->color[1] * value,
-        yarn_type->color[2] * value
+        yarn_type->color.r * value,
+        yarn_type->color.g * value,
+        yarn_type->color.b * value
     };
 	if(yarn_type->color_texmap){
-		wc_eval_texmap_color(yarn_type->color_texmap,intersection_data.context,
-			&color.r);
+		color = wc_eval_texmap_color(yarn_type->color_texmap,
+            intersection_data.context);
 		color.r*=value; color.g*=value; color.b*=value;
 	}
     return color;
@@ -760,7 +727,7 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
     if(params->pattern == 0){
         return 0.f;
     }
-    float psi = yarn_type_get_psi(params->pattern, data.yarn_type,
+    float psi = wc_yarn_type_get_psi(params, data.yarn_type,
 		intersection_data.context);
     if (psi <= 0.001f) {
         //Filament yarn
@@ -779,7 +746,7 @@ wcColor wcShade(wcIntersectionData intersection_data,
     wcPatternData data = wcGetPatternData(intersection_data,params);
     wcColor ret = wcEvalDiffuse(intersection_data,data,params);
     float spec  = wcEvalSpecular(intersection_data,data,params);
-    float specular_strength = yarn_type_get_specular_strength(params->pattern,
+    float specular_strength = wc_yarn_type_get_specular_strength(params,
         data.yarn_type,
 		intersection_data.context);
     ret.r = ret.r*(1.f-specular_strength) + specular_strength*spec;

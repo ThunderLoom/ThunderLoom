@@ -21,7 +21,7 @@ EvalDiffuseFunc
 #endif
 (const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
-	YarnType* yarn_type)
+	wcYarnType* yarn_type)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
         *diffuse_color = VUtils::Color(1.f,1.f,0.f);
@@ -44,9 +44,9 @@ EvalDiffuseFunc
 
     wcPatternData pattern_data = wcGetPatternData(intersection_data,
         weave_parameters);
-	*yarn_type = weave_parameters->pattern->yarn_types[pattern_data.yarn_type];
-    float specular_strength = yarn_type_get_specular_strength(weave_parameters->
-        pattern,pattern_data.yarn_type,&sc);
+	*yarn_type = weave_parameters->yarn_types[pattern_data.yarn_type];
+    float specular_strength = wc_yarn_type_get_specular_strength(
+        weave_parameters,pattern_data.yarn_type,&sc);
     wcColor d = 
         wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
     float factor = (1.f - specular_strength);
@@ -119,8 +119,8 @@ EvalSpecularFunc
 
     wcPatternData pattern_data = wcGetPatternData(intersection_data,
         weave_parameters);
-    float specular_strength = yarn_type_get_specular_strength(weave_parameters->
-        pattern,pattern_data.yarn_type,&sc);
+    float specular_strength = wc_yarn_type_get_specular_strength(
+        weave_parameters,pattern_data.yarn_type,&sc);
     float s = specular_strength *
         wcEvalSpecular(intersection_data, pattern_data, weave_parameters);
     reflection_color->r = s;
@@ -138,14 +138,14 @@ float wc_eval_texmap_mono(void *texmap, void *data)
 	return 1.f;
 }
 
-void wc_eval_texmap_color(void *texmap, void *data, float *col)
+wcColor wc_eval_texmap_color(void *texmap, void *data)
 {
+    wcColor ret = {1.f,1.f,1.f};
 	if(data){
 		ShadeContext *sc=(ShadeContext*)data;
 		Texmap *t=(Texmap*)texmap;
 		Point3 c=t->EvalColor(*sc);
-		col[0]=c.x; col[1]=c.y; col[2]=c.z;
-	} else{
-		col[0]=1.f; col[1]=1.f; col[2]=1.f;
+		ret.r=c.x; ret.g=c.y; ret.b=c.z;
 	}
+    return ret;
 }

@@ -9,10 +9,12 @@
 /* --- Basic usage ---
  * Before rendering, call wcWeavePatternFromFile to load a weaving pattern.
  */
-typedef struct wcWeaveParameters wcWeaveParameters; wcWeaveParameters; //Forward decl.
+typedef struct wcWeaveParameters wcWeaveParameters; //Forward decl.
 void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename);
+#ifdef WC_WCHAR
 void wcWeavePatternFromFile_wchar(wcWeaveParameters *params,
     const wchar_t *filename);
+#endif
 
 /* Before each frame, call wcPrepare to apply all changes to parameters
  */
@@ -22,8 +24,8 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params);
  * with the relevant information about the current shading point,
  * and call wcShade to recieve the reflected color.
  */
-typedef struct {float r,g,b;} wcColor; wcColor;
-typedef struct wcIntersectionData wcIntersectionData; wcIntersectionData;
+typedef struct {float r,g,b;} wcColor;
+typedef struct wcIntersectionData wcIntersectionData;
 wcColor wcShade(wcIntersectionData intersection_data,
         const wcWeaveParameters *params);
 
@@ -202,11 +204,13 @@ void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *warp_above,
 /* wcWeavePatternFromFile calles one of the functions below depending on
  * file extension*/
 void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename);
+void wcWeavePatternFromWeaveFile(wcWeaveParameters *params, const char *filename);
+#ifdef WC_WCHAR
 void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
     const wchar_t *filename);
-void wcWeavePatternFromWeaveFile(wcWeaveParameters *params, const char *filename);
 void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
     const wchar_t *filename);
+#endif
 
 static const
 wcYarnType default_yarn_type =
@@ -224,8 +228,8 @@ wcYarnType default_yarn_type =
 // Getter functions for the yarn type parameters.
 // These take into account whether the parameter is enabled or not
 // and handle the texmaps
-#define WC_FLOAT_PARAM(param) static inline float wc_yarn_type_get_##param\
-	(Pattern *p, uint32_t i, void* context){\
+#define WC_FLOAT_PARAM(param) static float wc_yarn_type_get_##param\
+    (const wcWeaveParameters *p, uint32_t i, void* context){\
 	wcYarnType yarn_type = p->yarn_types[i];\
     float ret;\
 	if(yarn_type.param##_enabled){\
@@ -240,8 +244,8 @@ wcYarnType default_yarn_type =
 		}\
 	}\
 	return ret;}
-#define WC_COLOR_PARAM(param) static inline wcColor wc_yarn_type_get_##param\
-	(Pattern *p, uint32_t i, void* context){\
+#define WC_COLOR_PARAM(param) static wcColor wc_yarn_type_get_##param\
+    (const wcWeaveParameters *p, uint32_t i, void* context){\
 	wcYarnType yarn_type = p->yarn_types[i];\
     wcColor ret;\
 	if(yarn_type.param##_enabled){\
@@ -256,8 +260,18 @@ wcYarnType default_yarn_type =
 		}\
 	}\
 	return ret;}
-#define WC_INT_PARAM(param)
-YARN_TYPE_PARAMETERS
+#define WC_INT_PARAM(param) 
+WC_YARN_PARAMETERS
 #undef WC_FLOAT_PARAM
 #undef WC_COLOR_PARAM
 #undef WC_INT_PARAM
+
+static const int WC_NUM_YARN_PARAMETERS = 0
+#define WC_FLOAT_PARAM(name) + 1
+#define WC_INT_PARAM(name)  + 1
+#define WC_COLOR_PARAM(name) + 1
+WC_YARN_PARAMETERS
+#undef WC_FLOAT_PARAM
+#undef WC_INT_PARAM
+#undef WC_COLOR_PARAM
+;

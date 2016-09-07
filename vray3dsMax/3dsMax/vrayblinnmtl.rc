@@ -124,60 +124,60 @@ IDD_YARN DIALOGEX 0, 0, 219, 55
 STYLE DS_SETFONT | WS_CHILD | WS_VISIBLE
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    CONTROL         "Custom2",IDC_UMAX_EDIT,"CustEdit",WS_TABSTOP,45,10,23,10
-    CONTROL         "Custom2",IDC_PSI_EDIT,"CustEdit",WS_TABSTOP,106,10,26,10
-    CONTROL         "Custom2",IDC_SPECULAR_EDIT,"CustEdit",WS_TABSTOP,45,23,23,10
-    CONTROL         "Custom2",IDC_DELTAX_EDIT,"CustEdit",WS_TABSTOP,168,23,21,10
-    CONTROL         "Custom2",IDC_ALPHA_EDIT,"CustEdit",WS_TABSTOP,45,36,23,10
-    CONTROL         "Custom2",IDC_BETA_EDIT,"CustEdit",WS_TABSTOP,106,36,25,10
-    CONTROL         "Custom1",IDC_YARNCOLOR_SWATCH,"ColorSwatch",0x0,174,9,16,12
+    CONTROL         "Custom2",IDC_umax_EDIT,"CustEdit",WS_TABSTOP,45,10,23,10
+    CONTROL         "Custom2",IDC_psi_EDIT,"CustEdit",WS_TABSTOP,106,10,26,10
+    CONTROL         "Custom2",IDC_specular_strength_EDIT,"CustEdit",WS_TABSTOP,45,23,23,10
+    CONTROL         "Custom2",IDC_delta_x_EDIT,"CustEdit",WS_TABSTOP,168,23,21,10
+    CONTROL         "Custom2",IDC_alpha_EDIT,"CustEdit",WS_TABSTOP,45,36,23,10
+    CONTROL         "Custom2",IDC_beta_EDIT,"CustEdit",WS_TABSTOP,106,36,25,10
+    CONTROL         "Custom1",IDC_color_SWATCH,"ColorSwatch",0x0,174,9,16,12
     LTEXT           "specular",IDC_STATIC,12,24,28,8
-    CONTROL         "Custom3",IDC_SPECULAR_SPIN,"SpinnerControl",0x0,68,23,7,10
-    LTEXT           "bend",IDC_UMAX_LABEL,13,11,17,8
-    CONTROL         "Custom3",IDC_UMAX_SPIN,"SpinnerControl",0x0,68,10,7,10
-    LTEXT           "twist",IDC_PSI_LABEL,85,11,15,8
-    CONTROL         "Custom3",IDC_PSI_SPIN,"SpinnerControl",0x0,131,10,7,10
-    LTEXT           "highlight width",IDC_DELTAX_LABEL,118,24,46,8
-    CONTROL         "Custom3",IDC_DELTAX_SPIN,"SpinnerControl",0x0,190,23,7,10
-    LTEXT           "alpha",IDC_ALPHA_LABEL,12,37,18,8
-    CONTROL         "Custom3",IDC_ALPHA_SPIN,"SpinnerControl",0x0,68,36,7,10
-    LTEXT           "beta",IDC_ALPHA_LABEL2,85,37,15,8
-    CONTROL         "Custom3",IDC_BETA_SPIN,"SpinnerControl",0x0,128,36,7,10
+    CONTROL         "Custom3",IDC_specular_strength_SPIN,"SpinnerControl",0x0,68,23,7,10
+    LTEXT           "bend",IDC_umax_LABEL,13,11,17,8
+    CONTROL         "Custom3",IDC_umax_SPIN,"SpinnerControl",0x0,68,10,7,10
+    LTEXT           "twist",IDC_psi_LABEL,85,11,15,8
+    CONTROL         "Custom3",IDC_psi_SPIN,"SpinnerControl",0x0,131,10,7,10
+    LTEXT           "highlight width",IDC_delta_x_LABEL,118,24,46,8
+    CONTROL         "Custom3",IDC_delta_x_SPIN,"SpinnerControl",0x0,190,23,7,10
+    LTEXT           "alpha",IDC_alpha_LABEL,12,37,18,8
+    CONTROL         "Custom3",IDC_alpha_SPIN,"SpinnerControl",0x0,68,36,7,10
+    LTEXT           "beta",IDC_alpha_LABEL2,85,37,15,8
+    CONTROL         "Custom3",IDC_beta_SPIN,"SpinnerControl",0x0,128,36,7,10
     LTEXT           "color",IDC_STATIC,150,11,16,8
-    CONTROL         "",IDC_YRN_TEX_SPECULAR_BUTTON,"CustButton",WS_TABSTOP,80,23,11,10
+    CONTROL         "",IDC_YRN_TEX_specular_strength_BUTTON,"CustButton",WS_TABSTOP,80,23,11,10
     LTEXT           "yarn size",IDC_YRN_TEX_SIZE_LABEL,144,37,28,8
     CONTROL         "",IDC_YRN_TEX_SIZE_BUTTON,"CustButton",WS_TABSTOP,177,36,13,10
-    CONTROL         "",IDC_YRN_TEX_DIFFUSE_BUTTON,"CustButton",WS_TABSTOP,190,10,12,10
+    CONTROL         "",IDC_YRN_TEX_color_BUTTON,"CustButton",WS_TABSTOP,190,10,12,10
 END
 
 IDD_YARN_TYPE DIALOGEX 0, 0, 220, 54
 STYLE DS_SETFONT | WS_CHILD | WS_VISIBLE
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    CONTROL         "bend",IDC_UMAX_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,9,32,10
-    CONTROL         "Custom2",IDC_UMAX_EDIT,"CustEdit",WS_TABSTOP,47,9,23,10
-    CONTROL         "twist",IDC_PSI_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,86,9,30,10
-    CONTROL         "Custom2",IDC_PSI_EDIT,"CustEdit",WS_TABSTOP,115,9,22,10
-    CONTROL         "color",IDC_COLOR_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,151,9,31,10
-    CONTROL         "specular",IDC_SPECULAR_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,24,43,10
-    CONTROL         "Custom2",IDC_SPECULAR_EDIT,"CustEdit",WS_TABSTOP,47,24,23,10
-    CONTROL         "highlight width",IDC_DELTAX_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,115,24,61,10
-    CONTROL         "Custom2",IDC_DELTAX_EDIT,"CustEdit",WS_TABSTOP,183,24,21,10
-    CONTROL         "alpha",IDC_ALPHA_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,38,33,10
-    CONTROL         "Custom2",IDC_ALPHA_EDIT,"CustEdit",WS_TABSTOP,47,38,23,10
-    CONTROL         "beta",IDC_BETA_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,85,38,30,10
-    CONTROL         "Custom2",IDC_BETA_EDIT,"CustEdit",WS_TABSTOP,115,38,22,10
-    CONTROL         "Custom1",IDC_YARNCOLOR_SWATCH,"ColorSwatch",0x0,182,8,16,12
-    CONTROL         "Custom3",IDC_SPECULAR_SPIN,"SpinnerControl",0x0,72,24,7,10
-    CONTROL         "Custom3",IDC_UMAX_SPIN,"SpinnerControl",0x0,71,9,7,10
-    CONTROL         "Custom3",IDC_PSI_SPIN,"SpinnerControl",0x0,137,9,7,10
-    CONTROL         "Custom3",IDC_DELTAX_SPIN,"SpinnerControl",0x0,205,24,7,10
-    CONTROL         "Custom3",IDC_ALPHA_SPIN,"SpinnerControl",0x0,72,38,7,10
-    CONTROL         "Custom3",IDC_BETA_SPIN,"SpinnerControl",0x0,137,38,7,10
-    CONTROL         "Custom2",IDC_YRN_TEX_SPECULAR_BUTTON,"CustButton",WS_TABSTOP,86,24,14,10
+    CONTROL         "bend",IDC_umax_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,9,32,10
+    CONTROL         "Custom2",IDC_umax_EDIT,"CustEdit",WS_TABSTOP,47,9,23,10
+    CONTROL         "twist",IDC_psi_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,86,9,30,10
+    CONTROL         "Custom2",IDC_psi_EDIT,"CustEdit",WS_TABSTOP,115,9,22,10
+    CONTROL         "color",IDC_color_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,151,9,31,10
+    CONTROL         "specular",IDC_specular_strength_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,24,43,10
+    CONTROL         "Custom2",IDC_specular_strength_EDIT,"CustEdit",WS_TABSTOP,47,24,23,10
+    CONTROL         "highlight width",IDC_delta_x_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,115,24,61,10
+    CONTROL         "Custom2",IDC_delta_x_EDIT,"CustEdit",WS_TABSTOP,183,24,21,10
+    CONTROL         "alpha",IDC_alpha_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,38,33,10
+    CONTROL         "Custom2",IDC_alpha_EDIT,"CustEdit",WS_TABSTOP,47,38,23,10
+    CONTROL         "beta",IDC_beta_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,85,38,30,10
+    CONTROL         "Custom2",IDC_beta_EDIT,"CustEdit",WS_TABSTOP,115,38,22,10
+    CONTROL         "Custom1",IDC_color_SWATCH,"ColorSwatch",0x0,182,8,16,12
+    CONTROL         "Custom3",IDC_specular_strength_SPIN,"SpinnerControl",0x0,72,24,7,10
+    CONTROL         "Custom3",IDC_umax_SPIN,"SpinnerControl",0x0,71,9,7,10
+    CONTROL         "Custom3",IDC_psi_SPIN,"SpinnerControl",0x0,137,9,7,10
+    CONTROL         "Custom3",IDC_delta_x_SPIN,"SpinnerControl",0x0,205,24,7,10
+    CONTROL         "Custom3",IDC_alpha_SPIN,"SpinnerControl",0x0,72,38,7,10
+    CONTROL         "Custom3",IDC_beta_SPIN,"SpinnerControl",0x0,137,38,7,10
+    CONTROL         "Custom2",IDC_YRN_TEX_specular_strength_BUTTON,"CustButton",WS_TABSTOP,86,24,14,10
     LTEXT           "yarn size",IDC_YRN_TEX_SIZE_LABEL,152,39,28,8
     CONTROL         "",IDC_YRN_TEX_SIZE_BUTTON2,"CustButton",WS_TABSTOP,189,38,13,10
-    CONTROL         "",IDC_YRN_TEX_DIFFUSE_BUTTON,"CustButton",WS_TABSTOP,198,9,14,10
+    CONTROL         "",IDC_YRN_TEX_color_BUTTON,"CustButton",WS_TABSTOP,198,9,14,10
 END
 
 
