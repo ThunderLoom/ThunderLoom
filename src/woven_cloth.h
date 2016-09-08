@@ -213,7 +213,7 @@ void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
 #endif
 
 static const
-wcYarnType default_yarn_type =
+wcYarnType wc_default_yarn_type =
 {
 	0.5f,  //umax
 	0.5f,  //psi

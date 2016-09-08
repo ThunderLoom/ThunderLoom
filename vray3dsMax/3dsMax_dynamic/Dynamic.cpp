@@ -25,7 +25,7 @@ EvalDiffuseFunc
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
         *diffuse_color = VUtils::Color(1.f,1.f,0.f);
-		*yarn_type = default_yarn_type;
+		*yarn_type = wc_default_yarn_type;
         return;
     }
     wcIntersectionData intersection_data;

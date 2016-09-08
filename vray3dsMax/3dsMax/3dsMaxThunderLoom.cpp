@@ -363,7 +363,7 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 s->SetScale(0.01f);\
                 s->SetValue(yarn_type.name, FALSE);\
                 ReleaseISpinner(s);\
-                if(data->yarn_type >= 0){\
+                if(data->yarn_type > 0){\
                     uint8_t enabled=yarn_type.name##_enabled;\
                     Button_SetCheck(\
                         GetDlgItem(hWnd,IDC_##name##_OVERRIDE),enabled);\
@@ -379,7 +379,7 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     yarn_type.name.b);\
                 swatch->SetColor(col);\
                 ReleaseIColorSwatch(swatch);\
-                if(data->yarn_type>=0){\
+                if(data->yarn_type>0){\
                     uint8_t enabled=yarn_type.name##_enabled;\
                     Button_SetCheck(GetDlgItem(hWnd,IDC_##name##_OVERRIDE),enabled);\
                     EnableWindow(swatch_hwnd,enabled);\
@@ -549,6 +549,9 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void ThunderLoomMtl::Reset() {
     //TODO(Vidar): Load default pattern...
     memset(&m_weave_parameters,0,sizeof(wcWeaveParameters));
+    m_weave_parameters.num_yarn_types = 1;
+    m_weave_parameters.yarn_types = (wcYarnType*)calloc(sizeof(wcYarnType),1);
+    m_weave_parameters.yarn_types[0] = wc_default_yarn_type;
     m_i_mtl_params = 0;
 	ivalid.SetEmpty();
 	thunderLoomDesc.Reset(this);
@@ -855,7 +858,6 @@ void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
 }
 
 VR::BSDFSampler* ThunderLoomMtl::newBSDF(const VR::VRayContext &rc, VR::VRenderMtlFlags flags) {
-    return NULL;
 	MyBlinnBSDF *bsdf=bsdfPool.newBRDF(rc);
 	if (!bsdf) return NULL;
 	bsdf->init(rc, &m_weave_parameters);

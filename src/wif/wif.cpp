@@ -461,14 +461,14 @@ void wif_get_pattern(wcWeaveParameters *param, WeaveData *data, uint32_t *w,
         wcYarnType *yarn_types =
             (wcYarnType*)calloc(data->num_colors+1,sizeof(wcYarnType));
 
-		yarn_types[0]=default_yarn_type;
+		yarn_types[0]=wc_default_yarn_type;
         for(c=1;c<data->num_colors+1;c++){
             yarn_types[c].color.r = data->colors[(c-1)*3+0];
             yarn_types[c].color.g = data->colors[(c-1)*3+1];
             yarn_types[c].color.b = data->colors[(c-1)*3+2];
 			yarn_types[c].color_enabled=1;
 		#define WC_FLOAT_PARAM(name)\
-            yarn_types[c].name = default_yarn_type.name;\
+            yarn_types[c].name = wc_default_yarn_type.name;\
             yarn_types[c].name##_enabled = 0;
 		#define WC_COLOR_PARAM(name)
             WC_YARN_PARAMETERS
