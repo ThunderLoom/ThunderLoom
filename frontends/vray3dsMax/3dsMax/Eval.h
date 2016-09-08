@@ -15,7 +15,7 @@
 
 void EvalDiffuseFunc (const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
-	YarnType *yarn_type, int *yarn_type_id);
+	wcYarnType *yarn_type, int *yarn_type_id);
 
 void EvalSpecularFunc ( const VUtils::VRayContext &rc,
     const VUtils::Vector &direction, wcWeaveParameters *weave_parameters,

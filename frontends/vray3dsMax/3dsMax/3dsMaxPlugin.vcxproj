@@ -483,7 +483,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>C:\Users\Vidar\Documents\code\ThunderLoom\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;WC_WCHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\..\..\build\vrayblinnmtl\max90\x64\official\</ObjectFileName>
@@ -528,7 +528,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>C:\Users\Vidar\Documents\code\ThunderLoom\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;MAX_RELEASE_R18;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;MAX_RELEASE_R18;WC_WCHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\..\..\build\vrayblinnmtl\max90\x64\official\</ObjectFileName>

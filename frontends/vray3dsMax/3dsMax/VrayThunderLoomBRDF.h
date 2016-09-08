@@ -17,9 +17,8 @@ protected:
 
     wcWeaveParameters *m_weave_parameters;
 	Texmap **m_texmaps;
-	YarnType m_yarn_type;
+	wcYarnType m_yarn_type;
 	int m_yarn_type_id;
-	float m_specular_strength; //The texture modulated specular strength
 
 public:
 

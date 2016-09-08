@@ -23,6 +23,20 @@
 
 #include "woven_cloth.h"
 
+//NOTE(Peter):These are parameters for each yarn type that can be varied  
+//for each uv position. These paramters are good to vary using texture maps
+#define YARN_TYPE_TEXMAP_PARAMETERS\
+	YARN_TYPE_TEXMAP(color)\
+	YARN_TYPE_TEXMAP(specular_strength)\
+	//YARN_TYPE_TEXMAP(yarnsize)
+enum {
+#define YARN_TYPE_TEXMAP(param) yrn_texmaps_##param,
+	YARN_TYPE_TEXMAP_PARAMETERS
+#undef YARN_TYPE_PARAM
+	NUMBER_OF_YRN_TEXMAPS
+};
+
+
 // IMPORTANT:
 // The ClassID must be changed whenever a new project
 // is created using this skeleton
@@ -51,7 +65,7 @@ enum {
 
 static int texmapBtnIDCs[NUMBER_OF_YRN_TEXMAPS] = 
 {
-#define YARN_TYPE_TEXMAP(A,id) IDC_YRN_TEX_##id##_BUTTON,
+#define YARN_TYPE_TEXMAP(name) IDC_YRN_TEX_##name##_BUTTON,
 	YARN_TYPE_TEXMAP_PARAMETERS
 #undef YARN_TYPE_PARAM
 };
