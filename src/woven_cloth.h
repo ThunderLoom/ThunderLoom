@@ -132,3 +132,7 @@ void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
 changed since reading the pattern*/
 WC_PREFIX
 void wcFinalizeWeaveParameters(wcWeaveParameters *params);
+
+
+
+void lookupPatternEntry(PatternEntry* entry, const wcWeaveParameters* params, const int8_t x, const int8_t y);

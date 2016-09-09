@@ -157,9 +157,15 @@ void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
     /*segment_u = asinf(x*sinf(params->umax));
         segment_v = asinf(y);*/
     //TODO(Vidar): Use a parameter for choosing model?
-    float segment_u = pattern_data->y*yarn_type_get_umax(params->pattern,
-        pattern_data->yarn_type,
-		intersection_data->context);
+    float umax;
+    if (pattern_data->ext_between_parallel == 1){
+        //if segment is extension between to parallel yarns -> bend = 0
+        umax = 0.0001;
+    } else {
+    umax = yarn_type_get_umax(params->pattern, pattern_data->yarn_type, 
+            intersection_data->context);
+    }
+    float segment_u = pattern_data->y*umax;
     float segment_v = pattern_data->x*M_PI_2;
 
     //Calculate the normal in yarn-local coordinates
@@ -706,10 +712,16 @@ static float vonMises(float cos_x, float b) {
 }
 
 WC_PREFIX
-void lookupPatternEntry(PatternEntry* entry, const wcWeaveParameters* params, const uint8_t x, const uint8_t y) {
+void lookupPatternEntry(PatternEntry* entry, const wcWeaveParameters* params, const int8_t x, const int8_t y) {
     //function to get pattern entry. Takes care of coordinate wrapping!
-    uint32_t tmpx = (uint32_t)fmod(x,(float)params->pattern_width);
-    uint32_t tmpy = (uint32_t)fmod(y,(float)params->pattern_height);
+    int32_t tmpx = (int32_t)fmod(x,(float)params->pattern_width);
+    int32_t tmpy = (int32_t)fmod(y,(float)params->pattern_height);
+    if (tmpx < 0.f) {
+        tmpx = params->pattern_width + tmpx;
+    }
+    if (tmpy < 0.f) {
+        tmpy = params->pattern_height + tmpy;
+    }
     *entry = params->pattern->entries[tmpx + tmpy*params->pattern_width];
 }
 
@@ -815,8 +827,12 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             if (weft_flag && fabs(y) <= params->pattern->
                     yarn_types[pattern_entry.yarn_type].yarnsize) {
                 current_point = pattern_entry;
-                pattern_x = (uint32_t)fabs(fmod(((int32_t)pattern_x + i*dir),
-                            (float)params->pattern_width));
+                int32_t tmpx = (int32_t)fmod(((int32_t)pattern_x + i*dir),
+                            (float)params->pattern_width);
+                if (tmpx < 0.f) {
+                    tmpx = params->pattern_width + tmpx;
+                }
+                pattern_x = tmpx;
                 yarn_hit = 1;
             }
 
@@ -858,8 +874,12 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             if (warp_flag && fabs(x) <= params->pattern->
                     yarn_types[pattern_entry.yarn_type].yarnsize) {
                 current_point = pattern_entry;
-                pattern_y = (uint32_t)fabs(fmod(((int32_t)pattern_y + i*dir),
-                            (float)params->pattern_height));
+                int32_t tmpy = (int32_t)fmod(((int32_t)pattern_y + i*dir),
+                            (float)params->pattern_height);
+                if (tmpy < 0.f) {
+                    tmpy = params->pattern_height + tmpy;
+                }
+                pattern_y = tmpy;
                 yarn_hit = 1;
 
             }
@@ -921,8 +941,13 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
                 (pattern_y + steps_left_warp + 1));        
         tmp_yarnsize = params->pattern->
             yarn_types[pattern_entry.yarn_type].yarnsize;
-            //offset_y_right = (1.f-tmp_yarnsize)/2.f;
+        //offset_y_right = (1.f-tmp_yarnsize)/2.f;
+        offset_y_right = (1.f-tmp_yarnsize)/2.f;
+        if(orignal_parallel_weft) {
+            tmp_yarnsize = params->pattern->
+                yarn_types[original_point.yarn_type].yarnsize;
             offset_y_right = (1.f-tmp_yarnsize)/2.f;
+        }
 
 		//self size
 		offset_x_left = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
@@ -945,10 +970,15 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         offset_x_left = (1.f-tmp_yarnsize)/2.f;
         //right
         lookupPatternEntry(&pattern_entry, params,
-                (pattern_x + steps_left_weft + 1), pattern_y);        
+                (pattern_x + steps_right_weft + 1), pattern_y);        
         tmp_yarnsize = params->pattern->
             yarn_types[pattern_entry.yarn_type].yarnsize;
         offset_x_right = (1.f-tmp_yarnsize)/2.f;
+        if(orignal_parallel_warp) {
+            tmp_yarnsize = params->pattern->
+                yarn_types[original_point.yarn_type].yarnsize;
+            offset_x_right = (1.f-tmp_yarnsize)/2.f;
+        }
 
 		//Self size
 		offset_y_left = -1.f*(1.f-params->pattern->yarn_types[current_point.yarn_type].yarnsize)/2.f;
@@ -981,8 +1011,9 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
             + steps_left_weft)/w;
 
 
-    /* Debug
-     * printf("orignal_parallel_weft: %d, orignal_parallel_warp: %d\n", orignal_parallel_weft, orignal_parallel_warp);
+    /* Debug */
+    /*
+    printf("orignal_parallel_weft: %d, orignal_parallel_warp: %d\n", orignal_parallel_weft, orignal_parallel_warp);
     printf("add_current_to_length: %f, add_current_to_width: %f\n", add_current_to_length, add_current_to_width);
     printf("steps_left_warp: %d, steps_right_warp: %d\n", steps_left_warp, steps_right_warp);
     printf("steps_left_weft: %d, steps_right_weft: %d\n", steps_left_weft, steps_right_weft);
@@ -994,7 +1025,8 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     printf("u_repeat*(float)(params->pattern_width): %f, u_repeat: %f\n", (u_repeat)*(float)(params->pattern_width), u_repeat);
     printf("pattern_x: %d, pattern_y: %d\n", pattern_x, pattern_y);
     printf("tmp x: %f, y: %f\n", x, y);
-    printf("tmp w: %f, l: %f\n", w, l);*/
+    printf("tmp w: %f, l: %f\n", w, l);
+    */
     
     //Rescale x, y to [-1,1], w,v scaled by 2
     x = x*2.f - 1.f;
@@ -1016,7 +1048,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     //return the results
     wcPatternData ret_data;
 	ret_data.yarn_hit = yarn_hit;
-	ret_data.ext_between_parallel = orignal_parallel_warp || orignal_parallel_weft;
+	ret_data.ext_between_parallel = (orignal_parallel_warp || orignal_parallel_weft);
 	ret_data.yarn_type = current_point.yarn_type;
     ret_data.length = l; 
     ret_data.width  = w; 
@@ -1059,9 +1091,9 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
 
     float reflection = 0.f;
     float umax;
-    if (data.ext_between_parallel){
+    if (data.ext_between_parallel == 1){
         //if segment is extension between to parallel yarns -> bend = 0
-        umax = 0.001;
+        umax = 0.0001;
     } else {
         umax = yarn_type_get_umax(params->pattern,data.yarn_type,
                 intersection_data.context);

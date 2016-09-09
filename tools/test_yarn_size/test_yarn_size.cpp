@@ -123,12 +123,11 @@ static void test_extending_warp_segments_at_weave_pattern_border() {
     intersection_data.uv_y = 0.25 - 0.126;
     wcPatternData pattern_data = wcGetPatternData(intersection_data, params);
     assert(pattern_data.width == 1.f);
-    //TODO
-    //assert(pattern_data.length == 3.5);
+    assert(pattern_data.length == 3.0);
     assert(pattern_data.warp_above == 1);
     assert(pattern_data.x == 0.f);
     assert(pattern_data.y > 0.9 && pattern_data.y <= 1.0); //should be at end of segment
-
+    
     intersection_data.uv_x = 0.25;
     intersection_data.uv_y = 0.75 - 0.25 - 0.124;
     pattern_data = wcGetPatternData(intersection_data, params);
@@ -362,6 +361,58 @@ static void test_extending_with_all_parallel_wefts () {
     assert(pattern_data.yarn_hit == 0);
 }
 
+static void test_extended_segments_over_border_with_two_parallel_warps_should_work() {
+    //see 2parallel.png for reference
+
+    wcWeaveParameters params_2parallel;
+    wcWeaveParameters *params;
+    params = &params_2parallel;
+    params->realworld_uv = 0;
+    params->uscale = params->vscale = 1.f;
+    wcWeavePatternFromFile(params,"2parallel.wif");
+    params->pattern->yarn_types[1].yarnsize = 0.5;
+    params->pattern->yarn_types[2].yarnsize = 1.0; //Different yarnsizes!
+    wcFinalizeWeaveParameters(params);
+    wcPatternData pattern_data;
+
+    intersection_data.uv_y = 0.75; 
+    intersection_data.uv_x = 3.f/6.0 + 0.5/6.f + 0.005;
+    pattern_data = wcGetPatternData(intersection_data, params);
+    assert(pattern_data.warp_above == 0);
+    assert(pattern_data.width == 2.f);
+    assert(pattern_data.length == 5.f);
+    assert(pattern_data.x == 0.f);
+    assert(pattern_data.y < -0.9 && pattern_data.y >= -1.f); //should be at beginning of segment*/
+    
+    intersection_data.uv_y = 0.75; 
+    intersection_data.uv_x = 0.999;
+    pattern_data = wcGetPatternData(intersection_data, params);
+    assert(pattern_data.width == 2.f);
+    assert(pattern_data.length == 5.f);
+    assert(pattern_data.warp_above == 0);
+    assert(pattern_data.x == 0.f);
+    assert(pattern_data.y > -0.05 && pattern_data.y < 0.05); //should near middle of segment*/
+    
+    intersection_data.uv_y = 0.75; 
+    intersection_data.uv_x = 0.001;
+    pattern_data = wcGetPatternData(intersection_data, params);
+    assert(pattern_data.width == 2.f);
+    assert(pattern_data.length == 5.f);
+    assert(pattern_data.warp_above == 0);
+    assert(pattern_data.x == 0.f);
+    assert(pattern_data.y > -0.05 && pattern_data.y < 0.05); //should near middle of segment*/
+
+    intersection_data.uv_y = 0.75; 
+    intersection_data.uv_x = 3.f/6.0 - 0.5/6.f - 0.005;
+    pattern_data = wcGetPatternData(intersection_data, params);
+    assert(pattern_data.width == 2.f);
+    assert(pattern_data.length == 5.f);
+    assert(pattern_data.warp_above == 0);
+    assert(pattern_data.x == 0.f);
+    assert(pattern_data.y > 0.9 && pattern_data.y <= 1.f); //should be at end of segment*/
+}
+
+
 //TODO
 static void test_extended_segments_between_two_parallel_warps_should_have_zero_bend() {
     //see 2parallel.png for reference
@@ -379,7 +430,7 @@ static void test_extended_segments_between_two_parallel_warps_should_have_zero_b
     params->pattern->yarn_types[2].yarnsize = 0.5;
     wcFinalizeWeaveParameters(params);
     wcPatternData pattern_data;
-
+    
     intersection_data.uv_y = 0.25; 
     intersection_data.uv_x = 1.f/6.0 - 0.5/6.f - 0.005;
     pattern_data = wcGetPatternData(intersection_data, params);
@@ -425,6 +476,72 @@ static void test_extended_segments_between_two_parallel_warps_should_have_zero_b
     //extension between parallel yarns should be flagged as true
     assert(pattern_data.ext_between_parallel == 1); 
     
+    //assert(false); //TODO check bend
+}
+
+static void test_extended_segments_between_two_parallel_warps_should_have_zero_bend2() {
+    //see 2parallel.png for reference
+
+    //Thinking is that visible segments that are between two parallel thin warps 
+    //will not bend. Should therefore not have specular highlight.
+    
+    wcWeaveParameters params_2parallel;
+    wcWeaveParameters *params;
+    params = &params_2parallel;
+    params->realworld_uv = 0;
+    params->uscale = params->vscale = 1.f;
+    wcWeavePatternFromFile(params,"2parallel.wif");
+    params->pattern->yarn_types[1].yarnsize = 0.5;
+    params->pattern->yarn_types[2].yarnsize = 1.0;
+    wcFinalizeWeaveParameters(params);
+    wcPatternData pattern_data;
+
+    intersection_data.uv_y = 0.25; 
+    intersection_data.uv_x = 1.f/6.0 - 0.5/6.f - 0.005;
+    pattern_data = wcGetPatternData(intersection_data, params);
+    assert(pattern_data.warp_above == 0);
+    assert(pattern_data.width == 2.f);
+    assert(pattern_data.length == 1.f);
+    assert(pattern_data.x == 0.f);
+    assert(pattern_data.y > 0.9 && pattern_data.y <= 1.f); //should be at end of segment*/
+    
+    intersection_data.uv_y = 0.25; 
+    intersection_data.uv_x = 0.001;
+    pattern_data = wcGetPatternData(intersection_data, params);
+    assert(pattern_data.width == 2.f);
+    assert(pattern_data.length == 1.f);
+    assert(pattern_data.warp_above == 0);
+    assert(pattern_data.x == 0.f);
+    assert(pattern_data.y > -0.05 && pattern_data.y < 0.05); //should near middle of segment*/
+    
+    intersection_data.uv_y = 0.25; 
+    intersection_data.uv_x = -0.001;
+    pattern_data = wcGetPatternData(intersection_data, params);
+    assert(pattern_data.width == 2.f);
+    assert(pattern_data.length == 1.f);
+    assert(pattern_data.warp_above == 0);
+    assert(pattern_data.x == 0.f);
+    assert(pattern_data.y > -0.05 && pattern_data.y < 0.05); //should near middle of segment*/
+
+    intersection_data.uv_y = 0.25; 
+    intersection_data.uv_x = 5.f/6.0 + 0.5/6.f + 0.005;
+    pattern_data = wcGetPatternData(intersection_data, params);
+    assert(pattern_data.width == 2.f);
+    assert(pattern_data.length == 1.f);
+    assert(pattern_data.warp_above == 0);
+    assert(pattern_data.x == 0.f);
+    assert(pattern_data.y < -0.9 && pattern_data.y >= -1.f); //should be at beginning of segment*/
+
+    /*printf("uv_x: %f, uv_y: %f \n", intersection_data.uv_x, intersection_data.uv_y);
+    printf("x: %f, y: %f \n", pattern_data.x, pattern_data.y);
+    printf("w: %f, l: %f \n", pattern_data.width, pattern_data.length);
+    printf("warp_above: %d, yarn_hit: %d, yarn_type: %d \n", pattern_data.warp_above, pattern_data.yarn_hit, pattern_data.yarn_type);*/
+    //debug_print(params, 1, 0.75);
+    
+    //extension between parallel yarns should be flagged as true
+    assert(pattern_data.ext_between_parallel == 1); 
+    
+    //debug_print(params, 1, 0.75);
     //assert(false); //TODO check bend
 }
 
@@ -524,6 +641,8 @@ int main(int argc, char **argv)
     test(extending_with_all_parallel_warps);
     test(extending_with_all_parallel_wefts);
     test(extended_segments_between_two_parallel_warps_should_have_zero_bend);
+    test(extended_segments_between_two_parallel_warps_should_have_zero_bend2);
+    test(extended_segments_over_border_with_two_parallel_warps_should_work);
 }
 
 
