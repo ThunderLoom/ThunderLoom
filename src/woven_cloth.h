@@ -223,6 +223,7 @@ wcYarnType wc_default_yarn_type =
 	4.f,   //beta
 	0.3f,  //delta_x
 	0.4f,  //specular_strength
+    0.f,   //specular_noise
 	0.3f, 0.3f, 0.3f,  //color
     0
 };

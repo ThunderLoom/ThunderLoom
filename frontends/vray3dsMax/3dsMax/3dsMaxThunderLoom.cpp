@@ -821,18 +821,18 @@ RefTargetHandle ThunderLoomMtl::Clone(RemapDir &remap) {
 	BaseClone(this, mnew, remap);
 	mnew->ReplaceReference(0, remap.CloneRef(pblock));
 	mnew->ivalid.SetEmpty();	
-	//TODO(Vidar):Copy parameters...
 	mnew->m_weave_parameters=m_weave_parameters;
 	if(m_weave_parameters.pattern){
 		int num_entries=m_weave_parameters.pattern_width *
 			m_weave_parameters.pattern_height;
 		PatternEntry *pattern;
-		pattern=(PatternEntry*)calloc(1,sizeof(PatternEntry)*num_entries);
-		*pattern=*m_weave_parameters.pattern;
+		pattern=(PatternEntry*)calloc(num_entries,sizeof(PatternEntry));
+        memcpy(pattern,m_weave_parameters.pattern,
+            sizeof(PatternEntry)*num_entries);
 		mnew->m_weave_parameters.pattern=pattern;
 
         int num_yarn_types = m_weave_parameters.num_yarn_types;
-        m_weave_parameters.yarn_types=(wcYarnType*)calloc(num_yarn_types,
+        mnew->m_weave_parameters.yarn_types=(wcYarnType*)calloc(num_yarn_types,
             sizeof(wcYarnType));
 		memcpy(mnew->m_weave_parameters.yarn_types,
             m_weave_parameters.yarn_types,
