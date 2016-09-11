@@ -734,6 +734,190 @@ int32_t wcRepeatIndex(const int32_t coord, const int32_t size) {
     return tmpcoord;
 }
 
+
+WC_PREFIX
+wcYarnSegment wcCalculateSegmentDim(float total_u, float total_v,
+        wcWeaveParameters *params) {
+    float u = fmod(total_u,1.f);
+    float v = fmod(total_v,1.f);
+    if (u < 0.f) {
+        u = u - floor(u);
+    }
+    if (v < 0.f) {
+        v = v - floor(v);
+    }
+
+    PatternEntry *pattern_entries = params->pattern->entries;
+    uint32_t pattern_width = params->pattern_width;
+    uint32_t pattern_height = params->pattern_height;
+    //TODO fmod repeat uvs, to avoiding the u or v == 1 check.
+    int32_t pattern_x = (u == 1.f) ? pattern_width-1 : (uint32_t)(u*(pattern_width));
+    int32_t pattern_y = (v == 1.f) ? pattern_height-1 : (uint32_t)(v*(pattern_height));
+    //The origin is the pattern entry from which size of segment is calculated. 
+    //The origin entry changes if we miss a thin yarn.
+    int32_t origin_x = pattern_x;
+    int32_t origin_y = pattern_y;
+    PatternEntry origin_entry = params->pattern->entries[pattern_x + 
+        pattern_y*pattern_width];
+    uint8_t warp_above = origin_entry.warp_above;
+    
+    int32_t current_x = origin_x;
+    int32_t current_y = origin_y;
+    int32_t *incremented_coord_along = warp_above ? &current_y : &current_x;
+    int32_t *incremented_coord_across = warp_above ? &current_x : &current_y;
+    float cell_x = (u == 1.f) ? 1 : u*(float)(pattern_width) - pattern_x;
+    float cell_y = (v == 1.f) ? 1 : v*(float)(pattern_height) - pattern_y;
+    float *cell_coord_along = warp_above ? &cell_y : &cell_x;
+    float *cell_coord_across = warp_above ? &cell_x : &cell_y;
+    uint32_t max_size_along = warp_above ? pattern_height: pattern_width;
+    uint32_t max_size_across = warp_above ? pattern_width: pattern_height;
+    uint32_t initial_coord_along = warp_above ? pattern_y: pattern_x;
+    uint32_t initial_coord_across = warp_above ? pattern_x: pattern_y;
+    printf("-----\n");
+    printf("pattern_x: %d, pattern_y: %d\n", pattern_x, pattern_y);
+    printf("u: %f, v: %f\n", u, v);
+    printf("cell_x: %f, cell_y: %f\n", cell_x, cell_y);
+    printf("pattern_w: %d, pattern_h: %d\n", pattern_width, pattern_height);
+    printf("start warp_above: %d\n", warp_above);
+    printf("start yarnsize: %f\n", params->pattern->yarn_types[origin_entry.yarn_type].yarnsize);
+    printf("*cell_coord_across: %f\n", (*cell_coord_across));
+    printf("2*cell_coord_across-1.f: %f\n", fabsf(2.f*(*cell_coord_across)-1.f));
+
+    //Have we hit the yarn? (For later, are we between two directly parallel yarns?)
+    uint8_t yarn_hit = 0;
+    uint8_t between_parallel = 0;
+    uint8_t extension = 0;
+    uint32_t origin_offset = 0;
+    if (fabsf(2*(*cell_coord_across)-1.f) <= params->pattern->yarn_types[origin_entry.yarn_type].yarnsize) {
+        yarn_hit = 1;
+    } else {
+        printf("Miss... look for extension\n");
+        //Did not hit yarn, look for extension...
+        int8_t direction = (*cell_coord_across >= 0.5) ? 1 : -1;
+        PatternEntry tmp_pe; 
+        *incremented_coord_across = initial_coord_across;
+        printf("(before loop)(*incremented_coord_across): %d\n", *incremented_coord_across);
+        uint8_t found_extension_entry = 1;
+        do{
+            (*incremented_coord_across) += direction;
+            lookupPatternEntry(&tmp_pe, params, current_x, current_y);
+            printf("(loop )(*incremented_coord_across): %d\n", *incremented_coord_across);
+            printf("(loop) current_x: %d, current_y: %d\n", current_x, current_y);
+            printf("stuck in loop? max_size_across: %d, inc-initial: %d\n", max_size_across, abs((int)*incremented_coord_across) - initial_coord_across);
+            if ((*incremented_coord_across) == initial_coord_across +
+                    direction && tmp_pe.warp_above == warp_above) {
+                between_parallel = 1;
+            }
+            if (abs((int)*incremented_coord_across - (int)initial_coord_across) == max_size_across) {
+                found_extension_entry = 0;
+                break;
+            }
+        } while (tmp_pe.warp_above == warp_above);
+        printf("found_extension_entry: %d \n", found_extension_entry);
+        
+        //Is there are yarn that can be used as extension. Did we hit it?
+        if (found_extension_entry && fabsf(2*(*cell_coord_along)-1.f) <=
+                params->pattern->yarn_types[tmp_pe.yarn_type].yarnsize) {
+            //Yes we hit an extention. Use this pattern entry as new origin!
+            printf("HIT extension!\n");
+            origin_entry = tmp_pe;
+            origin_offset = abs((!warp_above) ? (current_y - (int)origin_y) : (current_x - (int)origin_x));
+            printf("current_y - origin_y: %d - %d = %d\n",current_y, origin_y, current_y-(int)origin_y);
+            printf("current_x - origin_x: %d - %d = %d\n",current_x, origin_x, current_x-(int)origin_x);
+            printf("warp_above: %d\n",warp_above);
+            warp_above = origin_entry.warp_above;
+            origin_x = wcRepeatIndex(current_x, pattern_width);
+            origin_y = wcRepeatIndex(current_y, pattern_height);
+
+            extension = 1;
+            yarn_hit = 1;
+        }
+    }
+    printf("origin offset: %d\n",origin_offset);
+    
+    //look right and left from origin until we hit cell that is not current yarn weft/warp.
+    PatternEntry border_yarn_left;
+    PatternEntry border_yarn_right;
+    uint32_t steps_right = 0;
+    uint32_t steps_left  = 0;
+    uint8_t parallel_right = 0;
+    uint8_t parallel_left  = 0;
+    current_x = origin_x;
+    current_y = origin_y;
+    do{ 
+        (*incremented_coord_along)++;
+        if(*incremented_coord_along == max_size_along){
+            *incremented_coord_along = 0;
+        }
+        PatternEntry tmp_pe = pattern_entries[current_x + 
+            current_y*pattern_width];
+        if((tmp_pe.warp_above) != warp_above){
+            border_yarn_right = tmp_pe;
+            break;
+        }
+        (steps_right)++;
+    } while(*incremented_coord_along != initial_coord_along);
+
+    *incremented_coord_along = initial_coord_along;
+    do{
+        if(*incremented_coord_along == 0){
+            *incremented_coord_along = max_size_along;
+        }
+        (*incremented_coord_along)--;
+        PatternEntry tmp_pe = pattern_entries[current_x + 
+            current_y*pattern_width];
+        if((tmp_pe.warp_above) != warp_above){
+            border_yarn_left = tmp_pe;
+            break;
+        }
+        (steps_left)++;
+    } while(*incremented_coord_along != initial_coord_along);
+    
+    float border_yarn_size_left = params->pattern->
+        yarn_types[border_yarn_left.yarn_type].yarnsize;
+    float border_yarn_size_right = params->pattern->
+        yarn_types[border_yarn_right.yarn_type].yarnsize;
+
+    float width = params->pattern->yarn_types[origin_entry.yarn_type].yarnsize;
+    float length = steps_left + steps_right + 1.f +
+        ((1.f-border_yarn_size_left) + (1.f-border_yarn_size_right))/2.f;
+    printf("steps_left: %d, steps_right: %d\n", steps_left, steps_right);
+    printf("tmp width: %f, length: %f \n", width, length);
+    printf("between parallel: %d\n", between_parallel);
+
+    //If current segment is between two parallel yarns. Do not count self.
+    if(between_parallel) length -= 1;
+
+    //Determine coordinates for top left corner of segment.
+    float start_u, start_v;
+    {
+        float distance_left = steps_left + (1.f - border_yarn_size_left)/2.f
+            + origin_offset;
+        float distance_top = - (1.f-width)/2.f;
+        printf("distance_left: %f, distance_top: %f \n", distance_left, distance_top);
+        printf("cell_coord_along: %f, cell_coord_across: %f \n", *cell_coord_along, *cell_coord_across);
+        if (!warp_above) {
+            start_u = total_u + (-cell_x - distance_left)/pattern_width;
+            start_v = total_v + (-cell_y - distance_top)/pattern_height;
+        } else {
+            start_u = total_u + (-cell_x - distance_top)/pattern_width;
+            start_v = total_v + (-cell_y - distance_left)/pattern_height;
+            printf("total_v - distance_top/pattern_height: %f - %f/%d = %f \n", total_v, distance_left, pattern_height, start_v);
+        }
+    }
+
+    wcYarnSegment yarn;
+    yarn.length = length;
+    yarn.width = width;
+    yarn.start_u = start_u;
+    yarn.start_v = start_v;
+    yarn.warp_above = origin_entry.warp_above;
+    yarn.yarn_hit = yarn_hit;
+    yarn.between_parallel = between_parallel;
+    printf("yarn_hit: %d \n", yarn_hit);
+    return yarn;
+}
+
 /*
  * Given intersection_data, wcGetPatternData determines the current yarn
  * segment and associated paramters needed for shading.
@@ -771,6 +955,104 @@ int32_t wcRepeatIndex(const int32_t coord, const int32_t size) {
  * 13) rescale to fit yarn_segment_local coordinate system.
  * 14) swap coordinates if weft. So x/w is acroos and y/l is along.
  * */
+
+/*
+WC_PREFIX
+wcPatternData wcGetPatternDataNEW(wcIntersectionData intersection_data,
+        const wcWeaveParameters *params) {
+    if(params->pattern == 0){
+        wcPatternData data = {0};
+        return data;
+    }
+   
+    //Generate scaled uv coordinates from intersection_data
+    float uv_x = intersection_data.uv_x;
+    float uv_y = intersection_data.uv_y;
+    float u_scale, v_scale;
+    if (params->realworld_uv) {
+        //the user parameters uscale, vscale change roles when realworld_uv
+        // is true. If true they are then used to tweak the realworld scales
+        u_scale = params->uscale/params->pattern_realwidth; 
+        v_scale = params->vscale/params->pattern_realheight;
+    } else {
+        u_scale = params->uscale;
+        v_scale = params->vscale;
+    }
+
+    float total_u = uv_x*u_scale;
+    float total_v = uv_y*u_scale;
+
+    float u_repeat = fmod(uv_x*u_scale,1.f);
+    float v_repeat = fmod(uv_y*v_scale,1.f);
+    if (u_repeat < 0.f) {
+        u_repeat = u_repeat - floor(u_repeat);
+    }
+    if (v_repeat < 0.f) {
+        v_repeat = v_repeat - floor(v_repeat);
+    }
+    //non-repeating pattern index (used for specular noise)
+    uint32_t total_pattern_x = uv_x*u_scale*params->pattern_width;
+    uint32_t total_pattern_y = uv_y*v_scale*params->pattern_height;
+    //pattern index
+    uint32_t pattern_x = (uint32_t)(u_repeat*(float)(params->pattern_width));
+    uint32_t pattern_y = (uint32_t)(v_repeat*(float)(params->pattern_height));
+    //Coordinate within the current pattern cell
+    float cell_x = ((u_repeat*(float)(params->pattern_width) - (float)pattern_x));
+    float cell_y = ((v_repeat*(float)(params->pattern_height) - (float)pattern_y));
+
+    //Get yarnsegment dimensions
+    float width;
+    float length;
+    uint8_t yarn_hit = wcCalculateSegmentDim(u_repeat, v_repeat, params,
+            &width, &length);
+    
+    if (!yarn_hit) {
+        //No hit, No need to do more calculations.
+        wcPatternData ret_data;
+        ret_data.yarn_hit = 0;
+        ret_data.yarn_type = 0;
+        return ret_data;
+    }
+
+    float l = length;
+    float y = 0;//?
+
+	float w = width;
+    float x = 0; //?
+
+    //Rescale x, y to [-1,1], w,v scaled by 2
+    x = x*2.f - 1.f;
+    y = y*2.f - 1.f;
+    w = w*2.f;
+    l = l*2.f;
+
+    //Swap X and Y for warp, so that we always have the yarn going along y.
+    if(!extention_entry.warp_above){
+        float tmp1 = x;
+        float tmp2 = w;
+        x = -y;
+        y = tmp1;
+        w = l;
+        l = tmp2;
+    }
+    
+    //return the results
+    wcPatternData ret_data;
+	ret_data.yarn_hit = yarn_hit;
+	//TODO ret_data.ext_between_parallel = (parallel_warp || parallel_weft) ? 1 : 0;
+	//TODO ret_data.yarn_type = extention_entry.yarn_type;
+    ret_data.length = l; 
+    ret_data.width  = w; 
+    //TODO ret_data.x = x; 
+    //TODO ret_data.y = y; 
+    //TODO ret_data.warp_above = extention_entry.warp_above; 
+    calculate_segment_uv_and_normal(&ret_data, params, &intersection_data);
+    ret_data.total_index_x = total_pattern_x; //total x index of wrapped pattern matrix
+    ret_data.total_index_y = total_pattern_y; //total y index of wrapped pattern matrix
+    return ret_data;
+}*/
+
+
 WC_PREFIX
 wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         const wcWeaveParameters *params) {

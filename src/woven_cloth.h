@@ -134,5 +134,16 @@ WC_PREFIX
 void wcFinalizeWeaveParameters(wcWeaveParameters *params);
 
 
+//for testing...
+typedef struct
+{
+    float length, width; //Segment length and width
+    float start_u, start_v; //Coordinates for top left corner of segment in total uv coordinates.
+    uint8_t between_parallel;
+    uint8_t warp_above;
+    uint8_t yarn_hit;
+} wcYarnSegment;
 
-void lookupPatternEntry(PatternEntry* entry, const wcWeaveParameters* params, const int8_t x, const int8_t y);
+WC_PREFIX
+wcYarnSegment wcCalculateSegmentDim(float total_u, float total_v,
+        wcWeaveParameters *params);
