@@ -3,11 +3,7 @@
 #define REALWORLD_UV_WIF_TO_MM 10.0
 #include "wif/wif.cpp"
 #include "wif/ini.cpp"
-#include "str2d.h"
 #endif
-
-#include "perlin.h"
-#include "halton.h"
 
 // For M_PI etc.
 #ifndef _USE_MATH_DEFINES
@@ -21,20 +17,17 @@ typedef struct
     float x,y,z,w;
 } wcVector;
 
-WC_PREFIX
 static wcVector wcvector(float x, float y, float z)
 {
     wcVector ret = {x,y,z,0.f};
     return ret;
 }
 
-WC_PREFIX
 static float wcVector_magnitude(wcVector v)
 {
     return sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
 }
 
-WC_PREFIX
 static wcVector wcVector_normalize(wcVector v)
 {
     wcVector ret;
@@ -45,13 +38,11 @@ static wcVector wcVector_normalize(wcVector v)
     return ret;
 }
 
-WC_PREFIX
 static float wcVector_dot(wcVector a, wcVector b)
 {
     return a.x*b.x + a.y*b.y + a.z*b.z;
 }
 
-WC_PREFIX
 static wcVector wcVector_cross(wcVector a, wcVector b)
 {
     wcVector ret;
@@ -61,7 +52,6 @@ static wcVector wcVector_cross(wcVector a, wcVector b)
     return ret;
 }
 
-WC_PREFIX
 static wcVector wcVector_add(wcVector a, wcVector b)
 {
     wcVector ret;
@@ -73,7 +63,28 @@ static wcVector wcVector_add(wcVector a, wcVector b)
 
 // -- //
 
-WC_PREFIX
+//atof equivalent function wich is not dependent
+//on local. Heavily inspired by inplementation in K & R.
+static double str2d(char s[]) {
+    double val, power;
+    int i, sign;
+
+    for (i = 0; isspace(s[i]); i++)
+        ;
+    sign = (s[i] == '-') ? -1 : 1;
+    if (s[i] == '+' || s[i] == '-')
+        i++;
+    for (val = 0.0; isdigit(s[i]); i++)
+        val = 10.0 * val + (s[i] - '0');
+    if (s[i] == '.')
+        i++;
+    for (power = 1.0; isdigit(s[i]); i++) {
+        val = 10.0 * val + (s[i] - '0');
+        power *= 10.0;
+    }
+    return sign * val / power;
+}
+
 static float wcClamp(float x, float min, float max)
 {
     return (x < min) ? min : (x > max) ? max : x;
@@ -81,7 +92,6 @@ static float wcClamp(float x, float min, float max)
 
 /* Tiny Encryption Algorithm by David Wheeler and Roger Needham */
 /* Taken from mitsuba source code. */
-WC_PREFIX
 static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds)
 {
 	uint32_t sum = 0;
@@ -96,7 +106,6 @@ static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds)
 }
 
 //From Mitsuba
-WC_PREFIX
 static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds)
 {
     /* Trick from MTGP: generate an uniformly distributed
@@ -109,7 +118,6 @@ static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds)
     return x.f - 1.0f;
 }
 
-WC_PREFIX
 void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x,
         float *p_y, float *p_z)
 {
@@ -136,7 +144,6 @@ void sample_cosine_hemisphere(float sample_x, float sample_y, float *p_x,
     *p_z = sqrtf(1.0f - (*p_x)*(*p_x) - (*p_y)*(*p_y));
 }
 
-WC_PREFIX
 void sample_uniform_hemisphere(float sample_x, float sample_y, float *p_x,
         float *p_y, float *p_z)
 {
@@ -148,7 +155,6 @@ void sample_uniform_hemisphere(float sample_x, float sample_y, float *p_x,
     *p_z = sinf(phi);
 }
 
-WC_PREFIX
 void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
         const wcWeaveParameters *params,wcIntersectionData *intersection_data)
 {
@@ -162,8 +168,9 @@ void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
         //if segment is extension between to parallel yarns -> bend = 0
         umax = 0.0001;
     } else {
-    umax = yarn_type_get_umax(params->pattern, pattern_data->yarn_type, 
-            intersection_data->context);
+        umax = wc_yarn_type_get_umax(params,
+                pattern_data->yarn_type,
+                intersection_data->context);
     }
     float segment_u = pattern_data->y*umax;
     float segment_v = pattern_data->x*M_PI_2;
@@ -190,75 +197,31 @@ void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
 }
 
 
+static const int halton_4_base[] = {2, 3, 5, 7};
+static const float halton_4_base_inv[] =
+        {1.f/2.f, 1.f/3.f, 1.f/5.f, 1.f/7.f};
 
-WC_PREFIX
+//Sets the elements of val to the n-th 4-dimensional point
+//in the Halton sequence
+static void halton_4(int n, float val[]){
+    int j;
+    for(j=0;j<4;j++){
+        float f = 1.f;
+        int i = n;
+        val[j] = 0.f;
+        while(i>0){
+            f = f * halton_4_base_inv[j];
+            val[j] = val[j] + f * (i % halton_4_base[j]);
+            i = i / halton_4_base[j];
+        }
+    }
+}
+
+
 void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 {
-	if (params->pattern) {
-    //Generate distance matrix for the yarns in the pattern.
-    /*{
-        //each element in this matrix contains the distance in pattern indicies
-        //to the beginning of each yarnsegment in the pattern.
-        //The distance are floats that allow for yarn types with different sizes.
-        //
-        //These distances take varying yarn sizes into account!
-        //This way only one lookup is required duiring rendering. 
-
-        //Loop through each entry in pattern matrix.
-        //Look up yarn type and its corresponding size.
-        //Use that size value as a factor to change the yarn size 
-        
-        //get pattern info
-        uint32_t w = pattern->pattern_width;
-        uint32_t h = pattern->pattern_height;
-        float* segment_distances = (float*)calloc((w)*(h),sizeof(float));
-        for(y=0;y<h;y++){
-            for(x=0;x<w;x++){
-                PatternEntry current_point = params->pattern->
-                    entries[x + y*params->pattern_width];
-                
-                //for each element in pattern matrix
-                //Calculate the size of the segment
-                uint32_t steps_left_warp = 0, steps_right_warp = 0;
-                uint32_t steps_left_weft = 0, steps_right_weft = 0;
-                if (current_point.warp_above) {
-                    calculateLengthOfSegment(current_point.warp_above, x,
-                            y, &steps_left_warp, &steps_right_warp,
-                            params->pattern_width, params->pattern_height,
-                            params->pattern->entries);
-                } else{
-                    calculateLengthOfSegment(current_point.warp_above, x,
-                            y, &steps_left_weft, &steps_right_weft,
-                            params->pattern_width, params->pattern_height,
-                            params->pattern->entries);
-                }
-
-                //Look at crossing neighbors, 
-                //Use their yarnsize to increase distances a bit.
-                if (current_point.warp_above) {
-                    //look at pm y
-                } else{
-                    //look at pm x
-                }
-
-                //segment_distances[x+y*w].warp_above = 
-                
-
-
-                //Look at crossing neighbors, Use their yarnsize to increase distances a bit.
-
-            }
-        }
-        
-        //Would like a way to specify value between 0 to 1 (1 is full wifth of patern)
-        //and in return get the yarn and position in yarn.
-        //Non matrix base representation of yarns?
-        //Have float base representation of yarn segments and a function that finds one based on x,y input?
-        
-    }
-    */
-
     //Calculate normalization factor for the specular reflection
+	if (params->pattern) {
 		size_t nLocationSamples = 100;
 		size_t nDirectionSamples = 1000;
 		params->specular_normalization = 1.f;
@@ -267,14 +230,14 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 
 		// Temporarily disable speuclar noise...
 		float tmp_specular_noise[WC_MAX_YARN_TYPES];
-		for(int i=0;i<params->pattern->num_yarn_types;i++){
-			tmp_specular_noise[i] = params->pattern->yarn_types[i].specular_noise;
-			params->pattern->yarn_types[i].specular_noise = 0.f;
+		for(int i=0;i<params->num_yarn_types;i++){
+			tmp_specular_noise[i] = params->yarn_types[i].specular_noise;
+			params->yarn_types[i].specular_noise = 0.f;
 		}
 
 		// Normalize by the largest reflection across all uv coords and
 		// incident directions
-		for( uint32_t yarn_type = 0; yarn_type < params->pattern->num_yarn_types;
+		for( uint32_t yarn_type = 0; yarn_type < params->num_yarn_types;
 			yarn_type++){
 			for (size_t i = 0; i < nLocationSamples; i++) {
 				float result = 0.0f;
@@ -287,7 +250,6 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 				pattern_data.length = 1.f;
 				pattern_data.width = 1.f;
 				pattern_data.warp_above = 0;
-				pattern_data.yarn_hit = 1; //TODO: Verify that this is okay (always hit)
 				pattern_data.yarn_type = yarn_type;
 				wcIntersectionData intersection_data;
 				intersection_data.context=0;
@@ -323,258 +285,62 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 			params->specular_normalization =
 				(float)nDirectionSamples / highest_result;
 		}
-		for(int i=0;i<params->pattern->num_yarn_types;i++){
-			params->pattern->yarn_types[i].specular_noise = tmp_specular_noise[i];
+		for(int i=0;i<params->num_yarn_types;i++){
+			params->yarn_types[i].specular_noise = tmp_specular_noise[i];
 		}
 	}
 }
 
-                                                                                                             
-WC_PREFIX
-static Pattern *build_pattern_from_data(uint8_t *warp_above,
-	uint32_t *yarn_type, YarnType *yarn_types, uint32_t num_yarn_types,
-	uint32_t w, uint32_t h)
-{
-    uint32_t x,y,c;
-    Pattern *pattern;
-    pattern = (Pattern*)calloc(1,sizeof(Pattern));
-    pattern->yarn_types = (YarnType*)calloc(num_yarn_types,sizeof(YarnType));
-	pattern->num_yarn_types = num_yarn_types;
-	for (c = 0; c < num_yarn_types; c++) {
-		pattern->yarn_types[c] = yarn_types[c];
-	}
-    pattern->entries = (PatternEntry*)calloc((w)*(h),sizeof(PatternEntry));
-    for(y=0;y<h;y++){
-        for(x=0;x<w;x++){
-            pattern->entries[x+y*w].warp_above = warp_above[x+y*w];
-            pattern->entries[x+y*w].yarn_type  =  yarn_type[x+y*w];
-        }
-    }
-    return pattern;
-}
 
 #ifndef WC_NO_FILES
 
-WC_PREFIX
-static char * find_next_newline(char * buffer)
-{
-    char *r = buffer;
-    while(*r != 0 && *r != '\n'){
-        r++;
-    }
-    return r;
-}
-
-WC_PREFIX
-static char * read_color_from_weave_string(char *string, float * color)
-{
-    char *s = string;
-    for(int i=0;i<3;i++){
-        int a = atoi(s);
-        s = find_next_newline(s+1);
-        color[i] = (float)a/255.f;
-    }
-    return find_next_newline(find_next_newline(s)+1)+1;
-}
-
-WC_PREFIX
-static char * read_dimensions_from_weave_string(char *string,
-        float * thicknessw, float * thicknessh)
-{
-    char *s = string;
-    
-    *thicknessw = (float)str2d(s);
-    s = find_next_newline(s+1);
-    *thicknessh = (float)str2d(s);
-    s = find_next_newline(s+1);
-    
-    return find_next_newline(find_next_newline(s)+1)+1;
-}
-
-
-WC_PREFIX
-static void read_pattern_from_weave_string(char * s, uint32_t *pattern_width,
-    uint32_t *pattern_height, float *pattern_realwidth,
-    float *pattern_realheight, Pattern **pattern)
-{
-    //A Weave file has 2-three sets of color
-    //2-two sets of thickness and spacing in cm
-    //a pattern matrix
-
-    float warp_color[3], weft_color[3], 
-          warp_thickness, weft_thickness;
-    s = read_color_from_weave_string(s,warp_color);
-    s = read_color_from_weave_string(s,weft_color);
-    s = read_dimensions_from_weave_string(s, &warp_thickness, &weft_thickness);
-
-    char * t = find_next_newline(s);
-    *pattern_width = t - s;
-    int i = 0;
-    int num_chars = 0;
-    while(s[i] != 0) {
-        if(s[i] == '0' || s[i] == '1'){
-            num_chars++;
-        }
-        i++;
-    }
-    *pattern_height = num_chars/(*pattern_width);
-
-    *pattern = (Pattern*)calloc(1,sizeof(Pattern));
-    (*pattern)->entries = (PatternEntry*)calloc(num_chars,sizeof(PatternEntry));
-    (*pattern)->yarn_types = (YarnType*)calloc(2,sizeof(YarnType));
-    (*pattern)->num_yarn_types = 2;
-    memcpy((*pattern)->yarn_types[0].color, warp_color,3*sizeof(float));
-    memcpy((*pattern)->yarn_types[1].color, weft_color,3*sizeof(float));
-    
-    *pattern_realwidth = REALWORLD_UV_WIF_TO_MM
-        * (*pattern_width * (warp_thickness)); 
-    *pattern_realheight = REALWORLD_UV_WIF_TO_MM
-        * (*pattern_height * (weft_thickness)); 
-   
-    i = 0;
-    int ii =0;
-    while(s[i] != 0) {
-        if(s[i] == '0' || s[i] == '1'){
-            if(s[i] == '1'){
-                (*pattern)->entries[ii].warp_above = 1;
-                (*pattern)->entries[ii].yarn_type  = 0;
-            }else{
-                (*pattern)->entries[ii].yarn_type  = 1;
-            }
-            ii++;
-        }
-        i++;
-    }
-}
-
-WC_PREFIX
+//NOTE(Vidar): In case we add support for more file formats
 void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename)
 {
-    if(strlen(filename) > 4){
-        if(strcmp(filename+strlen(filename)-4,".wif") == 0){
-            wcWeavePatternFromWIF(params,filename);
-        } else {
-            wcWeavePatternFromWeaveFile(params,filename);
-        }
-    } else{
-        params->pattern_height = params->pattern_width = 0;
-        params->pattern = 0;
-    }
+    wcWeavePatternFromWIF(params,filename);
 }
-
-WC_PREFIX
+#ifdef WC_WCHAR
 void wcWeavePatternFromFile_wchar(wcWeaveParameters *params,
     const wchar_t *filename)
 {
-    if(wcslen(filename) > 4){
-        if(wcscmp(filename+wcslen(filename)-4,L".wif") == 0){
-            wcWeavePatternFromWIF_wchar(params,filename);
-        } else {
-            wcWeavePatternFromWeaveFile_wchar(params,filename);
-        }
-    }else{
-        params->pattern_height = params->pattern_width = 0;
-        params->pattern = 0;
-    }
+    wcWeavePatternFromWIF_wchar(params,filename);
 }
+#endif
 
-WC_PREFIX
 void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
 {
     WeaveData *data = wif_read(filename);
-    params->pattern = wif_get_pattern(data,
+    wif_get_pattern(params, data,
         &params->pattern_width, &params->pattern_height,
         &params->pattern_realwidth, &params->pattern_realheight);
     wif_free_weavedata(data);
     wcFinalizeWeaveParameters(params);
 }
 
-WC_PREFIX
+#ifdef WC_WCHAR
 void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
         const wchar_t *filename)
 {
     WeaveData *data = wif_read_wchar(filename);
-    params->pattern = wif_get_pattern(data,
+    wif_get_pattern(params, data,
         &params->pattern_width, &params->pattern_height,
         &params->pattern_realwidth, &params->pattern_realheight);
     wif_free_weavedata(data);
     wcFinalizeWeaveParameters(params);
 }
-
-WC_PREFIX
-static void weave_pattern_from_weave_file(wcWeaveParameters *params,
-    FILE *f)
-{
-    fseek (f , 0 , SEEK_END);
-    long lSize = ftell (f);
-    rewind (f);
-    char *buffer = (char*) calloc (lSize+1,sizeof(char));
-    if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
-    fread (buffer,1,lSize,f);
-    read_pattern_from_weave_string(buffer, 
-            &params->pattern_width, &params->pattern_height,
-            &params->pattern_realwidth, &params->pattern_realheight,
-            &params->pattern);
-    wcFinalizeWeaveParameters(params);
-}
-
-WC_PREFIX
-void wcWeavePatternFromWeaveFile(wcWeaveParameters *params,
-    const char *filename)
-{
-    FILE *f = fopen(filename,"rt");
-    if(f){
-        weave_pattern_from_weave_file(params,f);
-        fclose(f);
-    }else{
-        params->pattern_width = params->pattern_height = 0;
-    }
-}
-
-WC_PREFIX
-void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
-    const wchar_t *filename)
-{
-#ifdef _WIN32
-    FILE *f = _wfopen(filename, L"rt");
-    if(f){
-        weave_pattern_from_weave_file(params,f);
-        fclose(f);
-    }else{
-        params->pattern_width = params->pattern_height = 0;
-		params->pattern = 0;
-    }
 #endif
-}
 #endif
 
-WC_PREFIX
-void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *warp_above,
-	uint32_t *yarn_type, YarnType *yarn_types, uint32_t num_yarn_types,
-	uint32_t pattern_width, uint32_t pattern_height)
-{
-	params->pattern_width  = pattern_width;
-	params->pattern_height = pattern_height;
-	params->pattern = build_pattern_from_data(warp_above,
-		yarn_type, yarn_types, num_yarn_types, pattern_width, pattern_height);
-	wcFinalizeWeaveParameters(params);
-}
-
-WC_PREFIX
 void wcFreeWeavePattern(wcWeaveParameters *params)
 {
-    if(params->pattern){
-		if (params->pattern->yarn_types) {
-			free(params->pattern->yarn_types);
-		}
-		if (params->pattern->entries) {
-			free(params->pattern->entries);
-		}
+    if (params->yarn_types) {
+        free(params->yarn_types);
+    }
+    if (params->pattern) {
         free(params->pattern);
     }
 }
 
-WC_PREFIX
 static float intensityVariation(wcPatternData pattern_data)
 {
 	//NOTE(Vidar): a fineness of 3 seems to work fine...
@@ -607,51 +373,6 @@ static float intensityVariation(wcPatternData pattern_data)
     return log_xi < 10.f ? log_xi : 10.f;
 }
 
-WC_PREFIX
-static float yarnVariation(wcPatternData pattern_data, 
-        const wcWeaveParameters *params)
-{
-
-    float variation = 1.f;
-
-    uint32_t tindex_x = pattern_data.total_index_x;
-    uint32_t tindex_y = pattern_data.total_index_y;
-
-    //Switch X and Y for warp, so that we have the yarn going along y
-    if(!pattern_data.warp_above){
-        float tmp = tindex_x;
-        tindex_x = tindex_y;
-        tindex_y = tmp;
-    }
-
-    //We want to vary the intesity along the yarn.
-    //For a parallel yarn we want a diffrent variation. 
-    //Use a large xscale to make the values different.
-
-    float amplitude = params->yarnvar_amplitude;
-    float xscale = params->yarnvar_xscale;
-    float yscale = params->yarnvar_yscale;
-    int octaves = params->yarnvar_octaves;
-    float persistance = params->yarnvar_persistance; //paramter
-
-    float x_noise = (tindex_x/(float)params->pattern_width) * xscale;
-    //NOTE(Vidar): Should it really be pattern_width here too? Ask Peter...
-    float y_noise = (tindex_y + (pattern_data.y/2.f + 0.5))
-        /(float)params->pattern_width * yscale;
-
-    variation = octavePerlin(x_noise, y_noise, 0,
-            octaves, persistance) * amplitude + 1.f;
-
-    return wcClamp(variation, 0.f, 1.f);
-
-    //NOTE(Peter): Right now there is perlin on both warp and weft.
-    //Would be useful to specify only warp or weft. Or even better, 
-    //if a yarn_type definition is made, 
-    // define noise parmeters for a certain yarn. along with other 
-    // yarn properties.
-}
-
-WC_PREFIX
 static void calculateLengthOfSegment(uint8_t warp_above, uint32_t pattern_x,
                 uint32_t pattern_y, uint32_t *steps_left,
                 uint32_t *steps_right,  uint32_t pattern_width,
@@ -691,7 +412,6 @@ static void calculateLengthOfSegment(uint8_t warp_above, uint32_t pattern_x,
     } while(*incremented_coord != initial_coord);
 }
 
-WC_PREFIX
 static float vonMises(float cos_x, float b) {
     // assumes a = 0, b > 0 is a concentration parameter.
     float I0, absB = fabsf(b);
@@ -711,7 +431,6 @@ static float vonMises(float cos_x, float b) {
     return expf(b * cos_x) / (2 * M_PI * I0);
 }
 
-WC_PREFIX
 void lookupPatternEntry(PatternEntry* entry, const wcWeaveParameters* params, const int8_t x, const int8_t y) {
     //function to get pattern entry. Takes care of coordinate wrapping!
     int32_t tmpx = (int32_t)fmod(x,(float)params->pattern_width);
@@ -722,10 +441,9 @@ void lookupPatternEntry(PatternEntry* entry, const wcWeaveParameters* params, co
     if (tmpy < 0.f) {
         tmpy = params->pattern_height + tmpy;
     }
-    *entry = params->pattern->entries[tmpx + tmpy*params->pattern_width];
+    *entry = params->pattern[tmpx + tmpy*params->pattern_width];
 }
 
-WC_PREFIX
 int32_t wcRepeatIndex(const int32_t coord, const int32_t size) {
     int32_t tmpcoord = (int32_t)fmod(coord, (float)size);
     if (tmpcoord < 0.f) {
@@ -735,7 +453,6 @@ int32_t wcRepeatIndex(const int32_t coord, const int32_t size) {
 }
 
 
-WC_PREFIX
 wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
        const wcWeaveParameters *params) {
     float u = fmod(total_u,1.f);
@@ -747,7 +464,7 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
         v = v - floor(v);
     }
 
-    PatternEntry *pattern_entries = params->pattern->entries;
+    PatternEntry *pattern_entries = params->pattern;
     uint32_t pattern_width = params->pattern_width;
     uint32_t pattern_height = params->pattern_height;
     //TODO fmod repeat uvs, to avoiding the u or v == 1 check.
@@ -757,7 +474,7 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
     //The origin entry changes if we miss a thin yarn.
     int32_t origin_x = pattern_x;
     int32_t origin_y = pattern_y;
-    PatternEntry origin_entry = params->pattern->entries[pattern_x + 
+    PatternEntry origin_entry = params->pattern[pattern_x + 
         pattern_y*pattern_width];
     uint8_t warp_above = origin_entry.warp_above;
     
@@ -779,7 +496,7 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
     uint8_t between_parallel = 0;
     uint8_t extension = 0;
     int32_t origin_offset = 0;
-    if (fabsf(2*(*cell_coord_across)-1.f) <= params->pattern->yarn_types[origin_entry.yarn_type].yarnsize) {
+    if (fabsf(2*(*cell_coord_across)-1.f) <= params->yarn_types[origin_entry.yarn_type].yarnsize) {
         yarn_hit = 1;
     } else {
         //Did not hit yarn, look for extension...
@@ -802,7 +519,7 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
         
         //Is there are yarn that can be used as extension. Did we hit it?
         if (found_extension_entry && fabsf(2*(*cell_coord_along)-1.f) <=
-                params->pattern->yarn_types[tmp_pe.yarn_type].yarnsize) {
+                params->yarn_types[tmp_pe.yarn_type].yarnsize) {
             //Yes we hit an extention. Use this pattern entry as new origin!
             origin_entry = tmp_pe;
             origin_offset = ((!warp_above) ? ((int)origin_y - current_y) : ((int)origin_x - current_x));
@@ -823,7 +540,7 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
     calculateLengthOfSegment(origin_entry.warp_above, origin_x,
             origin_y, &steps_left, &steps_right,
             params->pattern_width, params->pattern_height,
-            params->pattern->entries);
+            params->pattern);
 
     if (origin_entry.warp_above) {
         lookupPatternEntry(&border_yarn_left, params, current_x,
@@ -838,12 +555,12 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
     
     }
     
-    float border_yarn_size_left = params->pattern->
+    float border_yarn_size_left = params->
         yarn_types[border_yarn_left.yarn_type].yarnsize;
-    float border_yarn_size_right = params->pattern->
+    float border_yarn_size_right = params->
         yarn_types[border_yarn_right.yarn_type].yarnsize;
 
-    float width = params->pattern->yarn_types[origin_entry.yarn_type].yarnsize;
+    float width = params->yarn_types[origin_entry.yarn_type].yarnsize;
     float length = steps_left + steps_right + 1.f +
         ((1.f-border_yarn_size_left) + (1.f-border_yarn_size_right))/2.f;
     
@@ -868,8 +585,8 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
         float distance_left = steps_left + (1.f - border_yarn_size_left)/2.f;
         if (!between_parallel) distance_left += origin_offset;
         if (between_parallel && *cell_coord_across >= 0.5) {
-            PatternEntry tmp_pe = params->pattern->entries[pattern_x + pattern_y*pattern_width];
-            distance_left = -(0.5 + params->pattern->yarn_types[tmp_pe.yarn_type].yarnsize/2.f);
+            PatternEntry tmp_pe = params->pattern[pattern_x + pattern_y*pattern_width];
+            distance_left = -(0.5 + params->yarn_types[tmp_pe.yarn_type].yarnsize/2.f);
         } 
 
         float distance_top = - (1.f-width)/2.f;
@@ -902,7 +619,6 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
  * yarnsizes can vary. This results in a certain number of special cases.
  */
 
-WC_PREFIX
 wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
         const wcWeaveParameters *params) {
     if(params->pattern == 0){
@@ -1007,7 +723,6 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     return ret_data;
 }
 
-WC_PREFIX
 float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
     wcPatternData data, const wcWeaveParameters *params)
 {
@@ -1041,7 +756,7 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
         //if segment is extension between to parallel yarns -> bend = 0
         umax = 0.0001;
     } else {
-        umax = yarn_type_get_umax(params->pattern,data.yarn_type,
+        umax = wc_yarn_type_get_umax(params,data.yarn_type,
                 intersection_data.context);
     }
     
@@ -1060,7 +775,7 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
         // our transformation TODO(Peter): Verify!
         //float specular_y = sinf(specular_u)/sinf(m_umax);
 
-        float delta_x = yarn_type_get_delta_x(params->pattern, data.yarn_type,
+        float delta_x = wc_yarn_type_get_delta_x(params, data.yarn_type,
 			intersection_data.context);
         //Clamp specular_y TODO(Peter): change name of m_delta_x to m_delta_h
         specular_y = specular_y < 1.f - delta_x ? specular_y :
@@ -1077,9 +792,9 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
                 wcVector_magnitude(wcVector_add(wi,wo)) *
                 fabsf((wcVector_cross(highlight_tangent,H)).x));
 
-            float alpha = yarn_type_get_alpha(params->pattern, data.yarn_type,
+            float alpha = wc_yarn_type_get_alpha(params, data.yarn_type,
 				intersection_data.context);
-            float beta = yarn_type_get_beta(params->pattern, data.yarn_type,
+            float beta = wc_yarn_type_get_beta(params, data.yarn_type,
 				intersection_data.context);
             // --- Set fc
             float cos_x = -wcVector_dot(wi, wo);
@@ -1104,7 +819,6 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
     return reflection;
 }
 
-WC_PREFIX
 float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     wcPatternData data, const wcWeaveParameters *params)
 {
@@ -1121,7 +835,7 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     }
     wcVector H = wcVector_normalize(wcVector_add(wi, wo));
 
-    float psi = yarn_type_get_psi(params->pattern,data.yarn_type,
+    float psi = wc_yarn_type_get_psi(params,data.yarn_type,
 		intersection_data.context);
 
     float u = data.u;
@@ -1148,14 +862,14 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
         // our transformation
         //float specular_x = sinf(specular_v);
 
-        float delta_x = yarn_type_get_delta_x(params->pattern,data.yarn_type,
+        float delta_x = wc_yarn_type_get_delta_x(params,data.yarn_type,
 			intersection_data.context);
         float umax;
         if (data.ext_between_parallel){
             //if segment is extension between to parallel yarns -> bend = 0
             umax = 0.001;
         } else {
-            umax = yarn_type_get_umax(params->pattern,data.yarn_type,
+            umax = wc_yarn_type_get_umax(params,data.yarn_type,
                     intersection_data.context);
         }
 
@@ -1167,9 +881,9 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
 
         if (fabsf(specular_x - x) < delta_x) {
 
-            float alpha = yarn_type_get_alpha(params->pattern,data.yarn_type,
+            float alpha = wc_yarn_type_get_alpha(params,data.yarn_type,
 				intersection_data.context);
-            float beta  = yarn_type_get_beta( params->pattern,data.yarn_type,
+            float beta  = wc_yarn_type_get_beta( params,data.yarn_type,
 				intersection_data.context);
 
             // --- Set Gv
@@ -1199,32 +913,30 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     return reflection;
 }
 
-WC_PREFIX
 wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
         wcPatternData data, const wcWeaveParameters *params)
 {
     float value = intersection_data.wi_z;
 
-	YarnType *yarn_type = params->pattern->yarn_types + data.yarn_type;
+	wcYarnType *yarn_type = params->yarn_types + data.yarn_type;
     if(!yarn_type->color_enabled || !data.yarn_hit){
-        yarn_type = &params->pattern->yarn_types[0];
+        yarn_type = &params->yarn_types[0];
     }
 
     wcColor color = {
-        yarn_type->color[0] * value,
-        yarn_type->color[1] * value,
-        yarn_type->color[2] * value
+        yarn_type->color.r * value,
+        yarn_type->color.g * value,
+        yarn_type->color.b * value
     };
 	if(yarn_type->color_texmap){
-		wc_eval_texmap_color(yarn_type->color_texmap,intersection_data.context,
-			&color.r);
+		color = wc_eval_texmap_color(yarn_type->color_texmap,
+            intersection_data.context);
 		color.r*=value; color.g*=value; color.b*=value;
 	}
 
     return color;
 }
 
-WC_PREFIX
 float wcEvalSpecular(wcIntersectionData intersection_data,
         wcPatternData data, const wcWeaveParameters *params)
 {
@@ -1239,7 +951,7 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
         //have not hit a yarn...
         return 0.f;
     }
-    float psi = yarn_type_get_psi(params->pattern, data.yarn_type,
+    float psi = wc_yarn_type_get_psi(params, data.yarn_type,
 		intersection_data.context);
     if (psi <= 0.001f) {
         //Filament yarn
@@ -1248,7 +960,7 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
         //Staple yarn
         reflection = wcEvalStapleSpecular(intersection_data, data, params); 
     }
-	float specular_noise=yarn_type_get_specular_noise(params->pattern,
+	float specular_noise=wc_yarn_type_get_specular_noise(params,
 		data.yarn_type,intersection_data.context);
 	float noise=1.f;
     if(specular_noise > 0.001f){
@@ -1264,7 +976,7 @@ wcColor wcShade(wcIntersectionData intersection_data,
     wcPatternData data = wcGetPatternData(intersection_data,params);
     wcColor ret = wcEvalDiffuse(intersection_data,data,params);
     float spec  = wcEvalSpecular(intersection_data,data,params);
-    float specular_strength = yarn_type_get_specular_strength(params->pattern,
+    float specular_strength = wc_yarn_type_get_specular_strength(params,
         data.yarn_type,
 		intersection_data.context);
     ret.r = ret.r*(1.f-specular_strength) + specular_strength*spec;
