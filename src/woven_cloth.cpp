@@ -251,6 +251,7 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 				pattern_data.width = 1.f;
 				pattern_data.warp_above = 0;
 				pattern_data.yarn_type = yarn_type;
+				pattern_data.yarn_hit = 1;
 				wcIntersectionData intersection_data;
 				intersection_data.context=0;
 				calculate_segment_uv_and_normal(&pattern_data, params,
@@ -947,10 +948,10 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
     if(params->pattern == 0){
         return 0.f;
     }
-    if(!data.yarn_hit){
+	if(!data.yarn_hit){
         //have not hit a yarn...
         return 0.f;
-    }
+	}
     float psi = wc_yarn_type_get_psi(params, data.yarn_type,
 		intersection_data.context);
     if (psi <= 0.001f) {

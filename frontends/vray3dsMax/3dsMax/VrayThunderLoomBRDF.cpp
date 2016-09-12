@@ -15,7 +15,7 @@ void
 MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters) {
     m_weave_parameters = weave_parameters;
     EvalDiffuseFunc(rc,weave_parameters,&diffuse_color,&m_yarn_type,
-		&m_yarn_type_id, &m_pattern_data);
+		&m_yarn_type_id);
     orig_backside = rc.rayresult.realBack;
 
     const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);
@@ -95,7 +95,7 @@ VUtils::Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction,
         VUtils::Color reflect_color;
         //TODO(Vidar):Better importance sampling... Cosine weighted for now
         float probReflection=cs;
-		EvalSpecularFunc(rc,direction,m_weave_parameters,nm,&reflect_color,m_pattern_data.yarn_hit);
+		EvalSpecularFunc(rc,direction,m_weave_parameters,nm,&reflect_color);
 
         //NOTE(Vidar): Multiple importance sampling factor
         float weight = getReflectionWeight(probLight,probReflection);

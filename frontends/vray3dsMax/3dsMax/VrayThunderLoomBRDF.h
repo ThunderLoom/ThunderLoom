@@ -19,7 +19,6 @@ protected:
 	Texmap **m_texmaps;
 	wcYarnType m_yarn_type;
 	int m_yarn_type_id;
-	wcPatternData m_pattern_data;
 
 public:
 

@@ -10,7 +10,7 @@ using namespace VUtils;
 
 void EvalDiffuseFunc (const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
-	wcYarnType* yarn_type, int* yarn_type_id, wcPatternData* yarn_pattern_data)
+	wcYarnType* yarn_type, int* yarn_type_id)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
         *diffuse_color = VUtils::Color(1.f,1.f,0.f);
@@ -34,15 +34,10 @@ void EvalDiffuseFunc (const VUtils::VRayContext &rc,
 
     wcPatternData pattern_data = wcGetPatternData(intersection_data,
         weave_parameters);
-	*yarn_pattern_data = pattern_data;
-
-	float specular_strength = 0;
-	//if (pattern_data.yarn_hit) {
-		*yarn_type_id = pattern_data.yarn_type;
-		*yarn_type = weave_parameters->yarn_types[pattern_data.yarn_type];
-		specular_strength = wc_yarn_type_get_specular_strength(
+	*yarn_type_id = pattern_data.yarn_type;
+	*yarn_type = weave_parameters->yarn_types[pattern_data.yarn_type];
+    float specular_strength = wc_yarn_type_get_specular_strength(
         weave_parameters,pattern_data.yarn_type,&sc);
-	//}
     wcColor d = 
         wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
     float factor = (1.f - specular_strength);
@@ -53,7 +48,7 @@ void EvalDiffuseFunc (const VUtils::VRayContext &rc,
 
 void EvalSpecularFunc ( const VUtils::VRayContext &rc,
 const VUtils::Vector &direction, wcWeaveParameters *weave_parameters,
-VUtils::Matrix nm, VUtils::Color *reflection_color, int yarn_hit)
+VUtils::Matrix nm, VUtils::Color *reflection_color)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
 		float s = 0.1f;
@@ -62,13 +57,6 @@ VUtils::Matrix nm, VUtils::Color *reflection_color, int yarn_hit)
 		reflection_color->b = s;
 		return;
     }
-	/*if(!yarn_hit) {
-		float s = 0;
-		reflection_color->r = s;
-		reflection_color->g = s;
-		reflection_color->b = s;
-		return;
-	}*/
     wcIntersectionData intersection_data;
    
     const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);
@@ -116,6 +104,7 @@ VUtils::Matrix nm, VUtils::Color *reflection_color, int yarn_hit)
 
     wcPatternData pattern_data = wcGetPatternData(intersection_data,
         weave_parameters);
+	//DBOUT("pattern_data.yarn_hit: "<< pattern_data.yarn_hit);
     float specular_strength = wc_yarn_type_get_specular_strength(
         weave_parameters,pattern_data.yarn_type,&sc);
     float s = specular_strength *
