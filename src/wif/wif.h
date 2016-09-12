@@ -29,7 +29,7 @@ WeaveData *wif_read_wchar(const wchar_t *filename);
 // Free the WeaveData data structure
 void wif_free_weavedata(WeaveData *data);
 // Allocate and return the pattern from a WIF file
-void wif_get_pattern(WeaveData *data, uint32_t *w, uint32_t *h, 
-     float *rw, float *rh, wcWeaveParameters);
+void wif_get_pattern(wcWeaveParameters *param, WeaveData *data, uint32_t *w, uint32_t *h, 
+     float *rw, float *rh);
 //void wif_free_pattern(PatternEntry *pattern);
 
