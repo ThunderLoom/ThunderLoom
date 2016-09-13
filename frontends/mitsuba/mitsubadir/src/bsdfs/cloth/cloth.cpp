@@ -34,7 +34,7 @@
 float wc_eval_texmap_mono(void *texmap, void *context) {
     return 0.f;
 }
-void  wc_eval_texmap_color(void *texmap, void *context, float *col) {
+wcColor wc_eval_texmap_color(void *texmap, void *context) {
 }
 
     MTS_NAMESPACE_BEGIN
@@ -55,16 +55,6 @@ void  wc_eval_texmap_color(void *texmap, void *context, float *col) {
                     m_weave_params.uscale = props.getFloat("uscale", 1.f);
                     m_weave_params.vscale = props.getFloat("vscale", 1.f);
                     m_weave_params.realworld_uv = 0;
-                    m_weave_params.yarnvar_amplitude =
-                        props.getFloat("yarnvar_amplitude", 0.0f);
-                    m_weave_params.yarnvar_xscale =
-                        props.getFloat("yarnvar_xscale", 1.0f);
-                    m_weave_params.yarnvar_yscale =
-                        props.getFloat("yarnvar_yscale", 1.0f);
-                    m_weave_params.yarnvar_persistance =
-                        props.getFloat("yarnvar_persistance", 1.0f);
-                    m_weave_params.yarnvar_octaves =
-                        props.getInteger("yarnvar_octaves", 1);
                     
 #ifdef USE_WIFFILE
                     // LOAD WIF FILE
@@ -72,7 +62,7 @@ void  wc_eval_texmap_color(void *texmap, void *context, float *col) {
                         Thread::getThread()->getFileResolver()->
                         resolve(props.getString("wiffile")).string();
 
-                    wcWeavePatternFromWIF(&m_weave_params,
+                    wcWeavePatternFromFile(&m_weave_params,
                             wiffilename.c_str());
 #else
                     // Static pattern
@@ -89,7 +79,7 @@ void  wc_eval_texmap_color(void *texmap, void *context, float *col) {
 #endif
 
                     //Default yarn paramters
-                    YarnType *yrn0 = &m_weave_params.pattern->yarn_types[0];
+                    wcYarnType *yrn0 = &m_weave_params.yarn_types[0];
                     yrn0->umax = props.getFloat("yrn0_bend", 0.5);
                     yrn0->psi = props.getFloat("yrn0_psi", 0.5);
                     yrn0->alpha = props.getFloat("yrn0_alpha", 0.5);
@@ -158,8 +148,8 @@ void  wc_eval_texmap_color(void *texmap, void *context, float *col) {
             wcPatternData pattern_data = wcGetPatternData(intersection_data,
                 &m_weave_params);
             int yrntype = pattern_data.yarn_type;
-            Float sstrength=yarn_type_get_specular_strength(
-                        m_weave_params.pattern, yrntype, NULL);
+            Float sstrength=wc_yarn_type_get_specular_strength(
+                        &m_weave_params, yrntype, NULL);
             wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
                 &m_weave_params);
             Spectrum col;
@@ -202,8 +192,8 @@ void  wc_eval_texmap_color(void *texmap, void *context, float *col) {
             }
 
             int yrntype = pattern_data.yarn_type;
-            Float sstrength=yarn_type_get_specular_strength(
-                        m_weave_params.pattern, yrntype, NULL);
+            Float sstrength=wc_yarn_type_get_specular_strength(
+                        &m_weave_params, yrntype, NULL);
             Spectrum specular(sstrength * wcEvalSpecular(intersection_data,
                     pattern_data, &m_weave_params));
             wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
@@ -280,8 +270,8 @@ void  wc_eval_texmap_color(void *texmap, void *context, float *col) {
             }
             
             int yrntype = pattern_data.yarn_type;
-            Float sstrength=yarn_type_get_specular_strength(
-                        m_weave_params.pattern, yrntype, NULL);
+            Float sstrength=wc_yarn_type_get_specular_strength(
+                        &m_weave_params, yrntype, NULL);
             Spectrum specular(sstrength * wcEvalSpecular(intersection_data,
                     pattern_data, &m_weave_params));
             wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
@@ -332,8 +322,8 @@ void  wc_eval_texmap_color(void *texmap, void *context, float *col) {
             }
 
             int yrntype = pattern_data.yarn_type;
-            Float sstrength=yarn_type_get_specular_strength(
-                        m_weave_params.pattern, yrntype, NULL);
+            Float sstrength=wc_yarn_type_get_specular_strength(
+                        &m_weave_params, yrntype, NULL);
             //Log(EDebug, "SPECULARSTRENGTH \"%f\"", specular_strength);
             Spectrum specular(sstrength * wcEvalSpecular(intersection_data,
                     pattern_data, &m_weave_params));
