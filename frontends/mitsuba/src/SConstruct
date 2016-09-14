@@ -23,14 +23,14 @@ if sys.platform == 'posix' or sys.platform == 'linux2':
 
 	libpath = os.path.join(mitsubaPath, 'dist')
 	env.AppendUnique(LIBPATH = [libpath])
-	libs = [f for f in os.listdir(libpath) if f.endswith('.so')]
-	env.AppendUnique(LIBS = [libs])
+	env.AppendUnique(LIBS = ['boost_filesystem', 'boost_system', 'boost_thread', 'mitsuba-core', 'mitsuba-render', 'mitsuba-hw'])
 	env.AppendUnique(RPATH = libpath)
 	#env.AppendUnique(LINKFLAGS = '-headerpad_max_install_names')
 
 	env['SHLIBPREFIX']=''
-	build = env.SharedLibrary('thunderloom_brdf', ['cloth.cpp'])
-	install_path = os.path.join(mitsubaPath, 'dist/plugins')
+	build = env.SharedLibrary('thunderloom_mitsuba', ['cloth.cpp'])
+	
+	install_path = Dir('../../../build/macos/').abspath
 	env.Install(install_path, build)
 	env.Alias('install', install_path)
 
