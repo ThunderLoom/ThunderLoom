@@ -20,15 +20,15 @@
     //#define DO_DEBUG
 #define USE_WIFFILE
 
-#include <mitsuba/render/scene.h>
+//include <mitsuba/render/scene.h>
 #include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/texture.h>
 #include <mitsuba/hw/basicshader.h>
 #include <mitsuba/core/warp.h>
+//#include <mitsuba/render/texture.h>
 #include <mitsuba/core/fresolver.h>
-#include "woven_cloth/woven_cloth.cpp"
+//#include <mitsuba/core/qmc.h>
 
-#include <mitsuba/core/qmc.h>
+#include "../../../src/woven_cloth.cpp"
 
 //Dummy texture eval functions for now.
 float wc_eval_texmap_mono(void *texmap, void *context) {
@@ -47,9 +47,9 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
                     // Reflectance is used to modify the color of the cloth
                     /* For better compatibility with other models, support both
                        'reflectance' and 'diffuseReflectance' as parameter names */
-                    m_reflectance = new ConstantSpectrumTexture(props.getSpectrum(
+                    /*m_reflectance = new ConstantSpectrumTexture(props.getSpectrum(
                         props.hasProperty("reflectance") ? "reflectance"
-                            : "diffuseReflectance", Spectrum(.5f)));
+                            : "diffuseReflectance", Spectrum(.5f)));*/
 
                     //Set main paramaters
                     m_weave_params.uscale = props.getFloat("uscale", 1.f);
@@ -97,7 +97,7 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
         Cloth(Stream *stream, InstanceManager *manager)
             : BSDF(stream, manager) {
                 //TODO(Vidar):Read parameters from stream
-                m_reflectance = static_cast<Texture *>(manager->getInstance(stream));
+                //m_reflectance = static_cast<Texture *>(manager->getInstance(stream));
 
                 configure();
             }
@@ -107,7 +107,7 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
 
         void configure() {
             /* Verify the input parameter and fix them if necessary */
-            m_reflectance = ensureEnergyConservation(m_reflectance, "reflectance", 1.0f);
+            //m_reflectance = ensureEnergyConservation(m_reflectance, "reflectance", 1.0f);
 
             m_components.clear();
             m_components.push_back(EDiffuseReflection | EFrontSide
@@ -344,14 +344,14 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
             BSDF::serialize(stream, manager);
             //TODO(Vidar): Serialize our parameters
 
-            manager->serialize(stream, m_reflectance.get());
+            //manager->serialize(stream, m_reflectance.get());
         }
 
         Float getRoughness(const Intersection &its, int component) const {
             return std::numeric_limits<Float>::infinity();
         }
 
-        std::string toString() const {
+        /*std::string toString() const {
             //TODO(Vidar): Add our parameters here...
             std::ostringstream oss;
             oss << "Cloth[" << endl
@@ -359,17 +359,18 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
                 << "  reflectance = " << indent(m_reflectance->toString()) << endl
                 << "]";
             return oss.str();
-        }
+        }*/
 
-        Shader *createShader(Renderer *renderer) const;
+        //Shader *createShader(Renderer *renderer) const;
 
         MTS_DECLARE_CLASS()
     private:
-            ref<Texture> m_reflectance;
+            //ref<Texture> m_reflectance;
             wcWeaveParameters m_weave_params;
 };
 
 
+/*
 // ================ Hardware shader implementation ================
 
 class SmoothDiffuseShader : public Shader {
@@ -414,9 +415,9 @@ class SmoothDiffuseShader : public Shader {
 
 Shader *Cloth::createShader(Renderer *renderer) const {
     return new SmoothDiffuseShader(renderer, m_reflectance.get());
-}
+}*/
 
-    MTS_IMPLEMENT_CLASS(SmoothDiffuseShader, false, Shader)
+//MTS_IMPLEMENT_CLASS(SmoothDiffuseShader, false, Shader)
 MTS_IMPLEMENT_CLASS_S(Cloth, false, BSDF)
-    MTS_EXPORT_PLUGIN(Cloth, "Smooth diffuse BRDF")
-    MTS_NAMESPACE_END
+MTS_EXPORT_PLUGIN(Cloth, "ThunderLoom wovencloth shader")
+MTS_NAMESPACE_END
