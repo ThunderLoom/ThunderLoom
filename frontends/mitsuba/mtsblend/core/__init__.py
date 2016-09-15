@@ -49,7 +49,7 @@ from ..properties import (
 
 # Exporter Nodes need to be imported to ensure initialisation
 from ..nodes import (
-    sockets, node_output, node_input, node_bsdf, node_subsurface, node_medium,
+    sockets, node_output, node_input, node_bsdf, thunderloom_mitsuba, node_subsurface, node_medium,
     node_emitter, node_environment, node_texture, nodetree
 )
 

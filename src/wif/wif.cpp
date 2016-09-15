@@ -435,6 +435,11 @@ void wif_get_pattern(wcWeaveParameters *param, WeaveData *data, uint32_t *w,
     uint32_t x,y;
     if(data == 0){
         //NOTE(Vidar): The file was invalid...
+        wcYarnType *yarn_types =
+            (wcYarnType*)calloc(1,sizeof(wcYarnType));
+		yarn_types[0]=wc_default_yarn_type;
+        param->yarn_types = yarn_types;
+        param->num_yarn_types = 1;
         *w = 0;
         *h = 0;
         param->pattern = 0;
@@ -442,7 +447,6 @@ void wif_get_pattern(wcWeaveParameters *param, WeaveData *data, uint32_t *w,
     }
 
 	//Pattern width/height in num of elements
-	//TODO(Peter) should these not be reversed? :/
 	*w = data->warp.num_threads;
 	*h = data->weft.num_threads;
 

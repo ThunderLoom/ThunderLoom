@@ -64,6 +64,7 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
 
                     wcWeavePatternFromFile(&m_weave_params,
                             wiffilename.c_str());
+                    printf("--------LOAD FILE!---------\n");
 #else
                     // Static pattern
                     // current: polyester pattern
@@ -90,8 +91,11 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
                     yrn0->specular_noise = 
                         props.getFloat("yrn0_specular_noise", 0.f);
                     
+                    printf("--------Before Finalize!---------\n");
+                    printf("m_weave_params.pattern: %d\n", m_weave_params.pattern);
                     wcFinalizeWeaveParameters(&m_weave_params);
 
+                    printf("--------Managed init!---------\n");
         }
 
         Cloth(Stream *stream, InstanceManager *manager)
@@ -177,8 +181,8 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
 
             wcPatternData pattern_data = wcGetPatternData(intersection_data,
                     &m_weave_params);
-            Intersection perturbed(bRec.its);
-            perturbed.shFrame = getPerturbedFrame(pattern_data, bRec.its);
+            //Intersection perturbed(bRec.its);
+            //perturbed.shFrame = getPerturbedFrame(pattern_data, bRec.its);
 
             //With normal displacement
             //Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
@@ -225,11 +229,13 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
 
             wcPatternData pattern_data = wcGetPatternData(intersection_data,
                     &m_weave_params);
-            Intersection perturbed(its);
+
+            return warp::squareToCosineHemispherePdf(bRec.wo);
+            /*Intersection perturbed(its);
             perturbed.shFrame = getPerturbedFrame(pattern_data, its);
 
             return warp::squareToCosineHemispherePdf(perturbed.toLocal(
-                        its.toWorld(bRec.wo)));
+                        its.toWorld(bRec.wo)));*/
 
         }
 
@@ -249,9 +255,9 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
 
             wcPatternData pattern_data = wcGetPatternData(intersection_data,
                     &m_weave_params);
-            Intersection perturbed(its);
-            perturbed.shFrame = getPerturbedFrame(pattern_data, its);
-            bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
+            //Intersection perturbed(its);
+            //perturbed.shFrame = getPerturbedFrame(pattern_data, its);
+            //bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
             bRec.wo = warp::squareToCosineHemisphere(sample);
             //With normal displacement
             //Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
@@ -300,9 +306,9 @@ wcColor wc_eval_texmap_color(void *texmap, void *context) {
 
             wcPatternData pattern_data = wcGetPatternData(intersection_data,
                     &m_weave_params);
-            Intersection perturbed(its);
-            perturbed.shFrame = getPerturbedFrame(pattern_data, its);
-            bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
+            //Intersection perturbed(its);
+            //perturbed.shFrame = getPerturbedFrame(pattern_data, its);
+            //bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
             bRec.wo = warp::squareToCosineHemisphere(sample);
             //With normal displacement
             //Vector perturbed_wo = perturbed.toLocal(bRec.its.toWorld(bRec.wo));
