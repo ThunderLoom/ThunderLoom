@@ -60,12 +60,12 @@ elif sys.platform == 'win32':
 	env.AppendUnique(CPPPATH = [os.path.join(mitsubaPath, 'dependencies/include')])
 
     #mitsuba compiled with intel compiler
-	env.AppendUnique(LIBS = ['boost_filesystem-vc100-mt-1_53', 'boost_system-vc100-mt-1_53', 'boost_thread-vc100-mt-1_53', 'mitsuba-core', 'mitsuba-render', 'mitsuba-hw'])
-	libpath2 = os.path.join(mitsubaPath, 'dependencies/lib/i386_vc10')
+	#env.AppendUnique(LIBS = ['boost_filesystem-vc100-mt-1_53', 'boost_system-vc100-mt-1_53', 'boost_thread-vc100-mt-1_53', 'mitsuba-core', 'mitsuba-render', 'mitsuba-hw'])
+	#libpath2 = os.path.join(mitsubaPath, 'dependencies/lib/i386_vc10')
 
     #mitsuba compiled with VC2010
-	env.AppendUnique(LIBS = ['boost_filesystem-vc100-mt-1_53', 'boost_system-vc100-mt-1_53', 'boost_thread-vc100-mt-1_53', 'mitsuba-core', 'mitsuba-render', 'mitsuba-hw'])
-	libpath2 = os.path.join(mitsubaPath, 'dependencies/lib/x64_vc10')
+	#env.AppendUnique(LIBS = ['boost_filesystem-vc100-mt-1_53', 'boost_system-vc100-mt-1_53', 'boost_thread-vc100-mt-1_53', 'mitsuba-core', 'mitsuba-render', 'mitsuba-hw'])
+	#libpath2 = os.path.join(mitsubaPath, 'dependencies/lib/x64_vc10')
     
     #mitsuba compiled with VC2012
 	env.AppendUnique(LIBS = ['boost_filesystem-vc120-mt-1_53', 'boost_system-vc120-mt-1_53', 'boost_thread-vc120-mt-1_53', 'mitsuba-core', 'mitsuba-render', 'mitsuba-hw'])

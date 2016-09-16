@@ -181,7 +181,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ADSK_3DSMAX_x64_2016)plugins\vrayplugins\</OutDir>
+    <OutDir>build\</OutDir>
     <TargetExt>.dlt</TargetExt>
     <TargetName>thunderLoom</TargetName>
   </PropertyGroup>
@@ -482,12 +482,12 @@
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>C:\Users\Vidar\Documents\code\ThunderLoom\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;WC_WCHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>.\..\..\build\vrayblinnmtl\max90\x64\official\</ObjectFileName>
-      <ProgramDataBaseFileName>.\..\..\build\vrayblinnmtl\max90\x64\official\</ProgramDataBaseFileName>
+      <AssemblerListingLocation>.\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\build\vrayblinnmtl\max90\x64\official\</ObjectFileName>
+      <ProgramDataBaseFileName>.\build\vrayblinnmtl\max90\x64\official\</ProgramDataBaseFileName>
       <AdditionalOptions> /Qprec_div /Qvc7 </AdditionalOptions>
     </ClCompile>
     <Midl>
@@ -509,8 +509,8 @@
       <LinkDLL>true</LinkDLL>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
-      <OutputFile>$(ADSK_3DSMAX_x64_2016)\plugins\vrayplugins\wovencloth.dlt</OutputFile>
-      <ImportLibrary>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl90.lib</ImportLibrary>
+      <OutputFile>.\build\thunderLoom.dlt</OutputFile>
+      <ImportLibrary>.\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl90.lib</ImportLibrary>
       <AdditionalLibraryDirectories>C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>
       <BaseAddress>0x08B70000</BaseAddress>

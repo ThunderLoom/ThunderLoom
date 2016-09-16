@@ -1,3 +1,14 @@
 default: mitsuba
+
 mitsuba:
-	mkdir build; cd frontends/mitsuba; scons release
+	scons --directory=frontends/mitsuba/ release
+
+3dsMax2016:
+ifeq ($(OS),Windows_NT)
+	msbuild frontends\vray3dsMax\vray3dsMaxThunderLoom.sln /p:Configuration="max 2016 release" /p:Platform="x64"
+	xcopy /u /Y frontends\vray3dsMax\3dsMax\build\thunderLoom.dlt build\win32\3dsMax2016\thunderLoom.dlt*
+else
+	echo "Build for 3dsMax2016 only supported on windows"
+endif
+
+#package_release:
