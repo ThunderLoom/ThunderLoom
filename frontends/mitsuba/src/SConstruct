@@ -4,7 +4,8 @@ try:
   mitsubaPath = os.environ['MITSUBA_DIR']
 except:
   print "You must set MITSUBA_DIR in your environment."
-  print "Source setpath.sh from Mitsuba directory."
+  print "Source setpath.sh from Mitsuba directory on osx/linux"
+  print "On windows, manually create enviornment variable MITSUBA_DIR pointing to mitsuba source folder"
   sys.exit(1)
 
 # Mitsuba configuration part
@@ -53,7 +54,36 @@ elif sys.platform == 'darwin':
 	env.Install(install_path, build)
 	env.Alias('release', install_path)
 
-else:
+elif sys.platform == 'win32':
+	env.AppendUnique(CCFLAGS = [])
+	env.AppendUnique(CPPPATH = [os.path.join(mitsubaPath, 'dist/sdk/include')])
+	env.AppendUnique(CPPPATH = [os.path.join(mitsubaPath, 'dependencies/include')])
 
+    #mitsuba compiled with intel compiler
+	env.AppendUnique(LIBS = ['boost_filesystem-vc100-mt-1_53', 'boost_system-vc100-mt-1_53', 'boost_thread-vc100-mt-1_53', 'mitsuba-core', 'mitsuba-render', 'mitsuba-hw'])
+	libpath2 = os.path.join(mitsubaPath, 'dependencies/lib/i386_vc10')
+
+    #mitsuba compiled with VC2010
+	env.AppendUnique(LIBS = ['boost_filesystem-vc100-mt-1_53', 'boost_system-vc100-mt-1_53', 'boost_thread-vc100-mt-1_53', 'mitsuba-core', 'mitsuba-render', 'mitsuba-hw'])
+	libpath2 = os.path.join(mitsubaPath, 'dependencies/lib/x64_vc10')
+    
+    #mitsuba compiled with VC2012
+	env.AppendUnique(LIBS = ['boost_filesystem-vc120-mt-1_53', 'boost_system-vc120-mt-1_53', 'boost_thread-vc120-mt-1_53', 'mitsuba-core', 'mitsuba-render', 'mitsuba-hw'])
+	libpath2 = os.path.join(mitsubaPath, 'dependencies/lib/x64_vc12')
+
+	libpath1 = os.path.join(mitsubaPath, 'dist/sdk/lib')
+	env.AppendUnique(LIBPATH = [libpath1, libpath2])
+	env.AppendUnique(RPATH = libpath1)
+	env.AppendUnique(RPATH = libpath2)
+	env.AppendUnique(LINKFLAGS = [])
+
+	env['SHLIBPREFIX']=''
+	build = env.SharedLibrary('thunderloom_mitsuba', ['cloth.cpp'])
+
+	install_path = Dir('../../../build/win32/mitsuba_plugin').abspath
+	print(install_path)
+	env.Install(install_path, build)
+	env.Alias('release', install_path)
+else:
 	print "<<ERROR>> There is no compilation toolchain for your system."
 	sys.exit(1)

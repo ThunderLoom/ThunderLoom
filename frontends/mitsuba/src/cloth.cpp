@@ -35,6 +35,8 @@ float wc_eval_texmap_mono(void *texmap, void *context) {
     return 0.f;
 }
 wcColor wc_eval_texmap_color(void *texmap, void *context) {
+    wcColor col = {1.f, 0.f, 0.f};
+    return col;
 }
 
     MTS_NAMESPACE_BEGIN
