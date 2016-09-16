@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<scene version="0.5.0">
+	<integrator type="path"/>
+
+	<sensor type="perspective" id="Camera-camera">
+		<string name="fovAxis" value="smaller"/>
+		<float name="focusDistance" value="6.0"/>
+		<float name="fov" value="28.8415"/>
+		<transform name="toWorld">
+			<lookAt target="3.04072, -2.85176, 2.80939" origin="3.69558, -3.46243, 3.25463" up="-0.317366, 0.312466, 0.895346"/>
+		</transform>
+
+		<sampler type="ldsampler">
+			<integer name="sampleCount" value="64"/>
+		</sampler>
+
+		<film type="ldrfilm" id="film">
+			<integer name="width" value="1200"/>
+			<integer name="height" value="800"/>
+			<string name="pixelFormat" value="rgb"/>
+			<boolean name="banner" value="false"/>
+
+			<rfilter type="gaussian"/>
+		</film>
+	</sensor>
+
+	<shape type="sphere">
+		<point name="center" x="0" y="-3" z="6"/>
+		<float name="radius" value=".1"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400"/>
+		</emitter>
+	</shape>
+
+	<bsdf type="diffuse" id="__diffmat">
+		<rgb name="reflectance" value="0.18 0.18 0.18"/>
+	</bsdf>
+    
+    <bsdf type="thunderloom_mitsuba" id="__cloth">
+        <string name="wiffile" value="8452.wif"/>
+        <float name="uscale" value="2.0"/>
+        <float name="vscale" value="2.0"/>
+        <float name="yrn0_bend" value="0.7"/>
+        <float name="yrn0_psi" value="0.7"/>
+        <float name="yrn0_alpha" value="0.05"/>
+        <float name="yrn0_beta" value="2.0"/>
+        <float name="yrn0_delta_x" value="0.1"/>
+        <float name="yrn0_specular_strength" value="0.3"/>
+	</bsdf>
+
+	<texture type="checkerboard" id="__planetex">
+		<rgb name="color0" value="0.4"/>
+		<rgb name="color1" value="0.2"/>
+		<float name="uscale" value="8.0"/>
+		<float name="vscale" value="8.0"/>
+		<float name="uoffset" value="0.0"/>
+		<float name="voffset" value="0.0"/>
+	</texture>
+
+	<bsdf type="diffuse" id="__planemat">
+		<ref name="reflectance" id="__planetex"/>
+	</bsdf>
+
+	<shape type="obj">
+		<string name="filename" value="towel.obj"/>
+
+        <transform name="toWorld">
+			<scale value="0.5"/>
+			<translate y="1.0"/>
+			<rotate x="1" angle="90"/>
+			<translate z="0.5"/>
+		</transform>
+
+		<ref id="__cloth"/>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="monkey.obj"/>
+        
+        <transform name="toWorld">
+			<scale value="0.5"/>
+			<translate y="1.0"/>
+			<rotate x="1" angle="90"/>
+			<translate z="0.5"/>
+		</transform>
+
+		<ref id="__diffmat"/>
+	</shape>
+
+	<shape type="serialized" id="Plane-mesh_0">
+		<string name="filename" value="matpreview.serialized"/>
+		<integer name="shapeIndex" value="0"/>
+		<transform name="toWorld">
+			<rotate z="1" angle="-4.3"/>
+			<matrix value="3.38818 -4.06354 0 -1.74958 4.06354 3.38818 0 1.43683 0 0 5.29076 -0.0120714 0 0 0 1"/>
+		</transform>
+
+		<ref name="bsdf" id="__planemat"/>
+	</shape>
+</scene>
