@@ -10,4 +10,4 @@ The 'frontend' folder includes two frontends for the shader model.
 'vray3dsMax' contains a V-Ray/3ds Max plugin that has been tested in 3ds Max 2014,2015,2016 and
 V-Ray 3.x
 
-The 'mitsuba' folder contains a plugin for mitsuba and a blender addon.
+The 'mitsuba' folder contains a plugin for mitsuba and patches for the mtsblend blender addon.

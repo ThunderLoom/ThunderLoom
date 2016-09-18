@@ -25,6 +25,14 @@
       <Configuration>max 2016 debug</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="max 2016 devel|Win32">
+      <Configuration>max 2016 devel</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="max 2016 devel|x64">
+      <Configuration>max 2016 devel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="max 2016 release|Win32">
       <Configuration>max 2016 release</Configuration>
       <Platform>Win32</Platform>
@@ -73,6 +81,12 @@
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v110</PlatformToolset>
@@ -92,6 +106,12 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2015 release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v110</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
@@ -128,6 +148,10 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
@@ -141,6 +165,10 @@
     <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='max 2015 release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
   </ImportGroup>
@@ -163,6 +191,11 @@
     <IntDir>.\..\..\build\vrayblinnmtl\max90\x64\official\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|Win32'">
+    <OutDir>.\..\..\build\vrayblinnmtl\max90\x64\official\</OutDir>
+    <IntDir>.\..\..\build\vrayblinnmtl\max90\x64\official\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'">
     <OutDir>.\..\..\build\vrayblinnmtl\max90\x64\official\</OutDir>
     <IntDir>.\..\..\build\vrayblinnmtl\max90\x64\official\</IntDir>
@@ -179,9 +212,16 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2015 release|x64'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetName>thunderLoom</TargetName>
+    <TargetExt>.dlt</TargetExt>
+    <OutDir>build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>build\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ADSK_3DSMAX_x64_2016)plugins\vrayplugins\</OutDir>
+    <OutDir>build\</OutDir>
     <TargetExt>.dlt</TargetExt>
     <TargetName>thunderLoom</TargetName>
   </PropertyGroup>
@@ -246,6 +286,52 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='max 2015 release|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MaxSpeed</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>C:\Users\Vidar\Documents\code\ThunderLoom\src;C:\Program Files\Autodesk\3ds Max 2015 SDK\maxsdk\include;C:\Program Files\Chaos Group\V-Ray\3dsmax 2015 for x64\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\..\..\build\vrayblinnmtl\max90\x64\official\</ObjectFileName>
+      <ProgramDataBaseFileName>.\..\..\build\vrayblinnmtl\max90\x64\official\</ProgramDataBaseFileName>
+      <AdditionalOptions> /Qprec_div /Qvc7 </AdditionalOptions>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0809</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
+      <LinkDLL>true</LinkDLL>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
+      <OutputFile>..\..\vrayplugins\vrayblinnmtl90.dlt</OutputFile>
+      <ImportLibrary>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl90.lib</ImportLibrary>
+      <AdditionalLibraryDirectories>k:\3dsmax\maxsdk90\Lib\x64;..\..\..\lib\x64;..\..\..\lib\x64\vc8;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <SetChecksum>true</SetChecksum>
+      <BaseAddress>0x08B70000</BaseAddress>
+      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;vray90.lib;vutils_s.lib;plugman_s.lib;vrender90.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions> /machine:AMD64</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|Win32'">
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
@@ -473,21 +559,21 @@
       <AdditionalOptions> /machine:AMD64</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|x64'">
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <StringPooling>true</StringPooling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>..\..\..\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\..\..\..\src;C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\include;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;WC_WCHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>.\..\..\build\vrayblinnmtl\max90\x64\official\</ObjectFileName>
-      <ProgramDataBaseFileName>.\..\..\build\vrayblinnmtl\max90\x64\official\</ProgramDataBaseFileName>
+      <AssemblerListingLocation>build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>build\vrayblinnmtl\max90\x64\official\</ObjectFileName>
+      <ProgramDataBaseFileName>build\vrayblinnmtl\max90\x64\official\</ProgramDataBaseFileName>
       <AdditionalOptions> /Qprec_div /Qvc7 </AdditionalOptions>
     </ClCompile>
     <Midl>
@@ -509,8 +595,53 @@
       <LinkDLL>true</LinkDLL>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
-      <OutputFile>$(ADSK_3DSMAX_x64_2016)\plugins\vrayplugins\thunderLoom.dlt</OutputFile>
-      <ImportLibrary>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl90.lib</ImportLibrary>
+      <OutputFile>.\build\3dsMax2016\thunderLoom.dlt</OutputFile>
+      <ImportLibrary>build\vrayblinnmtl\max90\x64\official\vrayblinnmtl90.lib</ImportLibrary>
+      <AdditionalLibraryDirectories>$(ADSK_3DSMAX_SDK_2016)\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <SetChecksum>true</SetChecksum>
+      <BaseAddress>0x08B70000</BaseAddress>
+      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;vray2016.lib;vutils_s.lib;plugman_s.lib;vrender2016.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions> /machine:AMD64</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MaxSpeed</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>..\..\..\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;WC_WCHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\build\vrayblinnmtl\max90\x64\official\</ObjectFileName>
+      <ProgramDataBaseFileName>.\build\vrayblinnmtl\max90\x64\official\</ProgramDataBaseFileName>
+      <AdditionalOptions> /Qprec_div /Qvc7 </AdditionalOptions>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0809</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
+      <LinkDLL>true</LinkDLL>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
+      <OutputFile>.\build\thunderLoom.dlt</OutputFile>
+      <ImportLibrary>.\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl90.lib</ImportLibrary>
       <AdditionalLibraryDirectories>C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>
       <BaseAddress>0x08B70000</BaseAddress>
@@ -659,10 +790,12 @@
     <ClCompile Include="VrayThunderLoomBRDF.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 debug|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
@@ -671,10 +804,12 @@
     <ClCompile Include="DllEntry.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 debug|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
@@ -683,10 +818,12 @@
     <ClCompile Include="3dsMaxThunderLoom.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2015 release|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='max 2016 debug|x64'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>
@@ -697,10 +834,12 @@
     <CustomBuild Include="plugin.def">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='max 2015 release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='max 2016 release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='max 2016 debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Max Release Official|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='max 2015 release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='max 2016 devel|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='max 2016 release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='max 2016 debug|x64'">true</ExcludedFromBuild>
     </CustomBuild>
