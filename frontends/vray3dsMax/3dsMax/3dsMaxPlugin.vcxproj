@@ -595,7 +595,7 @@
       <LinkDLL>true</LinkDLL>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
-      <OutputFile>.\build\3dsMax2016\thunderLoom.dlt</OutputFile>
+      <OutputFile>$(ADSK_3DSMAX_x64_2016)\plugins\vrayplugins\thunderLoom.dlt</OutputFile>
       <ImportLibrary>build\vrayblinnmtl\max90\x64\official\vrayblinnmtl90.lib</ImportLibrary>
       <AdditionalLibraryDirectories>$(ADSK_3DSMAX_SDK_2016)\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>

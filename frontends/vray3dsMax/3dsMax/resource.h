@@ -49,6 +49,7 @@
 #define IDC_USCALE_SPIN                 1016
 #define IDC_yarnsize_OVERRIDE           1016
 #define IDC_VSCALE_EDIT                 1017
+#define IDC_specular_strength_SPIN2     1017
 #define IDC_VSCALE_SPIN                 1018
 #define IDC_umax_EDIT                   1019
 #define IDC_umax_SPIN                   1020
@@ -174,6 +175,7 @@
 #define cb_refractMtl                   1133
 #define IDC_YRN_TEX_color_BUTTON        1197
 #define IDC_YRN_TEX_specular_strength_BUTTON 1199
+#define IDC_YRN_TEX_yarnsize_BUTTON     1200
 
 // Next default values for new objects
 // 
