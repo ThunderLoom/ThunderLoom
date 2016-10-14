@@ -216,7 +216,9 @@ static void test_extending_weft_segments_at_weave_pattern_border() {
     wcWeaveParameters *params = &params_halfsize;
     assert(params->yarn_types[0].yarnsize == 1.f);
     assert(params->yarn_types[1].yarnsize == 0.5);
+    assert(params->yarn_types[1].yarnsize_enabled == 1);
     assert(params->yarn_types[2].yarnsize == 0.5);
+    assert(params->yarn_types[2].yarnsize_enabled == 1);
 
     //Note! returned x and y from pattern_data
     //are defined so that y always is along the yarn...
@@ -287,7 +289,9 @@ static void test_extending_with_all_parallel_warps () {
     params->uscale = params->vscale = 1.f;
     wcWeavePatternFromFile(params,"3parallelwarps.wif");
     params->yarn_types[1].yarnsize = 0.5;
+    params->yarn_types[1].yarnsize_enabled = 1;
     params->yarn_types[2].yarnsize = 0.5;
+    params->yarn_types[2].yarnsize_enabled = 1;
     wcFinalizeWeaveParameters(params);
     /*
     for(uint32_t y = 0; y < params->pattern_height; y++){
@@ -334,7 +338,9 @@ static void test_extending_with_all_parallel_wefts () {
     params->uscale = params->vscale = 1.f;
     wcWeavePatternFromFile(params,"3parallelwefts.wif");
     params->yarn_types[1].yarnsize = 0.5;
+    params->yarn_types[1].yarnsize_enabled = 1;
     params->yarn_types[2].yarnsize = 0.5;
+    params->yarn_types[2].yarnsize_enabled = 1;
     wcFinalizeWeaveParameters(params);
     wcPatternData pattern_data;
 
@@ -369,7 +375,9 @@ static void test_extended_segments_over_border_with_two_parallel_warps_should_wo
     params->uscale = params->vscale = 1.f;
     wcWeavePatternFromFile(params,"2parallel.wif");
     params->yarn_types[1].yarnsize = 0.5;
+    params->yarn_types[1].yarnsize_enabled = 1;
     params->yarn_types[2].yarnsize = 1.0; //Different yarnsizes!
+    params->yarn_types[2].yarnsize_enabled = 1;
     wcFinalizeWeaveParameters(params);
     wcPatternData pattern_data;
 
@@ -425,7 +433,9 @@ static void test_extended_segments_between_two_parallel_warps_should_have_zero_b
     params->uscale = params->vscale = 1.f;
     wcWeavePatternFromFile(params,"2parallel.wif");
     params->yarn_types[1].yarnsize = 0.5;
+    params->yarn_types[1].yarnsize_enabled = 1;
     params->yarn_types[2].yarnsize = 0.5;
+    params->yarn_types[2].yarnsize_enabled = 1;
     wcFinalizeWeaveParameters(params);
     wcPatternData pattern_data;
     
@@ -490,7 +500,9 @@ static void test_extended_segments_between_two_parallel_warps_should_have_zero_b
     params->uscale = params->vscale = 1.f;
     wcWeavePatternFromFile(params,"2parallel.wif");
     params->yarn_types[1].yarnsize = 0.5;
+    params->yarn_types[1].yarnsize_enabled = 1;
     params->yarn_types[2].yarnsize = 1.0;
+    params->yarn_types[2].yarnsize_enabled = 1;
     wcFinalizeWeaveParameters(params);
     wcPatternData pattern_data;
 
@@ -596,8 +608,11 @@ static void setup() {
     printf("Pattern:\n");
     printf("Pattern:\n");
 
+    params->yarn_types[0].yarnsize_enabled = 1;
     params->yarn_types[1].yarnsize = 0.5;
+    params->yarn_types[1].yarnsize_enabled = 1;
     params->yarn_types[2].yarnsize = 0.5;
+    params->yarn_types[2].yarnsize_enabled = 1;
 
     //Somewhat unique default diffuse color.
     params->yarn_types[0].color.r = 0.5;
@@ -646,6 +661,10 @@ int main(int argc, char **argv)
 
 //Define dummy wceval for texmaps
 float wc_eval_texmap_mono(void *texmap, void *data)
+{
+	return 1.f;
+}
+float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *data)
 {
 	return 1.f;
 }

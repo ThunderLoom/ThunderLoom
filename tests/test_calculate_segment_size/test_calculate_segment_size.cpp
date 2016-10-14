@@ -29,17 +29,17 @@ static void test_calculates_segment_size_fullsize() {
             //printf("x: %d, y: %d\n", x, y);
             u = x/2.f;
             v = y/2.f;
-            yarn = wcGetYarnSegment(u, v, params);
+            yarn = wcGetYarnSegment(u, v, params, &intersection_data);
             //printf("w: %f, l: %f\n", yarn.width, yarn.length);
             assert(yarn.width == 1);
             assert(yarn.length == 1);
         }
     }
     u = 1/4.f; v = 1/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.start_u == 0); assert(yarn.start_v == 0);
     u = 1/4.f; v = 3/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.start_u == 0); assert(yarn.start_v == 0.5);
     
     params = &params_2parallel_fullsize; //se 2parallel.png for reference
@@ -48,7 +48,7 @@ static void test_calculates_segment_size_fullsize() {
             //printf("x: %d, y: %d\n", x, y);
             u = x/2.f;
             v = y/2.f;
-            yarn = wcGetYarnSegment(u, v,  params);
+            yarn = wcGetYarnSegment(u, v,  params, &intersection_data);
             //printf("w: %f, l: %f\n", yarn.width, yarn.length);
             if (y == 1 && (x == 0 || x == 2)) {
                 assert(yarn.length == 2);
@@ -72,17 +72,17 @@ static void test_calculates_segment_size_halfsize() {
         for (int y = 0; y < 1; y++) {
             u = x/4.f + 1.f/4.f;
             v = y/4.f + 1.f/4.f;
-            yarn = wcGetYarnSegment(u, v, params);
+            yarn = wcGetYarnSegment(u, v, params, &intersection_data);
             assert(yarn.length == 1.5);
             assert(yarn.width == 0.5);
         }
     }
     u = 1/4.f; v = 1/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.warp_above == 0);
     assert(yarn.start_u == 0 - 0.25/2.f); assert(yarn.start_v == 0.25/2.f);
     u = 1/4.f; v = 3/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.warp_above == 1);
     assert(yarn.start_u == 0.25/2.f); assert(yarn.start_v == 0.5 - 0.25/2.f);
 
@@ -92,7 +92,7 @@ static void test_calculates_segment_size_halfsize() {
             //printf("x: %d, y: %d \n",x,y);
             u = x/2.f + 1.f/4.f;
             v = y/2.f + 1.f/4.f;
-            yarn = wcGetYarnSegment(u, v, params);
+            yarn = wcGetYarnSegment(u, v, params, &intersection_data);
             if (y == 1 && (x == 0 || x == 2)) {
                 //printf("w: %f, l: %f \n", yarn.width, yarn.length);
 
@@ -117,7 +117,7 @@ static void test_calculates_segment_size_when_missing_main_yarn_and_hitting_exte
 
     intersection_data.uv_x = u = 3.f/6.f;
     intersection_data.uv_y = v = 2.f/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.yarn_hit == 1);
     assert(yarn.warp_above == 1);
     assert(yarn.length == 1.5); assert(yarn.width == 1.0);
@@ -125,7 +125,7 @@ static void test_calculates_segment_size_when_missing_main_yarn_and_hitting_exte
 
     intersection_data.uv_x = u = 3.f/6.f;
     intersection_data.uv_y = v = 0.01;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.yarn_hit == 1);
     assert(yarn.warp_above == 1);
     assert(yarn.length == 1.5); assert(yarn.width == 1.0);
@@ -139,25 +139,25 @@ static void test_calculates_segment_size_full_and_halfsize() {
     wcWeaveParameters *params = &params_2parallel_full_and_halfsize;
     u = 0/2.f;
     v = 0/2.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.length == 1 + 0.25 + 0.25);
     assert(yarn.width == 1);
     
     u = 3/6.f;
     v = 1/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.length == 1);
     assert(yarn.width == 0.5);
     
     u = 2/2.f;
     v = 0/2.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.length == 1 + 0.25 + 0.25);
     assert(yarn.width == 1);
 
     u = 1/4.f;
     v = 3/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.length == 1 + 1);
     assert(yarn.width == 0.5);
 }
@@ -167,22 +167,22 @@ static void test_calculateSegmentDim_returns_true_when_hitting_yarn() {
 
     u = 1.f/4.f;
     v = 1/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.yarn_hit == 1);
     
     u = 3.f/4.f;
     v = 1/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.yarn_hit == 1);
     
     u = 1/4.f;
     v = 3/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.yarn_hit == 1);
     
     u = 3/4.f;
     v = 3/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.yarn_hit == 1);
 }
 
@@ -190,11 +190,11 @@ static void test_calculateSegmentDim_returns_true_when_hitting_extension() {
     wcWeaveParameters *params = &params_halfsize;
 
     u = 1.f/4.f; v = 3.f/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.yarn_hit == 1); assert(yarn.warp_above == 1);
 
     u = 1.f/4.f - 0.5/2.f - 0.01; v = 3.f/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.yarn_hit == 1);
     assert(yarn.between_parallel == 0);
     assert(yarn.warp_above == 0); //extension is weft
@@ -204,7 +204,7 @@ static void test_calculateSegmentDim_returns_false_when_missing_yarn_and_extensi
     wcWeaveParameters *params = &params_halfsize;
 
     u = 1.f/4.f - 0.5/2.f - 0.01; v = 3.f/4.f - 0.5/2.f - 0.01;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.yarn_hit == 0);
     assert(yarn.between_parallel == 0);
 }
@@ -225,7 +225,7 @@ static void test_calculates_segment_between_parallel_warps_halfsize() {
 
     u = 0;
     v = 1.f/4.f;
-    yarn = wcGetYarnSegment(u, v, params);
+    yarn = wcGetYarnSegment(u, v, params, &intersection_data);
     assert(yarn.yarn_hit == 1);
     assert(yarn.between_parallel == 1);
     assert(yarn.width == 0.5); assert(yarn.length == 0.25 + 0.25);
@@ -245,7 +245,9 @@ static void setup() {
     params->uscale = params->vscale = 1.f;
     wcWeavePatternFromFile(params,"54235plain.wif");
     params->yarn_types[1].yarnsize = 0.5;
+    params->yarn_types[1].yarnsize_enabled = 1;
     params->yarn_types[2].yarnsize = 0.5;
+    params->yarn_types[2].yarnsize_enabled = 1;
     
     params = &params_2parallel_fullsize;
     params->realworld_uv = 0;
@@ -257,7 +259,9 @@ static void setup() {
     params->uscale = params->vscale = 1.f;
     wcWeavePatternFromFile(params,"2parallel.wif");
     params->yarn_types[1].yarnsize = 0.5;
+    params->yarn_types[1].yarnsize_enabled = 1;
     params->yarn_types[2].yarnsize = 0.5;
+    params->yarn_types[2].yarnsize_enabled = 1;
     //wcFinalizeWeaveParameters(params);
     
     params = &params_2parallel_full_and_halfsize;
@@ -265,7 +269,9 @@ static void setup() {
     params->uscale = params->vscale = 1.f;
     wcWeavePatternFromFile(params,"2parallel.wif");
     params->yarn_types[1].yarnsize = 1.0;
+    params->yarn_types[1].yarnsize_enabled = 1;
     params->yarn_types[2].yarnsize = 0.5;
+    params->yarn_types[2].yarnsize_enabled = 1;
 }
 
 int main(int argc, char **argv)
@@ -284,6 +290,10 @@ int main(int argc, char **argv)
 
 //Define dummy wceval for texmaps
 float wc_eval_texmap_mono(void *texmap, void *data)
+{
+	return 1.f;
+}
+float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *data)
 {
 	return 1.f;
 }

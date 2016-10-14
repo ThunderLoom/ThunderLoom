@@ -168,6 +168,8 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *data)
 {
 	if(data){
 		SCTexture *texsc = new SCTexture(); //Might slow it down a bit. Can be moved out!
+		texsc->duv.x= 0.f;
+		texsc->duv.y= 0.f;
 		texsc->uv.x= u;
 		texsc->uv.y= v;
 		ShadeContext *sc=(ShadeContext*)data;
