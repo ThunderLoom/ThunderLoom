@@ -30,13 +30,17 @@
 
 #include "../../../src/woven_cloth.cpp"
 
-//Dummy texture eval functions for now.
+//TODO: Implement these in mitsuba
+//Stubbed texture eval functions for now.
 float wc_eval_texmap_mono(void *texmap, void *context) {
     return 0.f;
 }
 wcColor wc_eval_texmap_color(void *texmap, void *context) {
     wcColor col = {1.f, 0.f, 0.f};
     return col;
+}
+float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) {
+    return 0.f;
 }
 
     MTS_NAMESPACE_BEGIN

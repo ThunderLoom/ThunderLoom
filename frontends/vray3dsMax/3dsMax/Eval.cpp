@@ -6,7 +6,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-using namespace VUtils;
+//using namespace VUtils;
 
 void EvalDiffuseFunc (const VUtils::VRayContext &rc,
     wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
@@ -112,6 +112,74 @@ VUtils::Matrix nm, VUtils::Color *reflection_color)
     reflection_color->r = s;
     reflection_color->g = s;
     reflection_color->b = s;
+}
+
+class SCTexture: public ShadeContext {
+	public:
+		ShadeContext *origsc;
+		TimeValue curtime;
+		Point3 ltPos; // position of point in light space
+		Point3 view;  // unit vector from light to point, in light space
+		Point3 dp; 
+		Point2 uv,duv;
+		IPoint2 scrpos;
+		float curve;
+		int projType;
+
+		BOOL 	  InMtlEditor() { return origsc->InMtlEditor(); }
+		LightDesc* Light(int n) { return NULL; }
+		TimeValue CurTime() { return curtime; }
+		int NodeID() { return -1; }
+		int FaceNumber() { return 0; }
+		int ProjType() { return projType; }
+		Point3 Normal() { return Point3(0,0,0); }
+		Point3 GNormal() { return Point3(0,0,0); }
+		Point3 ReflectVector(){ return Point3(0,0,0); }
+		Point3 RefractVector(float ior){ return Point3(0,0,0); }
+		Point3 CamPos() { return Point3(0,0,0); }
+		Point3 V() { return view; }
+		void SetView(Point3 v) { view = v; }
+		Point3 P() { return ltPos; }	
+		Point3 DP() { return dp; }
+		Point3 PObj() { return ltPos; }
+		Point3 DPObj(){ return Point3(0,0,0); } 
+		Box3 ObjectBox() { return Box3(Point3(-1,-1,-1),Point3(1,1,1));}   	  	
+		Point3 PObjRelBox() { return view; }
+		Point3 DPObjRelBox() { return Point3(0,0,0); }
+		void ScreenUV(Point2& UV, Point2 &Duv) { UV = uv; Duv = duv; }
+		IPoint2 ScreenCoord() { return scrpos;} 
+		Point3 UVW(int chan) { return Point3(uv.x, uv.y, 0.0f); }
+		Point3 DUVW(int chan) { return Point3(duv.x, duv.y, 0.0f);  }
+		void DPdUVW(Point3 dP[3], int chan) {}  // dont need bump vectors
+		void GetBGColor(Color &bgcol, Color& transp, BOOL fogBG=TRUE) {}   // returns Background color, bg transparency
+		
+		float Curve() { return curve; }
+
+		// Transform to and from internal space
+		Point3 PointTo(const Point3& p, RefFrame ito) { return p; } 
+		Point3 PointFrom(const Point3& p, RefFrame ifrom) { return p; } 
+		Point3 VectorTo(const Point3& p, RefFrame ito) { return p; } 
+		Point3 VectorFrom(const Point3& p, RefFrame ifrom) { return p; } 
+		SCTexture(){ doMaps = TRUE; 	curve = 0.0f;	dp = Point3(0.0f,0.0f,0.0f); }
+	};
+
+
+float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *data)
+{
+	if(data){
+		SCTexture *texsc = new SCTexture(); //Might slow it down a bit. Can be moved out!
+		texsc->duv.x= 0.f;
+		texsc->duv.y= 0.f;
+		texsc->uv.x= u;
+		texsc->uv.y= v;
+		ShadeContext *sc=(ShadeContext*)data;
+		Texmap *t=(Texmap*)texmap;
+		float value = t->EvalMono(*texsc);
+		delete texsc;
+		return value;
+	}
+
+	return 1.f;
 }
 
 float wc_eval_texmap_mono(void *texmap, void *data)

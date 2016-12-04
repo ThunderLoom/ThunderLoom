@@ -109,6 +109,7 @@ struct wcIntersectionData
  * when you compile woven_cloth.cpp.
  */
 //TODO(Vidar): Send these callbacks as parameters instead??
+float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context);
 // Called when a texture is applied to a float parameter.
 float wc_eval_texmap_mono(void *texmap, void *context);
 // Called when a texture is applied to a color parameter.
@@ -228,7 +229,7 @@ typedef struct
 } wcYarnSegment;
 
 wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
-        const wcWeaveParameters *params);
+	const wcWeaveParameters *params, const wcIntersectionData *intersection_data);
 
 static const
 wcYarnType wc_default_yarn_type =
@@ -245,6 +246,24 @@ wcYarnType wc_default_yarn_type =
     0
 };
 
+static float wc_yarn_type_get_lookup_yarnsize(const wcWeaveParameters *p,
+        uint32_t i, float u, float v, void* context) {
+    wcYarnType yarn_type = p->yarn_types[i];
+    float ret;
+    if(yarn_type.yarnsize_enabled){
+        ret = yarn_type.yarnsize;
+        if(yarn_type.yarnsize_texmap){
+            ret=wc_eval_texmap_mono_lookup(yarn_type.yarnsize_texmap,u,v,context);
+        }
+    } else{
+        ret = p->yarn_types[0].yarnsize;
+        if(p->yarn_types[0].yarnsize_texmap){
+            ret=wc_eval_texmap_mono_lookup(p->yarn_types[0].yarnsize_texmap,u,v,context);
+            //ret=wc_eval_texmap_mono(p->yarn_types[0].param##_texmap,context);
+        }
+    }
+    return ret;
+}
 // Getter functions for the yarn type parameters.
 // These take into account whether the parameter is enabled or not
 // and handle the texmaps
