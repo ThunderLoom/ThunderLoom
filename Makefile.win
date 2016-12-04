@@ -1,0 +1,25 @@
+all: clear mitsuba 3dsMax2014 3dsMax2015 3dsMax2016
+
+clear:
+	IF EXIST build\win32 rmdir /S /Q build\win32
+	mkdir build\win32
+mitsuba:
+	scons --directory=frontends/mitsuba/ release
+	xcopy /Y /I frontends\mitsuba\blender_mtsblend build\win32\blender_mtsblend
+	copy frontends\mitsuba\README.md build\win32\README_Mitsuba.md
+
+3dsMax2014:
+	msbuild frontends\vray3dsMax\vray3dsMaxThunderLoom.sln /p:Configuration="max 2014 release" /p:Platform="x64"
+	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2014 build\win32\3dsMax2014 
+	copy frontends\vray3dsMax\README.md build\win32\README_3dsMax.md
+
+3dsMax2015:
+	msbuild frontends\vray3dsMax\vray3dsMaxThunderLoom.sln /p:Configuration="max 2015 release" /p:Platform="x64"
+	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2015 build\win32\3dsMax2015 
+	copy frontends\vray3dsMax\README.md build\win32\README_3dsMax.md
+
+3dsMax2016:
+	msbuild frontends\vray3dsMax\vray3dsMaxThunderLoom.sln /p:Configuration="max 2016 release" /p:Platform="x64"
+	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2016 build\win32\3dsMax2016 
+	copy frontends\vray3dsMax\README.md build\win32\README_3dsMax.md
+
