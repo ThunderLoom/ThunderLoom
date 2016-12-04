@@ -2,8 +2,8 @@
 // This file sets up and registers the 3dsMax plugin.
 
 //The paramblock version
-const int PLUGIN_VERSION_HIGH=1;
-const int PLUGIN_VERSION_LOW=00;
+const int PLUGIN_VERSION_HIGH=0;
+const int PLUGIN_VERSION_LOW=90;
 //This is the plugin version * 100
 const int PLUGIN_VERSION= PLUGIN_VERSION_HIGH*100 + PLUGIN_VERSION_LOW;
 
