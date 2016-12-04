@@ -787,19 +787,18 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 				iload->Read((unsigned char*)&version,
 					sizeof(int), &nb);
 				//NOTE(Vidar):Load m_weave_parameters
-				int num_yarn_types;
 				wcWeaveParameters params;
 				iload->Read((unsigned char*)&params,
 					sizeof(wcWeaveParameters), &nb);
-				m_weave_parameters.yarn_types =
-                    (wcYarnType*)calloc(m_weave_parameters.num_yarn_types,
+				params.yarn_types =
+                    (wcYarnType*)calloc(params.num_yarn_types,
 					sizeof(wcYarnType));
-				iload->Read((unsigned char*)m_weave_parameters.yarn_types,
-					m_weave_parameters.num_yarn_types * sizeof(wcYarnType), &nb);
+				iload->Read((unsigned char*)params.yarn_types,
+					params.num_yarn_types * sizeof(wcYarnType), &nb);
 				int num_entries = params.pattern_width * params.pattern_height;
-				m_weave_parameters.pattern = (PatternEntry*)calloc(num_entries,
+				params.pattern = (PatternEntry*)calloc(num_entries,
 					sizeof(PatternEntry));
-				iload->Read((unsigned char*)m_weave_parameters.pattern,
+				iload->Read((unsigned char*)params.pattern,
 					num_entries * sizeof(PatternEntry), &nb);
 				m_weave_parameters = params;
 				break;

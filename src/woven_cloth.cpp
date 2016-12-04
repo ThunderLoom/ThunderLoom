@@ -642,7 +642,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     }
 
     float total_u = uv_x*u_scale;
-    float total_v = uv_y*u_scale;
+    float total_v = uv_y*v_scale;
 
     float u_repeat = fmod(uv_x*u_scale,1.f);
     float v_repeat = fmod(uv_y*v_scale,1.f);
