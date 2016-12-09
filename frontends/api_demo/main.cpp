@@ -63,6 +63,11 @@ float wc_eval_texmap_mono(void *texmap, void *context)
     return 1.f;
 }
 
+float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context)
+{
+    return 1.f;
+}
+
 wcColor wc_eval_texmap_color(void *texmap, void *context)
 {
     wcColor ret = {1.f,1.f,1.f};
