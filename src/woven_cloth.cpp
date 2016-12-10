@@ -11,6 +11,8 @@
 #endif
 #include <math.h>
 
+#include <stdio.h>
+
 // -- 3D Vector data structure -- //
 typedef struct
 {
@@ -292,45 +294,186 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 	}
 }
 
+wcWeaveParameters *wcWeavePatternFromData(uint8_t *warp_above, uint8_t *yarn_type,
+    uint32_t num_yarn_types, wcColor *yarn_colors, uint32_t pattern_width,
+    uint32_t pattern_height)
+{
+    wcWeaveParameters *params =
+        (wcWeaveParameters*)calloc(sizeof(wcWeaveParameters),1);
+    params->pattern_width = pattern_width;
+    params->pattern_height = pattern_height;
+    num_yarn_types++;
+    params->num_yarn_types = num_yarn_types;
+    params->yarn_types = (wcYarnType*)calloc(sizeof(wcYarnType),num_yarn_types);
+    params->yarn_types[0] = wc_default_yarn_type;
+    for(int i=1;i<num_yarn_types;i++){
+        params->yarn_types[i] = wc_default_yarn_type;
+        params->yarn_types[i].color = yarn_colors[i-1];
+        params->yarn_types[i].color_enabled = 1;
+    }
+    uint32_t pattern_size = pattern_width*pattern_height;
+    params->pattern = (PatternEntry*)calloc(sizeof(PatternEntry),pattern_size);
+    for(int i=0;i<pattern_size;i++){
+        params->pattern[i].warp_above = warp_above[i];
+        params->pattern[i].yarn_type = yarn_type[i];
+    }
+    return params;
+}
 
 #ifndef WC_NO_FILES
 
-//NOTE(Vidar): In case we add support for more file formats
-void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename)
+wcWeaveParameters *wcWeavePatternFromFile(const char *filename,const char **error)
 {
-    wcWeavePatternFromWIF(params,filename);
+	wcWeaveParameters *param = 0;
+	int len = 0;
+	while(filename[len] != 0){
+		len++;
+	}
+	if(len >=5){
+		bool wif_ok = true;
+		bool ptn_ok = true;
+		const char *wif_ext = ".wif";
+		const char *ptn_ext = ".ptn";
+		for(int i=0;i<4;i++){
+			char c = filename[len-1-i];
+			c = (c <= 'Z' && c >= 'A') ? c + 32 : c;
+			if(c != wif_ext[3-i]){
+				wif_ok = false;
+			}
+			if(c != ptn_ext[3-i]){
+				ptn_ok = false;
+			}
+        }   
+        if(wif_ok || ptn_ok){
+            FILE *fp;
+            if(wif_ok){
+             fp = fopen(filename,"rt");
+            }
+            if(ptn_ok){
+             fp = fopen(filename,"rb");
+            }
+            fseek(fp,0,SEEK_END);
+            long len = ftell(fp);
+            fseek(fp,0,SEEK_SET);
+            unsigned char *data = (unsigned char*)calloc(len,1);
+            fread(data,1,len,fp);
+            fclose(fp);
+            if(wif_ok){
+                param = wcWeavePatternFromWIF(data,len,error);
+            }
+            if(ptn_ok){
+                param = wcWeavePatternFromPTN(data,len,error);
+            }
+            free(data);
+		}
+	}
+	return param;
 }
 #ifdef WC_WCHAR
-void wcWeavePatternFromFile_wchar(wcWeaveParameters *params,
-    const wchar_t *filename)
+wcWeaveParameters *wcWeavePatternFromFile_wchar(const wchar_t *filename,const char **error)
 {
-    wcWeavePatternFromWIF_wchar(params,filename);
+	wcWeaveParameters *param = 0;
+	int len = 0;
+	while(filename[len] != 0){
+		len++;
+	}
+	if(len >=5){
+		bool wif_ok = true;
+		bool ptn_ok = true;
+		wchar_t *wif_ext = L".wif";
+		wchar_t *ptn_ext = L".ptn";
+		for(int i=0;i<4;i++){
+			wchar_t c = filename[len-1-i];
+			c = towlower(c);
+			if(c != wif_ext[3-i]){
+				wif_ok = false;
+			}
+			if(c != ptn_ext[3-i]){
+				ptn_ok = false;
+			}
+		}
+		if(wif_ok || ptn_ok){
+			FILE *fp;
+			if(wif_ok){
+			 fp = _wfopen(filename,L"rt");
+			}
+			if(ptn_ok){
+			 fp = _wfopen(filename,L"rb");
+			}
+			fseek(fp,0,SEEK_END);
+			long len = ftell(fp);
+			fseek(fp,0,SEEK_SET);
+			unsigned char *data = (unsigned char*)calloc(len,1);
+			fread(data,1,len,fp);
+			fclose(fp);
+			if(wif_ok){
+				param = wcWeavePatternFromWIF(data,len,error);
+			}
+			if(ptn_ok){
+				param = wcWeavePatternFromPTN(data,len,error);
+			}
+			free(data);
+		}else{
+			*error = "Unknown file format";
+		}
+	}else{
+		*error = "Unknown file format";
+	}
+	return param;
 }
 #endif
 
-void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename)
+wcWeaveParameters *wcWeavePatternFromWIF(unsigned char *data,long len,const char **error)
 {
-    WeaveData *data = wif_read(filename);
-    wif_get_pattern(params, data,
-        &params->pattern_width, &params->pattern_height,
-        &params->pattern_realwidth, &params->pattern_realheight);
-    wif_free_weavedata(data);
-    wcFinalizeWeaveParameters(params);
+    WeaveData *weave_data = wif_read((char*)data,len,error);
+    if(weave_data){
+        wcWeaveParameters *params = (wcWeaveParameters*)calloc(sizeof(wcWeaveParameters),1);
+        wif_get_pattern(params, weave_data,
+            &params->pattern_width, &params->pattern_height,
+            &params->pattern_realwidth, &params->pattern_realheight);
+        wif_free_weavedata(weave_data);
+        return params;
+    }
+    return 0;
+}
+#endif
+
+static wcWeaveParameters *wc_pattern_from_ptn_file_v1(unsigned char *data,long len,const char **error){
+#define WC_PTN_READ_ENTRY(name,type,num)\
+	if(len < sizeof(type)*num){ *error = "unexpected end of data"; return 0; }\
+	memcpy(name,data,sizeof(type)*num);\
+	data += sizeof(type)*num; len -= sizeof(type)*num;
+
+	wcWeaveParameters *param = (wcWeaveParameters*)calloc(sizeof(wcWeaveParameters),1);
+	WC_PTN_READ_ENTRY(param,wcWeaveParameters,1);
+
+	param->yarn_types = (wcYarnType*)calloc(sizeof(wcYarnType),param->num_yarn_types);
+	WC_PTN_READ_ENTRY(param->yarn_types,wcYarnType,param->num_yarn_types);
+
+	int pattern_size = param->pattern_width*param->pattern_height;
+	param->pattern = (PatternEntry*)calloc(sizeof(PatternEntry),pattern_size);
+	WC_PTN_READ_ENTRY(param->pattern,PatternEntry,pattern_size);
+
+#undef WC_PTN_READ_ENTRY
+	return param;
 }
 
-#ifdef WC_WCHAR
-void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
-        const wchar_t *filename)
-{
-    WeaveData *data = wif_read_wchar(filename);
-    wif_get_pattern(params, data,
-        &params->pattern_width, &params->pattern_height,
-        &params->pattern_realwidth, &params->pattern_realheight);
-    wif_free_weavedata(data);
-    wcFinalizeWeaveParameters(params);
+wcWeaveParameters *wcWeavePatternFromPTN(unsigned char *data,long len,const char **error){
+	wcWeaveParameters *param = 0;
+	int version = 0;
+	memcpy(&version,data,sizeof(int));\
+	data += sizeof(int);
+	len -= sizeof(int);
+	switch(version){
+	case 1:
+		param = wc_pattern_from_ptn_file_v1(data,len,error);
+		break;
+	default:
+		*error = "Unknown PTN file version";
+		return 0;
+	}
+	return param;
 }
-#endif
-#endif
 
 void wcFreeWeavePattern(wcWeaveParameters *params)
 {

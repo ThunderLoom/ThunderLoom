@@ -67,7 +67,7 @@ static int texmapBtnIDCs[NUMBER_OF_YRN_TEXMAPS] =
 {
 #define YARN_TYPE_TEXMAP(name) IDC_YRN_TEX_##name##_BUTTON,
 	YARN_TYPE_TEXMAP_PARAMETERS
-#undef YARN_TYPE_PARAM
+#undef YARN_TYPE_TEXMAP
 };
 
 /*===========================================================================*\
@@ -100,7 +100,7 @@ public:
 	IMtlParams *m_imp;
 
 	Interval ivalid;
-    wcWeaveParameters m_weave_parameters;
+    wcWeaveParameters *m_weave_parameters;
     IMtlParams *m_i_mtl_params;
     bool m_yarn_type_rollup_open[WC_MAX_YARN_TYPES];
 

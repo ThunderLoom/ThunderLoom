@@ -24,6 +24,9 @@ const int PLUGIN_VERSION= PLUGIN_VERSION_HIGH*100 + PLUGIN_VERSION_LOW;
 
 #include "helper.h"
 
+#define WC_PATTERN_EDITOR_IMPLEMENTATION
+#include "pattern_editor.h"
+
 // no param block script access for VRay free
 // TODO(Peter): VRay free? Demo?
 #ifdef _FREE_
@@ -170,10 +173,10 @@ public:
 			}
 		}
 		free(rollups);
-		if(sm && sm->m_weave_parameters.pattern && sm->m_i_mtl_params){
-			num_rollups=sm->m_weave_parameters.num_yarn_types;
+		if(sm && sm->m_weave_parameters->pattern && sm->m_i_mtl_params){
+			num_rollups=sm->m_weave_parameters->num_yarn_types;
 			rollups=(HWND*)calloc(num_rollups,sizeof(HWND));
-			if(sm && sm->m_weave_parameters.pattern){
+			if(sm && sm->m_weave_parameters->pattern){
 				//NOTE(Vidar): Create yarn type rollups
 				for(int i=0; i<num_rollups; i++){
 					YarnTypeDlgProcData *data=(YarnTypeDlgProcData*)
@@ -243,50 +246,36 @@ public:
 						switch(HIWORD(wParam)){
 							case BN_CLICKED:
 							{
-								wchar_t *filters=
-									L"Weave Files | *.WIF\0*.WIF\0"
-									L"All Files | *.*\0*.*\0"
-									;
-								wchar_t buffer[512]={0};
-								OPENFILENAME openfilename={0};
-								openfilename.lStructSize=sizeof(OPENFILENAME);
-								openfilename.hwndOwner=hWnd;
-								openfilename.lpstrFilter=filters;
-								openfilename.lpstrFile=buffer;
-								openfilename.nMaxFile=512;
-								openfilename.lpstrInitialDir=directory;
-								openfilename.lpstrTitle=L"Open weaving draft";
-								if(GetOpenFileName(&openfilename)){
-									IParamBlock2 *params=map->GetParamBlock();
-									wcFreeWeavePattern(&(sm->m_weave_parameters));
-									wcWeavePatternFromFile_wchar(
-										&(sm->m_weave_parameters),buffer);
-									//NOTE(Vidar):Set parameters...
-									int realworld;
-									sm->pblock->GetValue(mtl_realworld,0,realworld,
-										sm->ivalid);
-									sm->m_weave_parameters.realworld_uv=realworld;
-									sm->pblock->GetValue(mtl_uscale,0,
-										sm->m_weave_parameters.uscale,
-										sm->ivalid);
-									sm->pblock->GetValue(mtl_vscale,0,
-										sm->m_weave_parameters.vscale,
-										sm->ivalid);
-                                    int num_yarn_types = sm->m_weave_parameters.
-                                        num_yarn_types;
-									sm->m_yarn_type_rollup_open[0]=1;
-									for(int i=1;i<num_yarn_types;i++){
-										sm->m_yarn_type_rollup_open[i]=0;
-									}
-                                    //TODO(Peter): Test this with more complicate wif files!
-                                    //Set count for subtexmaps
-                                    sm->pblock->SetCount(texmaps,
-                                        num_yarn_types* NUMBER_OF_YRN_TEXMAPS);
-									map->Invalidate();
-									update_yarn_type_rollups();
-									//NOTE(Vidar): Hack to update the preview ball
-									sm->pblock->SetValue(mtl_dummy,0,0.5f);
+								HWND parent_hwnd=GetAncestor(hWnd,GA_ROOT);
+								EnableWindow(parent_hwnd,false);
+								sm->m_weave_parameters = 
+									wc_pattern_editor(sm->m_weave_parameters);
+								EnableWindow(parent_hwnd,true);
+								//NOTE(Vidar):Set parameters...
+								int realworld;
+								sm->pblock->GetValue(mtl_realworld,0,realworld,
+									sm->ivalid);
+								sm->m_weave_parameters->realworld_uv=realworld;
+								sm->pblock->GetValue(mtl_uscale,0,
+									sm->m_weave_parameters->uscale,
+									sm->ivalid);
+								sm->pblock->GetValue(mtl_vscale,0,
+									sm->m_weave_parameters->vscale,
+									sm->ivalid);
+								int num_yarn_types=sm->m_weave_parameters->
+									num_yarn_types;
+								sm->m_yarn_type_rollup_open[0]=1;
+								for(int i=1;i<num_yarn_types;i++){
+									sm->m_yarn_type_rollup_open[i]=0;
 								}
+								//TODO(Peter): Test this with more complicate wif files!
+								//Set count for subtexmaps
+								sm->pblock->SetCount(texmaps,
+									num_yarn_types* NUMBER_OF_YRN_TEXMAPS);
+								map->Invalidate();
+								update_yarn_type_rollups();
+								//NOTE(Vidar): Hack to update the preview ball
+								sm->pblock->SetValue(mtl_dummy,0,0.5f);
 								break;
 							}
 						}
@@ -402,8 +391,8 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)lParam;
             SetWindowLongPtr(hWnd,GWLP_USERDATA,(LONG_PTR)data);
 
-            wcWeaveParameters params = data->sm->m_weave_parameters;
-            wcYarnType yarn_type=params.yarn_types[data->yarn_type];
+            wcWeaveParameters *params = data->sm->m_weave_parameters;
+            wcYarnType yarn_type=params->yarn_types[data->yarn_type];
             //NOTE(Vidar): Setup spinners
             #define WC_FLOAT_PARAM(name){\
                 HWND spinner_hwnd = GetDlgItem(hWnd, IDC_##name##_SPIN);\
@@ -463,7 +452,7 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		#define GET_YARN_TYPE\
 			YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)\
 				GetWindowLong(hWnd,GWLP_USERDATA);\
-			wcYarnType * yarn_type = &data->sm->m_weave_parameters.yarn_types[\
+			wcYarnType * yarn_type = &data->sm->m_weave_parameters->yarn_types[\
                 data->yarn_type];
 			 //NOTE(Vidar): Hack to update the preview ball
 		#define UPDATE_BALL\
@@ -498,7 +487,7 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 						//NOTE(Vidar): Texmap buttons
 						default: {
-							if(data->sm->m_weave_parameters.pattern) {
+							if(data->sm->m_weave_parameters->pattern) {
 								for(int i = 0; i < NUMBER_OF_YRN_TEXMAPS; i++) {
 									if (LOWORD(wParam) == texmapBtnIDCs[i]
 										&& HIWORD(wParam) == BN_CLICKED){
@@ -600,11 +589,20 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 \*===========================================================================*/
 
 void ThunderLoomMtl::Reset() {
-    //TODO(Vidar): Load default pattern...
-    memset(&m_weave_parameters,0,sizeof(wcWeaveParameters));
-    m_weave_parameters.num_yarn_types = 1;
-    m_weave_parameters.yarn_types = (wcYarnType*)calloc(sizeof(wcYarnType),1);
-    m_weave_parameters.yarn_types[0] = wc_default_yarn_type;
+    //NOTE(Vidar): Load default pattern...
+	uint8_t warp_above[] = { 0,1,1,0 };
+	uint8_t yarn_type[] = { 1,2,2,1 };
+	uint32_t pattern_width = 2;
+	uint32_t pattern_height = 2;
+	wcColor yarn_colors[2];
+	yarn_colors[0].r = 1.f; yarn_colors[0].g = 0.f; yarn_colors[0].b = 0.f;
+	yarn_colors[1].r = 0.f; yarn_colors[1].g = 0.f; yarn_colors[1].b = 1.f;
+	uint32_t num_yarn_types = 2;
+	m_weave_parameters = wcWeavePatternFromData(
+		warp_above, yarn_type, num_yarn_types, yarn_colors,
+		pattern_width, pattern_height);
+	//TODO(Vidar):This leaks (a tiny bit of) memory...
+	// Fix by making m_weave_parameters a pointer instead.
     m_i_mtl_params = 0;
 	ivalid.SetEmpty();
 	thunderLoomDesc.Reset(this);
@@ -671,7 +669,7 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 	case REFMSG_CHANGE:
 		ivalid.SetEmpty();
 		if (hTarget == pblock) {
-			if (m_weave_parameters.pattern) {
+			if (m_weave_parameters->pattern) {
 				ParamID changing_param = pblock->LastNotifyParamID();
 				thunder_loom_param_blk_desc.InvalidateUI(changing_param);
 
@@ -681,18 +679,18 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 					{
 						int realworld;
 						pblock->GetValue(mtl_realworld,0,realworld,ivalid);
-						m_weave_parameters.realworld_uv=realworld;
+						m_weave_parameters->realworld_uv=realworld;
 						break;
 					}
 					case mtl_uscale:
 					{
-						pblock->GetValue(mtl_uscale,0,m_weave_parameters.uscale,
+						pblock->GetValue(mtl_uscale,0,m_weave_parameters->uscale,
 							ivalid);
 						break;
 					}
 					case mtl_vscale:
 					{
-						pblock->GetValue(mtl_vscale,0,m_weave_parameters.vscale,
+						pblock->GetValue(mtl_vscale,0,m_weave_parameters->vscale,
 							ivalid);
 						break;
 					}
@@ -707,7 +705,7 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 //texmaps
 
 int ThunderLoomMtl::NumSubTexmaps() {
-    return this->m_weave_parameters.num_yarn_types*NUMBER_OF_YRN_TEXMAPS;
+    return this->m_weave_parameters->num_yarn_types*NUMBER_OF_YRN_TEXMAPS;
 }
 
 Texmap* ThunderLoomMtl::GetSubTexmap(int i) {
@@ -760,13 +758,13 @@ IOResult ThunderLoomMtl::Save(ISave *isave)
 	isave->Write((unsigned char*)&PLUGIN_VERSION,
 		sizeof(int),&nb);
 
-	isave->Write((unsigned char*)&m_weave_parameters,
+	isave->Write((unsigned char*)m_weave_parameters,
 		sizeof(wcWeaveParameters), &nb);
-    isave->Write((unsigned char*)m_weave_parameters.yarn_types,
-		sizeof(wcYarnType)*m_weave_parameters.num_yarn_types, &nb);
-    isave->Write((unsigned char*)m_weave_parameters.pattern,
-		sizeof(PatternEntry)*m_weave_parameters.pattern_width
-		*m_weave_parameters.pattern_height, &nb);
+    isave->Write((unsigned char*)m_weave_parameters->yarn_types,
+		sizeof(wcYarnType)*m_weave_parameters->num_yarn_types, &nb);
+    isave->Write((unsigned char*)m_weave_parameters->pattern,
+		sizeof(PatternEntry)*m_weave_parameters->pattern_width
+		*m_weave_parameters->pattern_height, &nb);
     isave->EndChunk();
 	return IO_OK;
 }	
@@ -788,18 +786,18 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 					sizeof(int), &nb);
 				//NOTE(Vidar):Load m_weave_parameters
 				int num_yarn_types;
-				wcWeaveParameters params;
+				wcWeaveParameters *params = (wcWeaveParameters*)calloc(1,sizeof(wcWeaveParameters));
 				iload->Read((unsigned char*)&params,
 					sizeof(wcWeaveParameters), &nb);
-				m_weave_parameters.yarn_types =
-                    (wcYarnType*)calloc(m_weave_parameters.num_yarn_types,
+				m_weave_parameters->yarn_types =
+                    (wcYarnType*)calloc(m_weave_parameters->num_yarn_types,
 					sizeof(wcYarnType));
-				iload->Read((unsigned char*)m_weave_parameters.yarn_types,
-					m_weave_parameters.num_yarn_types * sizeof(wcYarnType), &nb);
-				int num_entries = params.pattern_width * params.pattern_height;
-				m_weave_parameters.pattern = (PatternEntry*)calloc(num_entries,
+				iload->Read((unsigned char*)m_weave_parameters->yarn_types,
+					m_weave_parameters->num_yarn_types * sizeof(wcYarnType), &nb);
+				int num_entries = params->pattern_width * params->pattern_height;
+				m_weave_parameters->pattern = (PatternEntry*)calloc(num_entries,
 					sizeof(PatternEntry));
-				iload->Read((unsigned char*)m_weave_parameters.pattern,
+				iload->Read((unsigned char*)m_weave_parameters->pattern,
 					num_entries * sizeof(PatternEntry), &nb);
 				m_weave_parameters = params;
 				break;
@@ -821,21 +819,23 @@ RefTargetHandle ThunderLoomMtl::Clone(RemapDir &remap) {
 	BaseClone(this, mnew, remap);
 	mnew->ReplaceReference(0, remap.CloneRef(pblock));
 	mnew->ivalid.SetEmpty();	
-	mnew->m_weave_parameters=m_weave_parameters;
-	if(m_weave_parameters.pattern){
-		int num_entries=m_weave_parameters.pattern_width *
-			m_weave_parameters.pattern_height;
+	mnew->m_weave_parameters=
+		(wcWeaveParameters*)calloc(1,sizeof(wcWeaveParameters));
+	*mnew->m_weave_parameters=*m_weave_parameters;
+	if(m_weave_parameters->pattern){
+		int num_entries=m_weave_parameters->pattern_width *
+			m_weave_parameters->pattern_height;
 		PatternEntry *pattern;
 		pattern=(PatternEntry*)calloc(num_entries,sizeof(PatternEntry));
-        memcpy(pattern,m_weave_parameters.pattern,
+        memcpy(pattern,m_weave_parameters->pattern,
             sizeof(PatternEntry)*num_entries);
-		mnew->m_weave_parameters.pattern=pattern;
+		mnew->m_weave_parameters->pattern=pattern;
 
-        int num_yarn_types = m_weave_parameters.num_yarn_types;
-        mnew->m_weave_parameters.yarn_types=(wcYarnType*)calloc(num_yarn_types,
+        int num_yarn_types = m_weave_parameters->num_yarn_types;
+        mnew->m_weave_parameters->yarn_types=(wcYarnType*)calloc(num_yarn_types,
             sizeof(wcYarnType));
-		memcpy(mnew->m_weave_parameters.yarn_types,
-            m_weave_parameters.yarn_types,
+		memcpy(mnew->m_weave_parameters->yarn_types,
+            m_weave_parameters->yarn_types,
 			num_yarn_types*sizeof(wcYarnType));
 	}
 	return (RefTargetHandle) mnew;
@@ -902,11 +902,11 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	//default values for the time being.
 	//these paramters will be removed later, is the plan
 
-	wcFinalizeWeaveParameters(&m_weave_parameters);
+	wcFinalizeWeaveParameters(m_weave_parameters);
     
-    if(m_weave_parameters.pattern){
-		for(int i=0;i<m_weave_parameters.num_yarn_types;i++){
-			wcYarnType *yarn_type=&m_weave_parameters.yarn_types[i];
+    if(m_weave_parameters->pattern){
+		for(int i=0;i<m_weave_parameters->num_yarn_types;i++){
+			wcYarnType *yarn_type=&m_weave_parameters->yarn_types[i];
 		#define YARN_TYPE_TEXMAP(name)\
 			yarn_type->name##_texmap= GetSubTexmap(\
 				NUMBER_OF_YRN_TEXMAPS*i +yrn_texmaps_##name);
@@ -927,7 +927,7 @@ void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
 VR::BSDFSampler* ThunderLoomMtl::newBSDF(const VR::VRayContext &rc, VR::VRenderMtlFlags flags) {
 	MyBlinnBSDF *bsdf=bsdfPool.newBRDF(rc);
 	if (!bsdf) return NULL;
-	bsdf->init(rc, &m_weave_parameters);
+	bsdf->init(rc, m_weave_parameters);
 	return bsdf;
 }
 

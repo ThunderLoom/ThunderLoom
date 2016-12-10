@@ -13,6 +13,15 @@
       <UniqueIdentifier>{fc1471ed-fc54-49c9-9b96-bbf34e389129}</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
     </Filter>
+    <Filter Include="Source Files\dependencies">
+      <UniqueIdentifier>{b5fc755b-d135-4621-9b08-9e7474fbfca8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\dependencies\gl3w">
+      <UniqueIdentifier>{8f5c102f-81c0-4729-be4a-daf3ba4c4af8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\dependencies\imgui">
+      <UniqueIdentifier>{dc4077d7-66eb-45ae-af6b-063517dd87d6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="3dsMaxThunderLoom.cpp">
@@ -30,6 +39,21 @@
     <ClCompile Include="Eval.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\dependencies\gl3w\src\gl3w.c">
+      <Filter>Source Files\dependencies\gl3w</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\dependencies\imgui\imgui.cpp">
+      <Filter>Source Files\dependencies\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\dependencies\imgui\imgui_demo.cpp">
+      <Filter>Source Files\dependencies\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\dependencies\imgui\imgui_draw.cpp">
+      <Filter>Source Files\dependencies\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\dependencies\imgui\imgui_impl_glfw_gl3.cpp">
+      <Filter>Source Files\dependencies\imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -45,6 +69,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Eval.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\pattern_editor\pattern_editor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\woven_cloth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\wif\wif.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
