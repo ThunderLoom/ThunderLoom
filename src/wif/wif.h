@@ -24,7 +24,7 @@ typedef struct
 }WeaveData;
 
 // Read a WIF file from disk
-WeaveData *wif_read(const char *filename);
+WeaveData *wif_read(char *in_data, long len, const char **error);
 WeaveData *wif_read_wchar(const wchar_t *filename);
 // Free the WeaveData data structure
 void wif_free_weavedata(WeaveData *data);

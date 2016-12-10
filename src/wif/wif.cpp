@@ -354,13 +354,47 @@ static int32_t handler(void* user_data, const char* section, const char* name,
     return 1;
 }
 
+struct read_data{
+        char *str;
+        long len;
+};
 
-WeaveData *wif_read(const char *filename)
+static char* read_from_string(char* str, int num, void* stream)
+{
+    struct read_data *data = (struct read_data*)stream;
+    if(data->len >0){
+            char *ret = str;
+            num--;
+            num = num > data->len ? data->len : num;
+            int end = 0;
+            for(int i=0;i<num;i++){
+                if(*data->str != '\n'){
+                        *str = *data->str;
+                        str++;
+                        data->str++;
+                        data->len--;
+                        end++;
+                }
+            }
+            str[-1] = 0;
+            if(data->str[0] == '\n'){
+                data->len--;
+                data->str++;
+            }
+            return ret;
+    }
+    return NULL;
+}
+
+WeaveData *wif_read(char *in_data, long len, const char **error)
 {
     WeaveData *data;
     data = (WeaveData*)calloc(1,sizeof(WeaveData));
-    if (ini_parse(filename, handler, data) != 0) {
-        printf("Error reading file \"%s\"\n",filename);
+    struct read_data d = {in_data,len};
+    int e = ini_parse_stream((ini_reader)read_from_string,&d,handler,data);
+    if(e != 0){
+        printf("ERROR! %d\n",e);
+        *error = "Error reading file";
         wif_free_weavedata(data);
         return 0;
     }
@@ -368,46 +402,27 @@ WeaveData *wif_read(const char *filename)
     if(data->read_sections != DATA_ALL_SECTIONS){
         //NOTE(Vidar): One of the sections was missing from the file.
         // Check which one and report it!
-#define CHECK_SECTION(var,section,name) if(!(var & section)) \
-    printf("ERROR! Missing section " name "\n");
-        CHECK_SECTION(data->read_sections, DATA_WARP_SECTION, "WARP")
-        CHECK_SECTION(data->read_sections, DATA_WEFT_SECTION, "WEFT")
-        CHECK_SECTION(data->read_sections, DATA_WEAVING_SECTION, "WEAVING")
-        CHECK_SECTION(data->read_sections, DATA_TIEUP_SECTION, "TIEUP")
-        CHECK_SECTION(data->read_sections, DATA_THREADING_SECTION, "THREADING")
-        CHECK_SECTION(data->read_sections, DATA_TREADLING_SECTION, "TREADLING")
-        CHECK_SECTION(data->read_sections,
+#define WIF_CHECK_SECTION(var,section,name) if(!(var & section)) {\
+    *error = ("Missing section " name); goto ret;}
+        WIF_CHECK_SECTION(data->read_sections, DATA_WARP_SECTION, "WARP")
+        WIF_CHECK_SECTION(data->read_sections, DATA_WEFT_SECTION, "WEFT")
+        WIF_CHECK_SECTION(data->read_sections, DATA_WEAVING_SECTION, "WEAVING")
+        WIF_CHECK_SECTION(data->read_sections, DATA_TIEUP_SECTION, "TIEUP")
+        WIF_CHECK_SECTION(data->read_sections, DATA_THREADING_SECTION, "THREADING")
+        WIF_CHECK_SECTION(data->read_sections, DATA_TREADLING_SECTION, "TREADLING")
+        WIF_CHECK_SECTION(data->read_sections,
             DATA_COLOR_PALETTE_SECTION, "COLOR PALETTE")
-        CHECK_SECTION(data->read_sections,
+        WIF_CHECK_SECTION(data->read_sections,
             DATA_COLOR_TABLE_SECTION, "COLOR TABLE")
-        CHECK_SECTION(data->read_sections,
+        WIF_CHECK_SECTION(data->read_sections,
             DATA_WARP_COLORS_SECTION, "WARP COLORS")
-        CHECK_SECTION(data->read_sections,
+        WIF_CHECK_SECTION(data->read_sections,
             DATA_WEFT_COLORS_SECTION, "WEFT COLORS")
+#undef WIF_CHECK_SECTION
+        ret:
         wif_free_weavedata(data);
         return 0;
     }
-    return data;
-}
-
-
-WeaveData *wif_read_wchar(const wchar_t *filename)
-{
-    WeaveData *data;
-    data = (WeaveData*)calloc(1,sizeof(WeaveData));
-    #ifdef WIN32
-    FILE* file;
-    int error = -1;
-
-    file = _wfopen(filename, L"rt");
-    if(file){
-        error = ini_parse_file(file, handler, data);
-        fclose(file);
-    }
-    if (error < 0) {
-        wprintf(L"Error reading file \"%s\"\n",filename);
-    }
-    #endif
     return data;
 }
 

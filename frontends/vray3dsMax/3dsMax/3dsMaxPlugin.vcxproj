@@ -291,7 +291,7 @@
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>C:\Users\Vidar\Documents\code\ThunderLoom\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\src</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
@@ -567,7 +567,7 @@
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>C:\Users\Vidar\Documents\code\ThunderLoom\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\src;.\..\dependencies\imgui;.\..\dependencies\gl3w\include;.\..\dependencies\glfw\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
@@ -596,10 +596,10 @@
       <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
       <OutputFile>..\..\vrayplugins\vrayblinnmtl90.dlt</OutputFile>
       <ImportLibrary>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl90.lib</ImportLibrary>
-      <AdditionalLibraryDirectories>k:\3dsmax\maxsdk90\Lib\x64;..\..\..\lib\x64;..\..\..\lib\x64\vc8;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>k:\3dsmax\maxsdk90\Lib\x64;..\..\..\lib\x64;..\..\..\lib\x64\vc8;%(AdditionalLibraryDirectories);..\..\dependencies\glfw\lib-vc2012\</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>
       <BaseAddress>0x08B70000</BaseAddress>
-      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;vray90.lib;vutils_s.lib;plugman_s.lib;vrender90.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;glfw3.lib;opengl32.lib;vray90.lib;vutils_s.lib;plugman_s.lib;vrender90.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions> /machine:AMD64</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -618,7 +618,7 @@
       <ObjectFileName>build\$(Platform)\$(Configuration)\</ObjectFileName>
       <ProgramDataBaseFileName>build\$(Platform)\$(Configuration)\</ProgramDataBaseFileName>
       <AdditionalOptions> /Qprec_div /Qvc7 </AdditionalOptions>
-      <AdditionalIncludeDirectories>..\..\..\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2015 for x64\include;$(ADSK_3DSMAX_SDK_2015)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2015 for x64\include;$(ADSK_3DSMAX_SDK_2015)\include;.\..\..\dependencies\imgui;.\..\..\dependencies\gl3w\include;.\..\..\dependencies\glfw\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -641,10 +641,10 @@
       <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
       <OutputFile>.\build\3dsMax2015\thunderLoom.dlt</OutputFile>
       <ImportLibrary>build\$(Platform)\$(Configuration)\vrayblinnmtl90.lib</ImportLibrary>
-      <AdditionalLibraryDirectories>$(ADSK_3DSMAX_SDK_2015)\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2015 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2015 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ADSK_3DSMAX_SDK_2015)\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2015 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2015 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories);..\..\dependencies\glfw\lib-vc2012\</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>
       <BaseAddress>0x08B70000</BaseAddress>
-      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;vray2015.lib;vutils_s.lib;plugman_s.lib;vrender2015.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;glfw3.lib;opengl32.lib;vray2015.lib;vutils_s.lib;plugman_s.lib;vrender2015.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions> /machine:AMD64</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -657,7 +657,7 @@
       <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>.\..\..\..\src;$(ADSK_3DSMAX_SDK_2016)\include;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\..\..\..\src;$(ADSK_3DSMAX_SDK_2016)\include;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;.\..\..\dependencies\imgui;.\..\..\dependencies\gl3w\include;.\..\..\dependencies\glfw\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;WC_WCHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
@@ -686,10 +686,10 @@
       <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
       <OutputFile>$(ADSK_3DSMAX_x64_2016)\plugins\vrayplugins\thunderLoom.dlt</OutputFile>
       <ImportLibrary>build\vrayblinnmtl\max90\x64\official\vrayblinnmtl90.lib</ImportLibrary>
-      <AdditionalLibraryDirectories>$(ADSK_3DSMAX_SDK_2016)\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ADSK_3DSMAX_SDK_2016)\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories);..\..\dependencies\glfw\lib-vc2012\</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>
       <BaseAddress>0x08B70000</BaseAddress>
-      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;vray2016.lib;vutils_s.lib;plugman_s.lib;vrender2016.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;glfw3.lib;opengl32.lib;vray2016.lib;vutils_s.lib;plugman_s.lib;vrender2016.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions> /machine:AMD64</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -702,7 +702,7 @@
       <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>.\..\..\..\src;$(ADSK_3DSMAX_SDK_2014)\include;C:\Program Files\Chaos Group\V-Ray\3dsmax 2014 for x64\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\..\..\..\src;$(ADSK_3DSMAX_SDK_2014)\include;C:\Program Files\Chaos Group\V-Ray\3dsmax 2014 for x64\include;.\..\..\dependencies\imgui;.\..\..\dependencies\gl3w\include;.\..\..\dependencies\glfw\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;WC_WCHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>build\$(Platform)\$(Configuration)\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>build\$(Platform)\$(Configuration)\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
@@ -731,10 +731,10 @@
       <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
       <OutputFile>.\build\3dsMax2014\thunderLoom.dlt</OutputFile>
       <ImportLibrary>build\$(Platform)\$(Configuration)\vrayblinnmtl90.lib</ImportLibrary>
-      <AdditionalLibraryDirectories>$(ADSK_3DSMAX_SDK_2014)\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2014 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2014 for x64\lib\x64\vc101;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ADSK_3DSMAX_SDK_2014)\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2014 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2014 for x64\lib\x64\vc101;%(AdditionalLibraryDirectories);..\..\dependencies\glfw\lib-vc2012\</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>
       <BaseAddress>0x08B70000</BaseAddress>
-      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;vray2014.lib;plugman_s.lib;vutils_s.lib;vrender2014.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;glfw3.lib;opengl32.lib;vray2014.lib;plugman_s.lib;vutils_s.lib;vrender2014.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions> /machine:AMD64</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -747,7 +747,7 @@
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>..\..\..\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;$(ADSK_3DSMAX_SDK_2016)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;$(ADSK_3DSMAX_SDK_2016)\include;.\..\..\dependencies\imgui;.\..\..\dependencies\gl3w\include;.\..\..\dependencies\glfw\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;WC_WCHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>build\$(Platform)\$(Configuration)\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>build\$(Platform)\$(Configuration)\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
@@ -776,10 +776,10 @@
       <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
       <OutputFile>.\build\thunderLoom.dlt</OutputFile>
       <ImportLibrary>build\$(Platform)\$(Configuration)\vrayblinnmtl90.lib</ImportLibrary>
-      <AdditionalLibraryDirectories>C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories);..\..\dependencies\glfw\lib-vc2012\</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>
       <BaseAddress>0x08B70000</BaseAddress>
-      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;vray2016.lib;vutils_s.lib;plugman_s.lib;vrender2016.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;glfw3.lib;opengl32.lib;vray2016.lib;vutils_s.lib;plugman_s.lib;vrender2016.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions> /machine:AMD64</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -792,7 +792,7 @@
       <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>C:\Users\Vidar\Documents\code\ThunderLoom\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\src;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\include;C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\include;.\..\..\dependencies\imgui;.\..\..\dependencies\gl3w\include;.\..\..\dependencies\glfw\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;MAX_RELEASE_R18;WC_WCHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\max90\x64\official\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
@@ -821,10 +821,10 @@
       <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
       <OutputFile>$(ADSK_3DSMAX_x64_2016)\plugins\vrayplugins\wovencloth.dlt</OutputFile>
       <ImportLibrary>.\..\..\build\vrayblinnmtl\max90\x64\official\vrayblinnmtl90.lib</ImportLibrary>
-      <AdditionalLibraryDirectories>C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk\lib\x64\Release;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64;C:\Program Files\Chaos Group\V-Ray\3dsmax 2016 for x64\lib\x64\vc11;%(AdditionalLibraryDirectories);..\..\dependencies\glfw\lib-vc2012\</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>
       <BaseAddress>0x08B70000</BaseAddress>
-      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;vray2016.lib;vutils_s.lib;plugman_s.lib;vrender2016.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;glfw3.lib;opengl32.lib;vray2016.lib;vutils_s.lib;plugman_s.lib;vrender2016.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions> /machine:AMD64</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -837,7 +837,7 @@
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>C:\Users\Vidar\Documents\code\ThunderLoom\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\src</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\debug\x64\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\debug\x64\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
@@ -882,7 +882,7 @@
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>C:\Users\Vidar\Documents\code\ThunderLoom\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\src;.\..\..\dependencies\imgui;.\..\..\dependencies\gl3w\include;.\..\..\dependencies\glfw\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;vrayblinnmtl_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\..\..\build\vrayblinnmtl\debug\x64\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\..\..\build\vrayblinnmtl\debug\x64\vrayblinnmtl.pch</PrecompiledHeaderOutputFile>
@@ -909,10 +909,10 @@
       <LinkDLL>true</LinkDLL>
       <OutputFile>$(ADSK_3DSMAX_x64_2015)\plugins\vrayplugins\vrayblinnmtl90.dlt</OutputFile>
       <ImportLibrary>.\..\..\build\vrayblinnmtl\debug\x64\vrayblinnmtl90.lib</ImportLibrary>
-      <AdditionalLibraryDirectories>C:\Program Files\Autodesk\3ds Max 2015 SDK\maxsdk\lib\x64\Release;..\..\..\lib\x64;..\..\..\lib\x64\vc11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\Autodesk\3ds Max 2015 SDK\maxsdk\lib\x64\Release;..\..\..\lib\x64;..\..\..\lib\x64\vc11;%(AdditionalLibraryDirectories);..\..\dependencies\glfw\lib-vc2012\</AdditionalLibraryDirectories>
       <SetChecksum>true</SetChecksum>
       <BaseAddress>0x08B70000</BaseAddress>
-      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;vray2015.lib;vutils_s.lib;plugman_s.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>paramblk2.lib;core.lib;geom.lib;maxutil.lib;bmm.lib;comctl32.lib;odbc32.lib;odbccp32.lib;glfw3.lib;opengl32.lib;vray2015.lib;vutils_s.lib;plugman_s.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>
       </AdditionalOptions>
       <ModuleDefinitionFile>.\plugin.def</ModuleDefinitionFile>
@@ -920,6 +920,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\woven_cloth.cpp" />
+    <ClCompile Include="..\..\dependencies\gl3w\src\gl3w.c" />
+    <ClCompile Include="..\..\dependencies\imgui\imgui.cpp" />
+    <ClCompile Include="..\..\dependencies\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\..\dependencies\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\..\dependencies\imgui\imgui_impl_glfw_gl3.cpp" />
     <ClCompile Include="Eval.cpp" />
     <ClCompile Include="VrayThunderLoomBRDF.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Max Release Official|Win32'"> /Qprec_div /Qvc7   /Qprec_div /Qvc7 </AdditionalOptions>

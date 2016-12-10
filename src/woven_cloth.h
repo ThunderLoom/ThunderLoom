@@ -10,11 +10,7 @@
  * Before rendering, call wcWeavePatternFromFile to load a weaving pattern.
  */
 typedef struct wcWeaveParameters wcWeaveParameters; //Forward decl.
-void wcWeavePatternFromFile(wcWeaveParameters *params, const char *filename);
-#ifdef WC_WCHAR
-void wcWeavePatternFromFile_wchar(wcWeaveParameters *params,
-    const wchar_t *filename);
-#endif
+wcWeaveParameters *wcWeavePatternFromFile(const char *filename,const char **error);
 
 /* Before each frame, call wcPrepare to apply all changes to parameters
  */
@@ -173,7 +169,6 @@ WC_FABRIC_PARAMETERS
 #undef WC_COLOR_PARAM
 // These are set by calling one of the wcWeavePatternFrom* functions
 // after all parameters above have been defined
-//TODO(Vidar): Move to the pattern struct?
     uint32_t pattern_height;
     uint32_t pattern_width;
     uint32_t num_yarn_types;
@@ -204,18 +199,19 @@ wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
 float wcEvalSpecular(wcIntersectionData intersection_data,
     wcPatternData data, const wcWeaveParameters *params);
 
-void wcWeavePatternFromData(wcWeaveParameters *params, uint8_t *warp_above,
-    float *warp_color, float *weft_color, uint32_t pattern_width,
-    uint32_t pattern_height);
+wcWeaveParameters *wcWeavePatternFromData(uint8_t *warp_above,
+    uint8_t *yarn_type, uint32_t num_yarn_types, wcColor *yarn_colors,
+    uint32_t pattern_width, uint32_t pattern_height);
 /* wcWeavePatternFromFile calles one of the functions below depending on
  * file extension*/
-void wcWeavePatternFromWIF(wcWeaveParameters *params, const char *filename);
-void wcWeavePatternFromWeaveFile(wcWeaveParameters *params, const char *filename);
+wcWeaveParameters *wcWeavePatternFromWIF(unsigned char *data,long len,
+                const char **error);
+wcWeaveParameters *wcWeavePatternFromPTN(unsigned char *data,long len,
+                const char **error);
+
 #ifdef WC_WCHAR
-void wcWeavePatternFromWIF_wchar(wcWeaveParameters *params,
-    const wchar_t *filename);
-void wcWeavePatternFromWeaveFile_wchar(wcWeaveParameters *params,
-    const wchar_t *filename);
+wcWeaveParameters *wcWeavePatternFromFile_wchar(const wchar_t *filename,
+	const char **error);
 #endif
 
 typedef struct
