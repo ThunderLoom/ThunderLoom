@@ -21,7 +21,7 @@
 #include "VrayThunderLoomBRDF.h"
 #include "pb2template_generator.h"
 
-#include "woven_cloth.h"
+#include "thunderloom.h"
 
 //NOTE(Peter):These are parameters for each yarn type that can be varied  
 //for each uv position. These paramters are good to vary using texture maps
@@ -100,9 +100,9 @@ public:
 	IMtlParams *m_imp;
 
 	Interval ivalid;
-    wcWeaveParameters *m_weave_parameters;
+    tlWeaveParameters *m_weave_parameters;
     IMtlParams *m_i_mtl_params;
-    bool m_yarn_type_rollup_open[WC_MAX_YARN_TYPES];
+    bool m_yarn_type_rollup_open[TL_MAX_YARN_TYPES];
 
 	// Parameter and UI management
 	IParamBlock2 *pblock; 	//ref 0

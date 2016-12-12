@@ -1,7 +1,6 @@
 //#include "stdafx.h"
 #include "Eval.h"
 #include "shadedata_new.h"
-#include "woven_cloth.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -9,16 +8,16 @@
 //using namespace VUtils;
 
 void EvalDiffuseFunc (const VUtils::VRayContext &rc,
-    wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
-	wcYarnType* yarn_type, int* yarn_type_id)
+    tlWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
+	tlYarnType* yarn_type, int* yarn_type_id)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
         *diffuse_color = VUtils::Color(1.f,1.f,0.f);
-		*yarn_type = wc_default_yarn_type;
+		*yarn_type = tl_default_yarn_type;
 		*yarn_type_id = 0;
         return;
     }
-    wcIntersectionData intersection_data;
+    tlIntersectionData intersection_data;
    
     const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);
 	VR::VRayInterface &vri=const_cast<VR::VRayInterface&>(vri_const);
@@ -32,14 +31,14 @@ void EvalDiffuseFunc (const VUtils::VRayContext &rc,
 
     intersection_data.context = &sc;
 
-    wcPatternData pattern_data = wcGetPatternData(intersection_data,
+    tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
         weave_parameters);
 	*yarn_type_id = pattern_data.yarn_type;
 	*yarn_type = weave_parameters->yarn_types[pattern_data.yarn_type];
-    float specular_strength = wc_yarn_type_get_specular_strength(
+    float specular_strength = tl_yarn_type_get_specular_strength(
         weave_parameters,pattern_data.yarn_type,&sc);
-    wcColor d = 
-        wcEvalDiffuse( intersection_data, pattern_data, weave_parameters);
+    tlColor d = 
+        tl_eval_diffuse( intersection_data, pattern_data, weave_parameters);
     float factor = (1.f - specular_strength);
     diffuse_color->r = factor*d.r;
     diffuse_color->g = factor*d.g;
@@ -47,7 +46,7 @@ void EvalDiffuseFunc (const VUtils::VRayContext &rc,
 }
 
 void EvalSpecularFunc ( const VUtils::VRayContext &rc,
-const VUtils::Vector &direction, wcWeaveParameters *weave_parameters,
+const VUtils::Vector &direction, tlWeaveParameters *weave_parameters,
 VUtils::Matrix nm, VUtils::Color *reflection_color)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
@@ -57,7 +56,7 @@ VUtils::Matrix nm, VUtils::Color *reflection_color)
 		reflection_color->b = s;
 		return;
     }
-    wcIntersectionData intersection_data;
+    tlIntersectionData intersection_data;
    
     const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);
 	VR::VRayInterface &vri=const_cast<VR::VRayInterface&>(vri_const);
@@ -102,13 +101,13 @@ VUtils::Matrix nm, VUtils::Color *reflection_color)
 
     intersection_data.context = &sc;
 
-    wcPatternData pattern_data = wcGetPatternData(intersection_data,
+    tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
         weave_parameters);
 	//DBOUT("pattern_data.yarn_hit: "<< pattern_data.yarn_hit);
-    float specular_strength = wc_yarn_type_get_specular_strength(
+    float specular_strength = tl_yarn_type_get_specular_strength(
         weave_parameters,pattern_data.yarn_type,&sc);
     float s = specular_strength *
-        wcEvalSpecular(intersection_data, pattern_data, weave_parameters);
+        tl_eval_specular(intersection_data, pattern_data, weave_parameters);
     reflection_color->r = s;
     reflection_color->g = s;
     reflection_color->b = s;
@@ -164,7 +163,7 @@ class SCTexture: public ShadeContext {
 	};
 
 
-float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *data)
+float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *data)
 {
 	if(data){
 		SCTexture *texsc = new SCTexture(); //Might slow it down a bit. Can be moved out!
@@ -182,7 +181,7 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *data)
 	return 1.f;
 }
 
-float wc_eval_texmap_mono(void *texmap, void *data)
+float tl_eval_texmap_mono(void *texmap, void *data)
 {
 	if(data){
 		ShadeContext *sc=(ShadeContext*)data;
@@ -192,9 +191,9 @@ float wc_eval_texmap_mono(void *texmap, void *data)
 	return 1.f;
 }
 
-wcColor wc_eval_texmap_color(void *texmap, void *data)
+tlColor tl_eval_texmap_color(void *texmap, void *data)
 {
-    wcColor ret = {1.f,1.f,1.f};
+    tlColor ret = {1.f,1.f,1.f};
 	if(data){
 		ShadeContext *sc=(ShadeContext*)data;
 		Texmap *t=(Texmap*)texmap;

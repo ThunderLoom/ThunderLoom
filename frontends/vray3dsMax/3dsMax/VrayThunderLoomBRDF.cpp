@@ -12,7 +12,7 @@ using namespace VUtils;
 // one calling eval(). In this function we can do all the work that is common
 // throughout all directions, such as computing the diffuse color.
 void
-MyBaseBSDF::init(const VRayContext &rc, wcWeaveParameters *weave_parameters) {
+MyBaseBSDF::init(const VRayContext &rc, tlWeaveParameters *weave_parameters) {
     m_weave_parameters = weave_parameters;
     EvalDiffuseFunc(rc,weave_parameters,&diffuse_color,&m_yarn_type,
 		&m_yarn_type_id);

@@ -376,7 +376,7 @@ static char* read_from_string(char* str, int num, void* stream)
                         end++;
                 }
             }
-            str[-1] = 0;
+            str[0] = 0;
             if(data->str[0] == '\n'){
                 data->len--;
                 data->str++;
@@ -444,15 +444,15 @@ void wif_free_weavedata(WeaveData *data)
 
 //NOTE(Vidar): This function takes the data which was read from the WIF file
 // and converts it to the data used by the shader
-void wif_get_pattern(wcWeaveParameters *param, WeaveData *data, uint32_t *w,
+void wif_get_pattern(tlWeaveParameters *param, WeaveData *data, uint32_t *w,
     uint32_t *h, float *rw, float *rh)
 {
     uint32_t x,y;
     if(data == 0){
         //NOTE(Vidar): The file was invalid...
-        wcYarnType *yarn_types =
-            (wcYarnType*)calloc(1,sizeof(wcYarnType));
-		yarn_types[0]=wc_default_yarn_type;
+        tlYarnType *yarn_types =
+            (tlYarnType*)calloc(1,sizeof(tlYarnType));
+		yarn_types[0]=tl_default_yarn_type;
         param->yarn_types = yarn_types;
         param->num_yarn_types = 1;
         *w = 0;
@@ -477,20 +477,20 @@ void wif_get_pattern(wcWeaveParameters *param, WeaveData *data, uint32_t *w,
         uint32_t c;
         PatternEntry *entries =
             (PatternEntry*)calloc((*w)*(*h),sizeof(PatternEntry));
-        wcYarnType *yarn_types =
-            (wcYarnType*)calloc(data->num_colors+1,sizeof(wcYarnType));
+        tlYarnType *yarn_types =
+            (tlYarnType*)calloc(data->num_colors+1,sizeof(tlYarnType));
 
-		yarn_types[0]=wc_default_yarn_type;
+		yarn_types[0]=tl_default_yarn_type;
         for(c=1;c<data->num_colors+1;c++){
             yarn_types[c].color.r = data->colors[(c-1)*3+0];
             yarn_types[c].color.g = data->colors[(c-1)*3+1];
             yarn_types[c].color.b = data->colors[(c-1)*3+2];
 			yarn_types[c].color_enabled=1;
-		#define WC_FLOAT_PARAM(name)\
-            yarn_types[c].name = wc_default_yarn_type.name;\
+		#define TL_FLOAT_PARAM(name)\
+            yarn_types[c].name = tl_default_yarn_type.name;\
             yarn_types[c].name##_enabled = 0;
-		#define WC_COLOR_PARAM(name)
-            WC_YARN_PARAMETERS
+		#define TL_COLOR_PARAM(name)
+            TL_YARN_PARAMETERS
 		#undef YARN_TYPE_PARAM
         }
         for(y=0;y<*h;y++){

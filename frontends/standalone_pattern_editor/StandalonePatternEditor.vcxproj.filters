@@ -27,9 +27,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\woven_cloth.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\dependencies\imgui\imgui.cpp">
       <Filter>Source Files\dependencies\imgui</Filter>
     </ClCompile>
@@ -42,13 +39,5 @@
     <ClCompile Include="..\dependencies\gl3w\src\gl3w.c">
       <Filter>Source Files\dependencies\gl3w</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\src\woven_cloth.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\pattern_editor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,12 +1,12 @@
 #pragma once
-#include "woven_cloth.h"
-wcWeaveParameters *wc_pattern_editor(wcWeaveParameters *param);
+#include "thunderloom.h"
+tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param);
 
 // -- Usage --
-//In one of your source files, define WC_PATTERN_EDITOR_IMPLEMENTATION
+//In one of your source files, define TL_PATTERN_EDITOR_IMPLEMENTATION
 //before including this file, like so:
 //
-//#define WC_PATTERN_EDITOR_IMPLEMENTATION
+//#define TL_PATTERN_EDITOR_IMPLEMENTATION
 //#include "pattern_editor.h"
 //
 // -- Dependencies --
@@ -14,7 +14,7 @@ wcWeaveParameters *wc_pattern_editor(wcWeaveParameters *param);
 // See README.txt in ../dependencies for instructions on how to get these
 // libraries
 
-#ifdef WC_PATTERN_EDITOR_IMPLEMENTATION
+#ifdef TL_PATTERN_EDITOR_IMPLEMENTATION
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -140,35 +140,35 @@ static char* file_open_dialog(const char *filters,const char* title, bool save)
 }
 
 //TODO(Vidar):Move to woven_cloth.cpp..
-static unsigned char * wc_pattern_to_ptn_file(wcWeaveParameters *param, long *ret_len){
+static unsigned char * tl_pattern_to_ptn_file(tlWeaveParameters *param, long *ret_len){
     int version = 1; //NOTE(Vidar): The current version of the file format...
     int pattern_size = param->pattern_width*param->pattern_height;
 
-#define WC_PTN_ENTRIES \
-    WC_PTN_ENTRY(&version,int,1)\
-    WC_PTN_ENTRY(param,wcWeaveParameters,1)\
-    WC_PTN_ENTRY(param->yarn_types,wcYarnType,param->num_yarn_types)\
-    WC_PTN_ENTRY(param->pattern,PatternEntry,pattern_size)\
+#define TL_PTN_ENTRIES \
+    TL_PTN_ENTRY(&version,int,1)\
+    TL_PTN_ENTRY(param,tlWeaveParameters,1)\
+    TL_PTN_ENTRY(param->yarn_types,tlYarnType,param->num_yarn_types)\
+    TL_PTN_ENTRY(param->pattern,PatternEntry,pattern_size)\
 
     long len = 0;
-#define WC_PTN_ENTRY(name,type,num) len += sizeof(type)*num;
-    WC_PTN_ENTRIES
-#undef WC_PTN_ENTRY
+#define TL_PTN_ENTRY(name,type,num) len += sizeof(type)*num;
+    TL_PTN_ENTRIES
+#undef TL_PTN_ENTRY
 
     unsigned char *data = (unsigned char *)calloc(1,len);
     unsigned char *dest = data;
-#define WC_PTN_ENTRY(name,type,num) memcpy(dest,name,sizeof(type)*num);\
+#define TL_PTN_ENTRY(name,type,num) memcpy(dest,name,sizeof(type)*num);\
     dest += sizeof(type)*num;
-    WC_PTN_ENTRIES
-#undef WC_PTN_ENTRY
+    TL_PTN_ENTRIES
+#undef TL_PTN_ENTRY
 
     *ret_len = len;
     return data;
 }
 
-static void save_ptn_file(const char *filename,wcWeaveParameters *param){
+static void save_ptn_file(const char *filename,tlWeaveParameters *param){
     long len=0;
-    unsigned char *data = wc_pattern_to_ptn_file(param,&len);
+    unsigned char *data = tl_pattern_to_ptn_file(param,&len);
     FILE *fp = fopen(filename,"wb");
     fwrite(data,len,1,fp);
     fclose(fp);
@@ -197,10 +197,8 @@ static void check_compilation(GLuint handle, GLenum flag)
         buffer[len]=0;
         printf("Error: %s\n",buffer);
 #ifdef WIN32
-        wchar_t wbuffer[1024];
-        mbstowcs(wbuffer,buffer,1024);
-        OutputDebugString(L"ERROR:\n");
-        OutputDebugString(wbuffer);
+        OutputDebugStringA("ERROR:\n");
+        OutputDebugStringA(buffer);
 #endif
     }
 }
@@ -247,14 +245,14 @@ static int compile_shader(const char *vert_shader, const char *frag_shader)
     return shader_handle;
 }
 
-static void draw_pattern_texture(unsigned char *bitmap, wcWeaveParameters *param)
+static void draw_pattern_texture(unsigned char *bitmap, tlWeaveParameters *param)
 {
     int w=param->pattern_width;
     int h=param->pattern_height;
     for(int y=0;y<h;y++){
         for(int x=0;x<w;x++){
             PatternEntry pe=param->pattern[x+y*w];
-            wcYarnType yt=param->yarn_types[pe.yarn_type];
+            tlYarnType yt=param->yarn_types[pe.yarn_type];
             if(!yt.color_enabled){
                 yt=param->yarn_types[0];
             }
@@ -268,7 +266,7 @@ static void draw_pattern_texture(unsigned char *bitmap, wcWeaveParameters *param
     }
 }
 
-static void redraw_pattern(EditorData *data, wcWeaveParameters *param, GLuint pattern_tex)
+static void redraw_pattern(EditorData *data, tlWeaveParameters *param, GLuint pattern_tex)
 {
     draw_pattern_texture(data->bitmap, param);
     glBindTexture(GL_TEXTURE_2D,pattern_tex);
@@ -282,7 +280,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
 }
 
-wcWeaveParameters *wc_pattern_editor(wcWeaveParameters *param)
+tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
 {
         // Setup window
     glfwSetErrorCallback(error_callback);
@@ -376,10 +374,10 @@ wcWeaveParameters *wc_pattern_editor(wcWeaveParameters *param)
                 char *filename = file_open_dialog(open_file_dialog_filters,"Load pattern",false);
                 if(filename[0] != 0){
                     const char *error = 0;
-                    wcWeaveParameters* p =
-                    wcWeavePatternFromFile(filename,&error);
+                    tlWeaveParameters* p =
+                    tl_weave_pattern_from_file(filename,&error);
                     if(p){
-                        wcFreeWeavePattern(param);
+                        tl_free_weave_parameters(param);
                         param = p;
                         data.center_x = 0.5f;
                         data.center_y = 0.5f;
@@ -443,7 +441,7 @@ wcWeaveParameters *wc_pattern_editor(wcWeaveParameters *param)
                     if(ImGui::Selectable(buffer,data.current_yarn_type==i)) {
                         data.current_yarn_type = data.current_yarn_type == i? 0 : i;
                     }
-                    wcYarnType *yt = param->yarn_types;
+                    tlYarnType *yt = param->yarn_types;
                     if(ImGui::Checkbox("",(bool*)&param->yarn_types[i].color_enabled)){
                         redraw_pattern(&data,param,pattern_tex);
                     }
@@ -478,13 +476,13 @@ wcWeaveParameters *wc_pattern_editor(wcWeaveParameters *param)
                 }
                 if(ImGui::Button("Add yarn type")){
                     int n =param->num_yarn_types;
-                    wcYarnType *yt = (wcYarnType*)calloc(n+1,sizeof(wcYarnType));
-                    memcpy(yt,param->yarn_types,n*sizeof(wcYarnType));
+                    tlYarnType *yt = (tlYarnType*)calloc(n+1,sizeof(tlYarnType));
+                    memcpy(yt,param->yarn_types,n*sizeof(tlYarnType));
                     free(param->yarn_types);
                     param->yarn_types = yt;
                     data.current_yarn_type = param->num_yarn_types;
                     param->num_yarn_types++;
-                    param->yarn_types[n] = wc_default_yarn_type;
+                    param->yarn_types[n] = tl_default_yarn_type;
                     param->yarn_types[n].color_enabled = 1;
                 }
             }

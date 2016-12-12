@@ -1,5 +1,327 @@
-#include "woven_cloth.h"
-#ifndef WC_NO_FILES
+#pragma once
+/* A shader model for woven cloth
+ * By Vidar Nelson and Peter McEvoy
+ *
+ * !Read this if you want to integrate the shader with your own renderer!
+ */
+
+/* --- Basic usage ---
+ * 
+ * In one of your source files, define TL_THUNDERLOOM_IMPLEMENTATION
+ * before including this file, like so:
+
+ * #define TL_THUNDERLOOM_IMPLEMENTATION
+ * #include "thunderloom.h"
+ *
+ * Before rendering, call tl_weave_pattern_from_file to load a weaving pattern.
+ */
+typedef struct tlWeaveParameters tlWeaveParameters; //Forward decl.
+tlWeaveParameters *tl_weave_pattern_from_file(const char *filename,const char **error);
+
+/* Before each frame, call tl_prepare to apply all changes to parameters
+ */
+void tl_prepare(tlWeaveParameters *params);
+
+/* During rendering, fill out an instance of tlIntersectionData
+ * with the relevant information about the current shading point,
+ * and call tl_shade to recieve the reflected color.
+ */
+typedef struct {float r,g,b;} tlColor;
+typedef struct tlIntersectionData tlIntersectionData;
+tlColor tl_shade(tlIntersectionData intersection_data,
+        const tlWeaveParameters *params);
+
+/* When you're done, call tl_free_weave_parameters to free the memory
+ * used by the weaving pattern.
+ */
+void tl_free_weave_parameters(tlWeaveParameters *params);
+
+/* --- Fabric Parameters ---
+ * When the weaving pattern is loaded, it is assigned default parameter values.
+ * There are some parameters which affect the entire fabric. They are stored in
+ * the tl_weave_pattern_from_file struct. The parameters are defined by the
+ * TL_FABRIC_PARAMETERS X-Macro below
+ */
+#define TL_FABRIC_PARAMETERS\
+	TL_FLOAT_PARAM(uscale)\
+	TL_FLOAT_PARAM(vscale)\
+	TL_FLOAT_PARAM(intensity_fineness)\
+	TL_INT_PARAM(realworld_uv)
+
+/* --- Yarn Parameters ---
+ * Furthermore, there are some settings which affect the yarn that the cloth
+ * consists of.
+ * Each color in the wif file will be separated into its own ''yarn type'', 
+ * and can be given separate settings. There is an array of yarn types at
+ * tlWeaveParameters.yarn_types, and the number of yarn types is stored in
+ * tlWeaveParameters.num_yarn_types.
+ *
+ * Yarn type 0 is somewhat special since it contains settings which are common
+ * for all yarn types. Unless a yarn type explicitly overrides a parameter,
+ * by setting [parm name]_enabled to 1, the value stored in yarn type
+ * 0 will be used.
+ * Example:
+ * ...
+ * The yarn type parameters can be found in the tlYarnType struct and are
+ * defined by TL_YARN_PARAMETERS below
+ * Each parameter has three members in the tlYarnType struct,
+ * float/tlColor [param], uint8_t [param]_enabled, and void * [param]_texmap
+ */
+#define TL_YARN_PARAMETERS\
+	TL_FLOAT_PARAM(umax)\
+	TL_FLOAT_PARAM(yarnsize)\
+	TL_FLOAT_PARAM(psi)\
+	TL_FLOAT_PARAM(alpha)\
+	TL_FLOAT_PARAM(beta)\
+	TL_FLOAT_PARAM(delta_x)\
+	TL_FLOAT_PARAM(specular_strength)\
+	TL_FLOAT_PARAM(specular_noise)\
+    TL_COLOR_PARAM(color)
+
+/* --- Intersection data ---
+ * During rendering, before calling tl_shade, the tlIntersectionData struct
+ * needs to be filled out. This struct looks like this:
+ */
+struct tlIntersectionData
+{
+    float uv_x, uv_y;       // Texture coordinates
+    float wi_x, wi_y, wi_z; // Incident direction 
+    float wo_x, wo_y, wo_z; // Outgoing direction
+	void *context;          // User data sent to texturing callbacks
+};
+/* The coordinate system for the directions needs to be defined such that
+ * x points along dP/du, y points along dP/dv, and z points along the normal.
+ * Here, dP/du and dP/dv are the derivatives of the current shading point with
+ * respect to the u and v texture coordinates, respectively. I.e. vectors
+ * which point in the direction of increasing u or v along the surface.
+ * The ''context'' member is explained below.
+ */
+
+/* --- Texturing ---
+ * Any yarn type parameter can be controlled using textures. This is
+ * implemented via callbacks.
+ * To assign a texture to a parameter, set the [param]_texture
+ * member of tlYarnType to the adress of that texture, or some other identifier
+ * which makes sense in your renderer. 
+ * During rendering, when the shader needs to evaluate a parameter, it will call
+ * either tl_eval_texmap_mono or tl_eval_texmap_color, declared below.
+ * The input to these functions are the texmap pointer and the context pointer
+ * from tlIntersectionData.
+ * If you don't want to implement these callbacks, make sure that
+ * TL_NO_TEXTURE_CALLBACKS is defined when you include thunderloom.h
+ */
+//TODO(Vidar): Send these callbacks as parameters instead??
+float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context);
+// Called when a texture is applied to a float parameter.
+float tl_eval_texmap_mono(void *texmap, void *context);
+// Called when a texture is applied to a color parameter.
+tlColor tl_eval_texmap_color(void *texmap, void *context);
+
+/* --- Separating diffuse and specular reflection ---
+ * ...
+ */ 
+
+
+/* ------------ Implementation --------------------- */
+
+#include <stdint.h>
+
+
+typedef struct
+{
+#define TL_FLOAT_PARAM(name) float name;
+#define TL_INT_PARAM(name)  uint8_t name;
+#define TL_COLOR_PARAM(name) tlColor name;
+TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_INT_PARAM
+#undef TL_COLOR_PARAM
+
+#define TL_FLOAT_PARAM(name) uint8_t name##_enabled;
+#define TL_INT_PARAM(name)  uint8_t name##_enabled;
+#define TL_COLOR_PARAM(name) uint8_t name##_enabled;
+TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_INT_PARAM
+#undef TL_COLOR_PARAM
+
+#define TL_FLOAT_PARAM(name) void *name##_texmap;
+#define TL_INT_PARAM(name)  void *name##_texmap;
+#define TL_COLOR_PARAM(name) void *name##_texmap;
+TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_INT_PARAM
+#undef TL_COLOR_PARAM
+}tlYarnType;
+
+typedef struct
+{
+    uint8_t warp_above;
+    uint8_t yarn_type; //NOTE(Vidar): We're limited to 256 yarn types now,
+                       //should be ok, right?
+}PatternEntry;
+#define TL_MAX_YARN_TYPES 256
+
+//TODO(Vidar): Give all parameters default values
+
+struct tlWeaveParameters
+{
+#define TL_FLOAT_PARAM(name) float name;
+#define TL_INT_PARAM(name)  uint8_t name;
+#define TL_COLOR_PARAM(name) tlColor name;
+TL_FABRIC_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_INT_PARAM
+#undef TL_COLOR_PARAM
+// These are set by calling one of the tlWeavePatternFrom* functions
+// after all parameters above have been defined
+    uint32_t pattern_height;
+    uint32_t pattern_width;
+    uint32_t num_yarn_types;
+    PatternEntry *pattern;
+    tlYarnType *yarn_types;
+    float specular_normalization;
+    float pattern_realheight;
+    float pattern_realwidth;
+};
+
+typedef struct
+{
+    uint32_t yarn_type;
+    float normal_x, normal_y, normal_z; //(not yarn local coordinates)
+    float u, v; //Segment uv coordinates (in angles)
+    float length, width; //Segment length and width
+    float x, y; //position within segment (in yarn local coordiantes). 
+    uint32_t total_index_x, total_index_y; //index for elements (not yarn local coordinates). TODO(Peter): perhaps a better name would be good?
+    uint8_t warp_above; 
+    uint8_t yarn_hit; //True if we hit a yarn. False if we hit space inbetween. 
+    uint8_t ext_between_parallel; //True if extensionis between to adjascent parallel yarns. -> bend should be zero
+} tlPatternData;
+
+tlPatternData tl_get_pattern_data(tlIntersectionData intersection_data,
+    const tlWeaveParameters *params);
+tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
+    tlPatternData data, const tlWeaveParameters *params);
+float tl_eval_specular(tlIntersectionData intersection_data,
+    tlPatternData data, const tlWeaveParameters *params);
+
+tlWeaveParameters *tl_weave_pattern_from_data(uint8_t *warp_above,
+    uint8_t *yarn_type, uint32_t num_yarn_types, tlColor *yarn_colors,
+    uint32_t pattern_width, uint32_t pattern_height);
+/* tl_weave_pattern_from_file calles one of the functions below depending on
+ * file extension*/
+tlWeaveParameters *tl_weave_pattern_from_wif(unsigned char *data,long len,
+                const char **error);
+tlWeaveParameters *tl_weave_pattern_from_ptn(unsigned char *data,long len,
+                const char **error);
+
+#ifdef TL_WCHAR
+tlWeaveParameters *tl_weave_pattern_from_wif_wchar(const wchar_t *filename,
+	const char **error);
+#endif
+
+typedef struct
+{
+    PatternEntry pattern_entry;
+    float length, width; //Segment length and width
+    float start_u, start_v; //Coordinates for top left corner of segment in total uv coordinates.
+    uint8_t between_parallel;
+    uint8_t warp_above;
+    uint8_t yarn_hit;
+} tlYarnSegment;
+
+static const
+tlYarnType tl_default_yarn_type =
+{
+	0.5f,  //umax
+	1.0f,  //yarnsize
+	0.5f,  //psi
+	0.05f, //alpha
+	4.f,   //beta
+	0.3f,  //delta_x
+	0.4f,  //specular_strength
+    0.f,   //specular_noise
+    {0.3f, 0.3f, 0.3f},  //color
+    0
+};
+
+tlYarnSegment tl_get_yarn_segment(float total_u, float total_v,
+	const tlWeaveParameters *params, const tlIntersectionData *intersection_data);
+
+static float tl_yarn_type_get_lookup_yarnsize(const tlWeaveParameters *p,
+        uint32_t i, float u, float v, void* context) {
+    tlYarnType yarn_type = p->yarn_types[i];
+    float ret;
+    if(yarn_type.yarnsize_enabled){
+        ret = yarn_type.yarnsize;
+        if(yarn_type.yarnsize_texmap){
+            ret=tl_eval_texmap_mono_lookup(yarn_type.yarnsize_texmap,u,v,context);
+        }
+    } else{
+        ret = p->yarn_types[0].yarnsize;
+        if(p->yarn_types[0].yarnsize_texmap){
+            ret=tl_eval_texmap_mono_lookup(p->yarn_types[0].yarnsize_texmap,u,v,context);
+            //ret=tl_eval_texmap_mono(p->yarn_types[0].param##_texmap,context);
+        }
+    }
+    return ret;
+}
+// Getter functions for the yarn type parameters.
+// These take into account whether the parameter is enabled or not
+// and handle the texmaps
+#define TL_FLOAT_PARAM(param) static float tl_yarn_type_get_##param\
+    (const tlWeaveParameters *p, uint32_t i, void* context){\
+	tlYarnType yarn_type = p->yarn_types[i];\
+    float ret;\
+	if(yarn_type.param##_enabled){\
+		ret = yarn_type.param;\
+		if(yarn_type.param##_texmap){\
+			ret=tl_eval_texmap_mono(yarn_type.param##_texmap,context);\
+		}\
+	} else{\
+		ret = p->yarn_types[0].param;\
+		if(p->yarn_types[0].param##_texmap){\
+			ret=tl_eval_texmap_mono(p->yarn_types[0].param##_texmap,context);\
+		}\
+	}\
+	return ret;}
+#define TL_COLOR_PARAM(param) static tlColor tl_yarn_type_get_##param\
+    (const tlWeaveParameters *p, uint32_t i, void* context){\
+	tlYarnType yarn_type = p->yarn_types[i];\
+    tlColor ret;\
+	if(yarn_type.param##_enabled){\
+		ret = yarn_type.param;\
+		if(yarn_type.param##_texmap){\
+			ret=tl_eval_texmap_color(yarn_type.param##_texmap,context);\
+		}\
+	} else{\
+		ret = p->yarn_types[0].param;\
+		if(p->yarn_types[0].param##_texmap){\
+			ret=tl_eval_texmap_color(p->yarn_types[0].param##_texmap,context);\
+		}\
+	}\
+	return ret;}
+#define TL_INT_PARAM(param) 
+TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_COLOR_PARAM
+#undef TL_INT_PARAM
+
+static const int TL_NUM_YARN_PARAMETERS = 0
+#define TL_FLOAT_PARAM(name) + 1
+#define TL_INT_PARAM(name)  + 1
+#define TL_COLOR_PARAM(name) + 1
+TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_INT_PARAM
+#undef TL_COLOR_PARAM
+;
+
+/* ----------- IMPLEMENTATION --------------- */
+
+#ifdef TL_THUNDERLOOM_IMPLEMENTATION
+
+#ifndef TL_NO_FILES
 #define REALWORLD_UV_WIF_TO_MM 10.0
 #include "wif/wif.cpp"
 #include "wif/ini.cpp"
@@ -11,28 +333,29 @@
 #endif
 #include <math.h>
 
+//TODO(Vidar): Do we need this?
 #include <stdio.h>
 
 // -- 3D Vector data structure -- //
 typedef struct
 {
     float x,y,z,w;
-} wcVector;
+} tlVector;
 
-static wcVector wcvector(float x, float y, float z)
+static tlVector tlvector(float x, float y, float z)
 {
-    wcVector ret = {x,y,z,0.f};
+    tlVector ret = {x,y,z,0.f};
     return ret;
 }
 
-static float wcVector_magnitude(wcVector v)
+static float tlVector_magnitude(tlVector v)
 {
     return sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
 }
 
-static wcVector wcVector_normalize(wcVector v)
+static tlVector tlVector_normalize(tlVector v)
 {
-    wcVector ret;
+    tlVector ret;
     float inv_mag = 1.f/sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
     ret.x = v.x * inv_mag;
     ret.y = v.y * inv_mag;
@@ -40,23 +363,23 @@ static wcVector wcVector_normalize(wcVector v)
     return ret;
 }
 
-static float wcVector_dot(wcVector a, wcVector b)
+static float tlVector_dot(tlVector a, tlVector b)
 {
     return a.x*b.x + a.y*b.y + a.z*b.z;
 }
 
-static wcVector wcVector_cross(wcVector a, wcVector b)
+static tlVector tlVector_cross(tlVector a, tlVector b)
 {
-    wcVector ret;
+    tlVector ret;
     ret.x = a.y*b.z - a.z*b.y;
     ret.y = a.z*b.x - a.x*b.z;
     ret.z = a.x*b.y - a.y*b.x;
     return ret;
 }
 
-static wcVector wcVector_add(wcVector a, wcVector b)
+static tlVector tlVector_add(tlVector a, tlVector b)
 {
-    wcVector ret;
+    tlVector ret;
     ret.x = a.x + b.x;
     ret.y = a.y + b.y;
     ret.z = a.z + b.z;
@@ -87,14 +410,14 @@ static double str2d(char s[]) {
     return sign * val / power;
 }
 
-static float wcClamp(float x, float min, float max)
+static float tl_clamp(float x, float min, float max)
 {
     return (x < min) ? min : (x > max) ? max : x;
 }
 
 /* Tiny Encryption Algorithm by David Wheeler and Roger Needham */
 /* Taken from mitsuba source code. */
-static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds)
+static uint64_t sample_TEA(uint32_t v0, uint32_t v1, int rounds)
 {
 	uint32_t sum = 0;
 
@@ -108,7 +431,7 @@ static uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds)
 }
 
 //From Mitsuba
-static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds)
+static float sample_TEA_single(uint32_t v0, uint32_t v1, int rounds)
 {
     /* Trick from MTGP: generate an uniformly distributed
     single precision number in [1,2) and subtract 1. */
@@ -116,7 +439,7 @@ static float sampleTEASingle(uint32_t v0, uint32_t v1, int rounds)
         uint32_t u;
         float f;
     } x;
-    x.u = ((sampleTEA(v0, v1, rounds) & 0xFFFFFFFF) >> 9) | 0x3f800000UL;
+    x.u = ((sample_TEA(v0, v1, rounds) & 0xFFFFFFFF) >> 9) | 0x3f800000UL;
     return x.f - 1.0f;
 }
 
@@ -157,8 +480,8 @@ void sample_uniform_hemisphere(float sample_x, float sample_y, float *p_x,
     *p_z = sinf(phi);
 }
 
-void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
-        const wcWeaveParameters *params,wcIntersectionData *intersection_data)
+void calculate_segment_uv_and_normal(tlPatternData *pattern_data,
+        const tlWeaveParameters *params,tlIntersectionData *intersection_data)
 {
     //Calculate the yarn-segment-local u v coordinates along the curved cylinder
     //NOTE: This is different from how Irawan does it
@@ -170,7 +493,7 @@ void calculate_segment_uv_and_normal(wcPatternData *pattern_data,
         //if segment is extension between to parallel yarns -> bend = 0
         umax = 0.0001;
     } else {
-        umax = wc_yarn_type_get_umax(params,
+        umax = tl_yarn_type_get_umax(params,
                 pattern_data->yarn_type,
                 intersection_data->context);
     }
@@ -220,7 +543,7 @@ static void halton_4(int n, float val[]){
 }
 
 
-void wcFinalizeWeaveParameters(wcWeaveParameters *params)
+void tl_prepare(tlWeaveParameters *params)
 {
     //Calculate normalization factor for the specular reflection
 	if (params->pattern) {
@@ -231,7 +554,7 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 		float highest_result = 0.f;
 
 		// Temporarily disable speuclar noise...
-		float tmp_specular_noise[WC_MAX_YARN_TYPES];
+		float tmp_specular_noise[TL_MAX_YARN_TYPES];
 		for(int i=0;i<params->num_yarn_types;i++){
 			tmp_specular_noise[i] = params->yarn_types[i].specular_noise;
 			params->yarn_types[i].specular_noise = 0.f;
@@ -245,7 +568,7 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 				float result = 0.0f;
 				float halton_point[4];
 				halton_4(i + 50, halton_point);
-				wcPatternData pattern_data;
+				tlPatternData pattern_data;
 				// Pick a random location on a segment rectangle...
 				pattern_data.x = -1.f + 2.f*halton_point[0];
 				pattern_data.y = -1.f + 2.f*halton_point[1];
@@ -254,7 +577,7 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 				pattern_data.warp_above = 0;
 				pattern_data.yarn_type = yarn_type;
 				pattern_data.yarn_hit = 1;
-				wcIntersectionData intersection_data;
+				tlIntersectionData intersection_data;
 				intersection_data.context=0;
 				calculate_segment_uv_and_normal(&pattern_data, params,
 					&intersection_data);
@@ -273,7 +596,7 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 					sample_cosine_hemisphere(halton_direction[0], halton_direction[1],
 						&intersection_data.wo_x, &intersection_data.wo_y,
 						&intersection_data.wo_z);
-					result += wcEvalSpecular(intersection_data, pattern_data, params);
+					result += tl_eval_specular(intersection_data, pattern_data, params);
 				}
 				if (result > highest_result) {
 					highest_result = result;
@@ -294,20 +617,20 @@ void wcFinalizeWeaveParameters(wcWeaveParameters *params)
 	}
 }
 
-wcWeaveParameters *wcWeavePatternFromData(uint8_t *warp_above, uint8_t *yarn_type,
-    uint32_t num_yarn_types, wcColor *yarn_colors, uint32_t pattern_width,
+tlWeaveParameters *tl_weave_pattern_from_data(uint8_t *warp_above, uint8_t *yarn_type,
+    uint32_t num_yarn_types, tlColor *yarn_colors, uint32_t pattern_width,
     uint32_t pattern_height)
 {
-    wcWeaveParameters *params =
-        (wcWeaveParameters*)calloc(sizeof(wcWeaveParameters),1);
+    tlWeaveParameters *params =
+        (tlWeaveParameters*)calloc(sizeof(tlWeaveParameters),1);
     params->pattern_width = pattern_width;
     params->pattern_height = pattern_height;
     num_yarn_types++;
     params->num_yarn_types = num_yarn_types;
-    params->yarn_types = (wcYarnType*)calloc(sizeof(wcYarnType),num_yarn_types);
-    params->yarn_types[0] = wc_default_yarn_type;
+    params->yarn_types = (tlYarnType*)calloc(sizeof(tlYarnType),num_yarn_types);
+    params->yarn_types[0] = tl_default_yarn_type;
     for(int i=1;i<num_yarn_types;i++){
-        params->yarn_types[i] = wc_default_yarn_type;
+        params->yarn_types[i] = tl_default_yarn_type;
         params->yarn_types[i].color = yarn_colors[i-1];
         params->yarn_types[i].color_enabled = 1;
     }
@@ -320,11 +643,11 @@ wcWeaveParameters *wcWeavePatternFromData(uint8_t *warp_above, uint8_t *yarn_typ
     return params;
 }
 
-#ifndef WC_NO_FILES
+#ifndef TL_NO_FILES
 
-wcWeaveParameters *wcWeavePatternFromFile(const char *filename,const char **error)
+tlWeaveParameters *tl_weave_pattern_from_file(const char *filename,const char **error)
 {
-	wcWeaveParameters *param = 0;
+	tlWeaveParameters *param = 0;
 	int len = 0;
 	while(filename[len] != 0){
 		len++;
@@ -359,20 +682,20 @@ wcWeaveParameters *wcWeavePatternFromFile(const char *filename,const char **erro
             fread(data,1,len,fp);
             fclose(fp);
             if(wif_ok){
-                param = wcWeavePatternFromWIF(data,len,error);
+                param = tl_weave_pattern_from_wif(data,len,error);
             }
             if(ptn_ok){
-                param = wcWeavePatternFromPTN(data,len,error);
+                param = tl_weave_pattern_from_ptn(data,len,error);
             }
             free(data);
 		}
 	}
 	return param;
 }
-#ifdef WC_WCHAR
-wcWeaveParameters *wcWeavePatternFromFile_wchar(const wchar_t *filename,const char **error)
+#ifdef TL_WCHAR
+tlWeaveParameters *tl_weave_pattern_from_wif_wchar(const wchar_t *filename,const char **error)
 {
-	wcWeaveParameters *param = 0;
+	tlWeaveParameters *param = 0;
 	int len = 0;
 	while(filename[len] != 0){
 		len++;
@@ -407,10 +730,10 @@ wcWeaveParameters *wcWeavePatternFromFile_wchar(const wchar_t *filename,const ch
 			fread(data,1,len,fp);
 			fclose(fp);
 			if(wif_ok){
-				param = wcWeavePatternFromWIF(data,len,error);
+				param = tl_weave_pattern_from_wif(data,len,error);
 			}
 			if(ptn_ok){
-				param = wcWeavePatternFromPTN(data,len,error);
+				param = tl_weave_pattern_from_ptn(data,len,error);
 			}
 			free(data);
 		}else{
@@ -423,11 +746,11 @@ wcWeaveParameters *wcWeavePatternFromFile_wchar(const wchar_t *filename,const ch
 }
 #endif
 
-wcWeaveParameters *wcWeavePatternFromWIF(unsigned char *data,long len,const char **error)
+tlWeaveParameters *tl_weave_pattern_from_wif(unsigned char *data,long len,const char **error)
 {
     WeaveData *weave_data = wif_read((char*)data,len,error);
     if(weave_data){
-        wcWeaveParameters *params = (wcWeaveParameters*)calloc(sizeof(wcWeaveParameters),1);
+        tlWeaveParameters *params = (tlWeaveParameters*)calloc(sizeof(tlWeaveParameters),1);
         wif_get_pattern(params, weave_data,
             &params->pattern_width, &params->pattern_height,
             &params->pattern_realwidth, &params->pattern_realheight);
@@ -438,35 +761,35 @@ wcWeaveParameters *wcWeavePatternFromWIF(unsigned char *data,long len,const char
 }
 #endif
 
-static wcWeaveParameters *wc_pattern_from_ptn_file_v1(unsigned char *data,long len,const char **error){
-#define WC_PTN_READ_ENTRY(name,type,num)\
+static tlWeaveParameters *tl_pattern_from_ptn_file_v1(unsigned char *data,long len,const char **error){
+#define TL_PTN_READ_ENTRY(name,type,num)\
 	if(len < sizeof(type)*num){ *error = "unexpected end of data"; return 0; }\
 	memcpy(name,data,sizeof(type)*num);\
 	data += sizeof(type)*num; len -= sizeof(type)*num;
 
-	wcWeaveParameters *param = (wcWeaveParameters*)calloc(sizeof(wcWeaveParameters),1);
-	WC_PTN_READ_ENTRY(param,wcWeaveParameters,1);
+	tlWeaveParameters *param = (tlWeaveParameters*)calloc(sizeof(tlWeaveParameters),1);
+	TL_PTN_READ_ENTRY(param,tlWeaveParameters,1);
 
-	param->yarn_types = (wcYarnType*)calloc(sizeof(wcYarnType),param->num_yarn_types);
-	WC_PTN_READ_ENTRY(param->yarn_types,wcYarnType,param->num_yarn_types);
+	param->yarn_types = (tlYarnType*)calloc(sizeof(tlYarnType),param->num_yarn_types);
+	TL_PTN_READ_ENTRY(param->yarn_types,tlYarnType,param->num_yarn_types);
 
 	int pattern_size = param->pattern_width*param->pattern_height;
 	param->pattern = (PatternEntry*)calloc(sizeof(PatternEntry),pattern_size);
-	WC_PTN_READ_ENTRY(param->pattern,PatternEntry,pattern_size);
+	TL_PTN_READ_ENTRY(param->pattern,PatternEntry,pattern_size);
 
-#undef WC_PTN_READ_ENTRY
+#undef TL_PTN_READ_ENTRY
 	return param;
 }
 
-wcWeaveParameters *wcWeavePatternFromPTN(unsigned char *data,long len,const char **error){
-	wcWeaveParameters *param = 0;
+tlWeaveParameters *tl_weave_pattern_from_ptn(unsigned char *data,long len,const char **error){
+	tlWeaveParameters *param = 0;
 	int version = 0;
 	memcpy(&version,data,sizeof(int));\
 	data += sizeof(int);
 	len -= sizeof(int);
 	switch(version){
 	case 1:
-		param = wc_pattern_from_ptn_file_v1(data,len,error);
+		param = tl_pattern_from_ptn_file_v1(data,len,error);
 		break;
 	default:
 		*error = "Unknown PTN file version";
@@ -475,7 +798,8 @@ wcWeaveParameters *wcWeavePatternFromPTN(unsigned char *data,long len,const char
 	return param;
 }
 
-void wcFreeWeavePattern(wcWeaveParameters *params)
+//TODO(Vidar):This should free params too, right?
+void tl_free_weave_parameters(tlWeaveParameters *params)
 {
     if (params->yarn_types) {
         free(params->yarn_types);
@@ -485,7 +809,7 @@ void wcFreeWeavePattern(wcWeaveParameters *params)
     }
 }
 
-static float intensityVariation(wcPatternData pattern_data)
+static float intensity_variation(tlPatternData pattern_data)
 {
 	//NOTE(Vidar): a fineness of 3 seems to work fine...
 	float intensity_fineness=3.f;
@@ -512,12 +836,12 @@ static float intensityVariation(wcPatternData pattern_data)
     uint32_t r2 = (uint32_t) ((centery + tindex_y) 
             * intensity_fineness);
     
-    float xi = sampleTEASingle(r1, r2, 8);
+    float xi = sample_TEA_single(r1, r2, 8);
     float log_xi = -logf(xi);
     return log_xi < 10.f ? log_xi : 10.f;
 }
 
-static void calculateLengthOfSegment(uint8_t warp_above, uint32_t pattern_x,
+static void calculate_length_of_segment(uint8_t warp_above, uint32_t pattern_x,
                 uint32_t pattern_y, uint32_t *steps_left,
                 uint32_t *steps_right,  uint32_t pattern_width,
                 uint32_t pattern_height, PatternEntry *pattern_entries)
@@ -556,7 +880,7 @@ static void calculateLengthOfSegment(uint8_t warp_above, uint32_t pattern_x,
     } while(*incremented_coord != initial_coord);
 }
 
-static float vonMises(float cos_x, float b) {
+static float von_mises(float cos_x, float b) {
     // assumes a = 0, b > 0 is a concentration parameter.
     float I0, absB = fabsf(b);
     if (fabsf(b) <= 3.75f) {
@@ -575,7 +899,7 @@ static float vonMises(float cos_x, float b) {
     return expf(b * cos_x) / (2 * M_PI * I0);
 }
 
-void lookupPatternEntry(PatternEntry* entry, const wcWeaveParameters* params, const int8_t x, const int8_t y) {
+static void lookup_pattern_entry(PatternEntry* entry, const tlWeaveParameters* params, const int8_t x, const int8_t y) {
     //function to get pattern entry. Takes care of coordinate wrapping!
     int32_t tmpx = (int32_t)fmod(x,(float)params->pattern_width);
     int32_t tmpy = (int32_t)fmod(y,(float)params->pattern_height);
@@ -588,7 +912,7 @@ void lookupPatternEntry(PatternEntry* entry, const wcWeaveParameters* params, co
     *entry = params->pattern[tmpx + tmpy*params->pattern_width];
 }
 
-int32_t wcRepeatIndex(const int32_t coord, const int32_t size) {
+static int32_t tl_repeat_index(const int32_t coord, const int32_t size) {
     //coord = -0.124*2 = -0.248
     float tmpcoord = (float)fmod((float)coord, (float)size);
     if (tmpcoord < 0.f) {
@@ -597,24 +921,24 @@ int32_t wcRepeatIndex(const int32_t coord, const int32_t size) {
     return (int32_t)tmpcoord;
 }
 
-static float getYarnSegmentSize(int32_t total_pattern_x, int32_t total_pattern_y,
-		const wcWeaveParameters *params, const wcIntersectionData *intersection_data) {
+static float get_yarn_segment_size(int32_t total_pattern_x, int32_t total_pattern_y,
+		const tlWeaveParameters *params, const tlIntersectionData *intersection_data) {
         //remove scaling from coords
 		float lookup_u = (total_pattern_x + 0.5)/((float)(params->pattern_width)*params->uscale);
 		float lookup_v = (total_pattern_y + 0.5)/((float)(params->pattern_height)*params->vscale);
 		
         PatternEntry yrntype;
-		lookupPatternEntry(&yrntype, params, total_pattern_x, total_pattern_y);
+		lookup_pattern_entry(&yrntype, params, total_pattern_x, total_pattern_y);
 
 		//Sample potential yarnsize texmap in middle of cell
-        float size = wc_yarn_type_get_lookup_yarnsize(params, yrntype.yarn_type,
+        float size = tl_yarn_type_get_lookup_yarnsize(params, yrntype.yarn_type,
                 lookup_u, lookup_v, intersection_data->context);
-		//float size = wc_yarn_type_get_yarnsize(params, yrntype.yarn_type, intersection_data->context);
+		//float size = tl_yarn_type_get_yarnsize(params, yrntype.yarn_type, intersection_data->context);
 		return size;
 	};
 
-wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
-		const wcWeaveParameters *params, const wcIntersectionData *intersection_data) {
+tlYarnSegment tl_get_yarn_segment(float total_u, float total_v,
+		const tlWeaveParameters *params, const tlIntersectionData *intersection_data) {
     //total_u and total_v are scaled and non_repeating
 
     float u = fmod(total_u,1.f);
@@ -639,8 +963,8 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
     //int32_t total_pattern_x = total_u*pattern_width;
     //int32_t total_pattern_y = total_v*pattern_height;
     
-    int32_t pattern_repeat_x = wcRepeatIndex(pattern_x, pattern_width);
-    int32_t pattern_repeat_y = wcRepeatIndex(pattern_y, pattern_height);
+    int32_t pattern_repeat_x = tl_repeat_index(pattern_x, pattern_width);
+    int32_t pattern_repeat_y = tl_repeat_index(pattern_y, pattern_height);
     //int32_t pattern_repeat_x = (u == 1.f) ? pattern_width-1 : (uint32_t)(u*(pattern_width));
     //int32_t pattern_repeat_y = (v == 1.f) ? pattern_height-1 : (uint32_t)(v*(pattern_height));
 
@@ -671,8 +995,8 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
     uint32_t initial_coord_across = warp_above ? pattern_x: pattern_y;
 
     //Get segment size of yarn in current position in pattern matrix.
-	//float yarnsize = getYarnSegmentSize(total_pattern_x, total_pattern_y, params, intersection_data);
-    float origin_yarnsize = getYarnSegmentSize(origin_x,
+	//float yarnsize = get_yarn_segment_size(total_pattern_x, total_pattern_y, params, intersection_data);
+    float origin_yarnsize = get_yarn_segment_size(origin_x,
             origin_y, params, intersection_data);
     
     //init some flags
@@ -690,7 +1014,7 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
         uint8_t found_extension_entry = 1; //initialize flag
         do{
             (*incremented_coord_across) += direction;
-            lookupPatternEntry(&tmp_pe, params, current_x, current_y);
+            lookup_pattern_entry(&tmp_pe, params, current_x, current_y);
             if ((*incremented_coord_across) == initial_coord_across +
                     direction && tmp_pe.warp_above == warp_above) {
                 between_parallel = 1;
@@ -702,7 +1026,7 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
         } while (tmp_pe.warp_above == warp_above);
             
         //Need yarnsize sampled at center of yarnsegment, which is extention...
-        float tmp_yarnsize = getYarnSegmentSize(current_x,
+        float tmp_yarnsize = get_yarn_segment_size(current_x,
                 current_y, params, intersection_data);
         
         //If there is yarn that can be used as extension. Did we hit it?
@@ -725,9 +1049,9 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
     //look right and left from origin until we hit cell that is not current yarn weft/warp.
     uint32_t steps_right = 0;
     uint32_t steps_left  = 0;
-    calculateLengthOfSegment(origin_entry.warp_above,
-            wcRepeatIndex(origin_x, pattern_width),
-            wcRepeatIndex(origin_y, pattern_height),
+    calculate_length_of_segment(origin_entry.warp_above,
+            tl_repeat_index(origin_x, pattern_width),
+            tl_repeat_index(origin_y, pattern_height),
             &steps_left, &steps_right, params->pattern_width,
             params->pattern_height, params->pattern);
 
@@ -736,22 +1060,22 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
     float border_yarn_size_left;
     float border_yarn_size_right;
     if (origin_entry.warp_above) {
-        lookupPatternEntry(&border_yarn_left, params, current_x,
+        lookup_pattern_entry(&border_yarn_left, params, current_x,
                 (current_y - steps_left - 1));        
-        lookupPatternEntry(&border_yarn_right, params, current_x,
+        lookup_pattern_entry(&border_yarn_right, params, current_x,
                 (current_y + steps_right + 1));        
-        border_yarn_size_left = getYarnSegmentSize(current_x, 
+        border_yarn_size_left = get_yarn_segment_size(current_x, 
                 (current_y - steps_left - 1), params, intersection_data);
-        border_yarn_size_right = getYarnSegmentSize(current_x, 
+        border_yarn_size_right = get_yarn_segment_size(current_x, 
                 (current_y + steps_right + 1), params, intersection_data);
     } else {
-        lookupPatternEntry(&border_yarn_left, params,
+        lookup_pattern_entry(&border_yarn_left, params,
                 (current_x - steps_left - 1), current_y);
-        lookupPatternEntry(&border_yarn_right, params,
+        lookup_pattern_entry(&border_yarn_right, params,
                 (current_x + steps_right + 1), current_y);
-        border_yarn_size_left = getYarnSegmentSize(
+        border_yarn_size_left = get_yarn_segment_size(
                 (current_x - steps_left - 1), current_y, params, intersection_data);
-        border_yarn_size_right = getYarnSegmentSize(
+        border_yarn_size_right = get_yarn_segment_size(
                 (current_x + steps_right + 1), current_y, params, intersection_data);
     }
     
@@ -761,16 +1085,16 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
         yarn_types[border_yarn_right.yarn_type].yarnsize;
         */
         
-    /*float width = wc_yarn_type_get_yarnsize(params, origin_entry.yarn_type,
+    /*float width = tl_yarn_type_get_yarnsize(params, origin_entry.yarn_type,
             intersection_data->context);*/
-    float width = getYarnSegmentSize(origin_x, origin_y, params, intersection_data);
+    float width = get_yarn_segment_size(origin_x, origin_y, params, intersection_data);
     float length = steps_left + steps_right + 1.f +
         ((1.f-border_yarn_size_left) + (1.f-border_yarn_size_right))/2.f;
     
     /*
     ========== TODO ========== !!!!!!!!!!!!!!!!!!!!!!
-        Add variables so that we can sample using getYarnSegmentSize...
-        origin_x and orign_y are repeating! Must use non reapeating coords to sample getYarnSegmentSize with!
+        Add variables so that we can sample using get_yarn_segment_size...
+        origin_x and orign_y are repeating! Must use non reapeating coords to sample get_yarn_segment_size with!
         */
 
     //If current segment is between two parallel yarns. Do not count self.
@@ -798,10 +1122,10 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
         if (!between_parallel) distance_left += origin_offset;
         if (between_parallel && *cell_coord_across >= 0.5) {
             PatternEntry tmp_pe = params->pattern[
-                wcRepeatIndex(pattern_x, pattern_width) +
-                wcRepeatIndex(pattern_y, pattern_height)*pattern_width];
-            //distance_left = -(0.5 + wc_yarn_type_get_yarnsize(params, tmp_pe.yarn_type, intersection_data->context)/2.f);
-            distance_left = -(0.5 + wc_yarn_type_get_yarnsize(params, tmp_pe.yarn_type, intersection_data->context)/2.f);
+                tl_repeat_index(pattern_x, pattern_width) +
+                tl_repeat_index(pattern_y, pattern_height)*pattern_width];
+            //distance_left = -(0.5 + tl_yarn_type_get_yarnsize(params, tmp_pe.yarn_type, intersection_data->context)/2.f);
+            distance_left = -(0.5 + tl_yarn_type_get_yarnsize(params, tmp_pe.yarn_type, intersection_data->context)/2.f);
         } 
 
         float distance_top = - (1.f-width)/2.f;
@@ -815,7 +1139,7 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
         }
     }
 
-    wcYarnSegment yarn;
+    tlYarnSegment yarn;
     yarn.length = length;
     yarn.width = width;
     yarn.start_u = start_u;
@@ -828,16 +1152,16 @@ wcYarnSegment wcGetYarnSegment(float total_u, float total_v,
 }
 
 /*
- * Given intersection_data, wcGetPatternData determines the current yarn
+ * Given intersection_data, tl_get_pattern_data determines the current yarn
  * segment and associated paramters needed for shading.
  * Determination of yarn segment is made more complicated by the fact that 
  * yarnsizes can vary. This results in a certain number of special cases.
  */
 
-wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
-        const wcWeaveParameters *params) {
+tlPatternData tl_get_pattern_data(tlIntersectionData intersection_data,
+        const tlWeaveParameters *params) {
     if(params->pattern == 0){
-        wcPatternData data = {0};
+        tlPatternData data = {0};
         return data;
     }
    
@@ -878,11 +1202,11 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     float cell_y = ((v_repeat*(float)(params->pattern_height) - (float)pattern_y));
 
     //Get yarnsegment dimensions
-	wcYarnSegment yarnsegment = wcGetYarnSegment(total_u, total_v, params, &intersection_data);
+	tlYarnSegment yarnsegment = tl_get_yarn_segment(total_u, total_v, params, &intersection_data);
     
     if (!yarnsegment.yarn_hit) {
         //No hit, No need to do more calculations.
-        wcPatternData ret_data;
+        tlPatternData ret_data;
         ret_data.yarn_hit = 0;
         ret_data.yarn_type = 0;
         return ret_data;
@@ -924,7 +1248,7 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     }
 
     //return the results
-    wcPatternData ret_data;
+    tlPatternData ret_data;
 	ret_data.yarn_hit = yarnsegment.yarn_hit;
 	ret_data.ext_between_parallel = yarnsegment.between_parallel;
 	ret_data.yarn_type = yarnsegment.pattern_entry.yarn_type;
@@ -939,12 +1263,12 @@ wcPatternData wcGetPatternData(wcIntersectionData intersection_data,
     return ret_data;
 }
 
-float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
-    wcPatternData data, const wcWeaveParameters *params)
+float tl_eval_filament_specular(tlIntersectionData intersection_data,
+    tlPatternData data, const tlWeaveParameters *params)
 {
-    wcVector wi = wcvector(intersection_data.wi_x, intersection_data.wi_y,
+    tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
         intersection_data.wi_z);
-    wcVector wo = wcvector(intersection_data.wo_x, intersection_data.wo_y,
+    tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
         intersection_data.wo_z);
 
     if(!data.warp_above){
@@ -953,7 +1277,7 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
         wi.x = -wi.y; wi.y = tmp2;
         wo.x = -wo.y; wo.y = tmp3;
     }
-    wcVector H = wcVector_normalize(wcVector_add(wi,wo));
+    tlVector H = tlVector_normalize(tlVector_add(wi,wo));
 
     float v = data.v;
     float y = data.y;
@@ -972,18 +1296,18 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
         //if segment is extension between to parallel yarns -> bend = 0
         umax = 0.0001;
     } else {
-        umax = wc_yarn_type_get_umax(params,data.yarn_type,
+        umax = tl_yarn_type_get_umax(params,data.yarn_type,
                 intersection_data.context);
     }
     
     if (fabsf(specular_u) < umax){
         // Make normal for highlights, uses v and specular_u
-        wcVector highlight_normal = wcVector_normalize(wcvector(sinf(v),
+        tlVector highlight_normal = tlVector_normalize(tlvector(sinf(v),
                     sinf(specular_u)*cosf(v),
                     cosf(specular_u)*cosf(v)));
 
         // Make tangent for highlights, uses v and specular_u
-        wcVector highlight_tangent = wcVector_normalize(wcvector(0.f, 
+        tlVector highlight_tangent = tlVector_normalize(tlvector(0.f, 
                     cosf(specular_u), -sinf(specular_u)));
 
         //get specular_y, using irawans transformation.
@@ -991,7 +1315,7 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
         // our transformation TODO(Peter): Verify!
         //float specular_y = sinf(specular_u)/sinf(m_umax);
 
-        float delta_x = wc_yarn_type_get_delta_x(params, data.yarn_type,
+        float delta_x = tl_yarn_type_get_delta_x(params, data.yarn_type,
 			intersection_data.context);
         //Clamp specular_y TODO(Peter): change name of m_delta_x to m_delta_h
         specular_y = specular_y < 1.f - delta_x ? specular_y :
@@ -1005,20 +1329,20 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
             float a = 1.f; //radius of yarn
             float R = 1.f/(sin(umax)); //radius of curvature
             float Gu = a*(R + a*cosf(v)) /(
-                wcVector_magnitude(wcVector_add(wi,wo)) *
-                fabsf((wcVector_cross(highlight_tangent,H)).x));
+                tlVector_magnitude(tlVector_add(wi,wo)) *
+                fabsf((tlVector_cross(highlight_tangent,H)).x));
 
-            float alpha = wc_yarn_type_get_alpha(params, data.yarn_type,
+            float alpha = tl_yarn_type_get_alpha(params, data.yarn_type,
 				intersection_data.context);
-            float beta = wc_yarn_type_get_beta(params, data.yarn_type,
+            float beta = tl_yarn_type_get_beta(params, data.yarn_type,
 				intersection_data.context);
             // --- Set fc
-            float cos_x = -wcVector_dot(wi, wo);
-            float fc = alpha + vonMises(cos_x, beta);
+            float cos_x = -tlVector_dot(wi, wo);
+            float fc = alpha +von_mises(cos_x, beta);
 
             // --- Set A
-            float widotn = wcVector_dot(wi, highlight_normal);
-            float wodotn = wcVector_dot(wo, highlight_normal);
+            float widotn = tlVector_dot(wi, highlight_normal);
+            float wodotn = tlVector_dot(wo, highlight_normal);
             widotn = (widotn < 0.f) ? 0.f : widotn;   
             wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
             float A = 0.f;
@@ -1035,12 +1359,12 @@ float wcEvalFilamentSpecular(wcIntersectionData intersection_data,
     return reflection;
 }
 
-float wcEvalStapleSpecular(wcIntersectionData intersection_data,
-    wcPatternData data, const wcWeaveParameters *params)
+float tl_eval_staple_specular(tlIntersectionData intersection_data,
+    tlPatternData data, const tlWeaveParameters *params)
 {
-    wcVector wi = wcvector(intersection_data.wi_x, intersection_data.wi_y,
+    tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
         intersection_data.wi_z);
-    wcVector wo = wcvector(intersection_data.wo_x, intersection_data.wo_y,
+    tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
         intersection_data.wo_z);
 
     if(!data.warp_above){
@@ -1049,9 +1373,9 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
         wi.x = -wi.y; wi.y = tmp2;
         wo.x = -wo.y; wo.y = tmp3;
     }
-    wcVector H = wcVector_normalize(wcVector_add(wi, wo));
+    tlVector H = tlVector_normalize(tlVector_add(wi, wo));
 
-    float psi = wc_yarn_type_get_psi(params,data.yarn_type,
+    float psi = tl_yarn_type_get_psi(params,data.yarn_type,
 		intersection_data.context);
 
     float u = data.u;
@@ -1068,7 +1392,7 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     float specular_v = atan2f(-H.y*sinf(u) - H.z*cosf(u), H.x) + acosf(D);
     //TODO(Vidar): Clamp specular_v, do we need it?
     // Make normal for highlights, uses u and specular_v
-    wcVector highlight_normal = wcVector_normalize(wcvector(sinf(specular_v),
+    tlVector highlight_normal = tlVector_normalize(tlvector(sinf(specular_v),
         sinf(u)*cosf(specular_v), cosf(u)*cosf(specular_v)));
 
     if (fabsf(specular_v) < M_PI_2 && fabsf(D) < 1.f) {
@@ -1078,14 +1402,14 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
         // our transformation
         //float specular_x = sinf(specular_v);
 
-        float delta_x = wc_yarn_type_get_delta_x(params,data.yarn_type,
+        float delta_x = tl_yarn_type_get_delta_x(params,data.yarn_type,
 			intersection_data.context);
         float umax;
         if (data.ext_between_parallel){
             //if segment is extension between to parallel yarns -> bend = 0
             umax = 0.001;
         } else {
-            umax = wc_yarn_type_get_umax(params,data.yarn_type,
+            umax = tl_yarn_type_get_umax(params,data.yarn_type,
                     intersection_data.context);
         }
 
@@ -1097,23 +1421,23 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
 
         if (fabsf(specular_x - x) < delta_x) {
 
-            float alpha = wc_yarn_type_get_alpha(params,data.yarn_type,
+            float alpha = tl_yarn_type_get_alpha(params,data.yarn_type,
 				intersection_data.context);
-            float beta  = wc_yarn_type_get_beta( params,data.yarn_type,
+            float beta  = tl_yarn_type_get_beta( params,data.yarn_type,
 				intersection_data.context);
 
             // --- Set Gv
             float a = 1.f; //radius of yarn
             float R = 1.f/(sin(umax)); //radius of curvature
             float Gv = a*(R + a*cosf(specular_v))/(
-                wcVector_magnitude(wcVector_add(wi,wo)) *
-                wcVector_dot(highlight_normal,H) * fabsf(sinf(psi)));
+                tlVector_magnitude(tlVector_add(wi,wo)) *
+                tlVector_dot(highlight_normal,H) * fabsf(sinf(psi)));
             // --- Set fc
-            float cos_x = -wcVector_dot(wi, wo);
-            float fc = alpha + vonMises(cos_x, beta);
+            float cos_x = -tlVector_dot(wi, wo);
+            float fc = alpha +von_mises(cos_x, beta);
             // --- Set A
-            float widotn = wcVector_dot(wi, highlight_normal);
-            float wodotn = wcVector_dot(wo, highlight_normal);
+            float widotn = tlVector_dot(wi, highlight_normal);
+            float wodotn = tlVector_dot(wo, highlight_normal);
             widotn = (widotn < 0.f) ? 0.f : widotn;   
             wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
             //TODO(Vidar): This is where we get the NAN
@@ -1129,23 +1453,23 @@ float wcEvalStapleSpecular(wcIntersectionData intersection_data,
     return reflection;
 }
 
-wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
-        wcPatternData data, const wcWeaveParameters *params)
+tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
+        tlPatternData data, const tlWeaveParameters *params)
 {
     float value = intersection_data.wi_z;
 
-	wcYarnType *yarn_type = params->yarn_types + data.yarn_type;
+	tlYarnType *yarn_type = params->yarn_types + data.yarn_type;
     if(!yarn_type->color_enabled || !data.yarn_hit){
         yarn_type = &params->yarn_types[0];
     }
 
-    wcColor color = {
+    tlColor color = {
         yarn_type->color.r * value,
         yarn_type->color.g * value,
         yarn_type->color.b * value
     };
 	if(yarn_type->color_texmap){
-		color = wc_eval_texmap_color(yarn_type->color_texmap,
+		color = tl_eval_texmap_color(yarn_type->color_texmap,
             intersection_data.context);
 		color.r*=value; color.g*=value; color.b*=value;
 	}
@@ -1153,8 +1477,8 @@ wcColor wcEvalDiffuse(wcIntersectionData intersection_data,
     return color;
 }
 
-float wcEvalSpecular(wcIntersectionData intersection_data,
-        wcPatternData data, const wcWeaveParameters *params)
+float tl_eval_specular(tlIntersectionData intersection_data,
+        tlPatternData data, const tlWeaveParameters *params)
 {
     // Depending on the given psi parameter the yarn is considered
     // staple or filament. They are treated differently in order
@@ -1167,36 +1491,55 @@ float wcEvalSpecular(wcIntersectionData intersection_data,
         //have not hit a yarn...
         return 0.f;
 	}
-    float psi = wc_yarn_type_get_psi(params, data.yarn_type,
+    float psi = tl_yarn_type_get_psi(params, data.yarn_type,
 		intersection_data.context);
     if (psi <= 0.001f) {
         //Filament yarn
-        reflection = wcEvalFilamentSpecular(intersection_data, data, params); 
+        reflection = tl_eval_filament_specular(intersection_data, data, params); 
     } else {
         //Staple yarn
-        reflection = wcEvalStapleSpecular(intersection_data, data, params); 
+        reflection = tl_eval_staple_specular(intersection_data, data, params); 
     }
-	float specular_noise=wc_yarn_type_get_specular_noise(params,
+	float specular_noise=tl_yarn_type_get_specular_noise(params,
 		data.yarn_type,intersection_data.context);
 	float noise=1.f;
     if(specular_noise > 0.001f){
-		float iv = intensityVariation(data);
+		float iv = intensity_variation(data);
 		noise=(1.f-specular_noise)+specular_noise * iv;
     }
 	return reflection * params->specular_normalization * noise;
 }
 
-wcColor wcShade(wcIntersectionData intersection_data,
-        const wcWeaveParameters *params)
+tlColor tl_shade(tlIntersectionData intersection_data,
+        const tlWeaveParameters *params)
 {
-    wcPatternData data = wcGetPatternData(intersection_data,params);
-    wcColor ret = wcEvalDiffuse(intersection_data,data,params);
-    float spec  = wcEvalSpecular(intersection_data,data,params);
-    float specular_strength = wc_yarn_type_get_specular_strength(params,
-        data.yarn_type,
-		intersection_data.context);
+    tlPatternData data = tl_get_pattern_data(intersection_data,params);
+    tlColor ret = tl_eval_diffuse(intersection_data,data,params);
+    float spec  = tl_eval_specular(intersection_data,data,params);
+    float specular_strength = tl_yarn_type_get_specular_strength(params,
+        data.yarn_type, intersection_data.context);
     ret.r = ret.r*(1.f-specular_strength) + specular_strength*spec;
     ret.g = ret.g*(1.f-specular_strength) + specular_strength*spec;
     ret.b = ret.b*(1.f-specular_strength) + specular_strength*spec;
     return ret;
-    }
+}
+
+#ifdef TL_NO_TEXTURE_CALLBACKS
+float tl_eval_texmap_mono(void *texmap, void *context)
+{
+    return 1.f;
+}
+
+float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context)
+{
+    return 1.f;
+}
+
+tlColor tl_eval_texmap_color(void *texmap, void *context)
+{
+    tlColor ret = {1.f,1.f,1.f};
+    return ret;
+}
+#endif
+
+#endif

@@ -1,4 +1,7 @@
-#define WC_PATTERN_EDITOR_IMPLEMENTATION
+#define TL_THUNDERLOOM_IMPLEMENTATION
+#define TL_NO_TEXTURE_CALLBACKS
+#include "thunderloom.h"
+#define TL_PATTERN_EDITOR_IMPLEMENTATION
 #include "pattern_editor.h"
 #include <stdio.h>
 
@@ -20,35 +23,19 @@ int main(int argc, char **argv)
 	uint8_t yarn_type[] = { 1,2,2,1 };
 	uint32_t pattern_width = 2;
 	uint32_t pattern_height = 2;
-	wcColor yarn_colors[2];
+	tlColor yarn_colors[2];
 	yarn_colors[0].r = 1.f; yarn_colors[0].g = 0.f; yarn_colors[0].b = 0.f;
 	yarn_colors[1].r = 0.f; yarn_colors[1].g = 0.f; yarn_colors[1].b = 1.f;
 	uint32_t num_yarn_types = 2;
-	wcWeaveParameters* params = wcWeavePatternFromData(
+	tlWeaveParameters* params = tl_weave_pattern_from_data(
 		warp_above,yarn_type,num_yarn_types,yarn_colors,
 		pattern_width, pattern_height);
 	if(params){
-		wc_pattern_editor(params);
+		tl_pattern_editor(params);
 	}else{
         //TODO(Vidar):Report error in a message box
 		printf("ERROR! %s\n",error);
 	}
 
 	return 0;
-}
-
-float wc_eval_texmap_mono(void * a, void * b)
-{
-    return 0.f;
-}
-
-wcColor wc_eval_texmap_color(void * a, void * b)
-{
-	wcColor ret = {0.f,0.f,0.f};
-	return ret;
-}
-
-float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context)
-{
-    return 1.f;
 }

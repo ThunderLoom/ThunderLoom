@@ -1,7 +1,7 @@
 #ifndef __BLINN_BRDF_SAMPLER__
 #define __BLINN_BRDF_SAMPLER__
 
-#include "woven_cloth.h"
+#include "thunderloom.h"
 #include "imtl.h"
 
 namespace VUtils {
@@ -15,15 +15,15 @@ protected:
 
 	Matrix nm, inm; // A matrix with the normal as the z-axis; can be used for anisotropy
 
-    wcWeaveParameters *m_weave_parameters;
+    tlWeaveParameters *m_weave_parameters;
 	Texmap **m_texmaps;
-	wcYarnType m_yarn_type;
+	tlYarnType m_yarn_type;
 	int m_yarn_type_id;
 
 public:
 
 	// Initialization
-	void init(const VRayContext &rc, wcWeaveParameters *weave_parameters);
+	void init(const VRayContext &rc, tlWeaveParameters *weave_parameters);
 
 	// From BRDFSampler
 	Vector getDiffuseNormal(const VR::VRayContext &rc);
