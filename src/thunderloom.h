@@ -935,7 +935,7 @@ static float get_yarn_segment_size(int32_t total_pattern_x, int32_t total_patter
                 lookup_u, lookup_v, intersection_data->context);
 		//float size = tl_yarn_type_get_yarnsize(params, yrntype.yarn_type, intersection_data->context);
 		return size;
-	};
+	}
 
 tlYarnSegment tl_get_yarn_segment(float total_u, float total_v,
 		const tlWeaveParameters *params, const tlIntersectionData *intersection_data) {
