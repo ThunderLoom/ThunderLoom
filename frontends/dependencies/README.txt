@@ -18,4 +18,7 @@ Put the resulting files into this folder, so that you get this structure:
 Windows: Download the pre-compiled binaries from here: http://www.glfw.org/download.html
 Extract the files into a folder called glwf inside this folder
 
-OSX: glfw can be obtained using macports. The Makefile for the standalone pattern editor is set up for this.
+OSX: glfw can be obtained using homebrew. "brew install glfw"
+The Makefile for the standalone pattern editor is set up for this.
+Macports can also be used, just make sure to change 
+/usr/local/lib to /opt/local/lib in the Makefile.

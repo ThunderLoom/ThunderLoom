@@ -20,6 +20,16 @@ wcWeaveParameters *wc_pattern_editor(wcWeaveParameters *param);
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <commdlg.h>
+#elif __APPLE__
+    #include "TargetConditionals.h"
+    #if TARGET_OS_MAC
+//For macOS a small wrapper for Cocoa features (alert, save, open) is required
+//implementation in frontends/standalone_pattern_editor/macos_wrapper.mm
+extern void macos_file_dialog(char * buffer, int bufferSize,
+        const char * aDefaultPathAndFile, const char (*filters)[10],
+        const int n_filters, uint8_t save);
+extern int macos_alert(const char * details, const char * msg);
+    #endif
 #endif
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 #include "imgui.h"
@@ -134,8 +144,12 @@ static char* file_open_dialog(const char *filters,const char* title, bool save)
     }else{
         GetOpenFileNameA(&openfilename);
     }
+#elif TARGET_OS_MAC
+    const char t_filters[2][10] = {"wif", "ptn"};
+    const char *suggested_path = ""; 
+    macos_file_dialog(buffer, 512, suggested_path, t_filters, 2, save);
 #endif
-    //TODO(Vidar): Open file browser on osx
+    
     return buffer;
 }
 
@@ -392,8 +406,9 @@ wcWeaveParameters *wc_pattern_editor(wcWeaveParameters *param)
                     }else{
 #ifdef WIN32
                         MessageBoxA(NULL,error,"ERROR!",MB_OK|MB_ICONERROR);
+#elif TARGET_OS_MAC
+                        macos_alert(error, "ERROR!");
 #endif
-                        //TODO(Vidar):Report error on OSX
                     }
                 }
                 free(filename);
