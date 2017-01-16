@@ -57,11 +57,6 @@ float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
                     /*m_reflectance = new ConstantSpectrumTexture(props.getSpectrum(
                         props.hasProperty("reflectance") ? "reflectance"
                             : "diffuseReflectance", Spectrum(.5f)));*/
-
-                    //Set main paramaters
-                    m_weave_params->uscale = props.getFloat("uscale", 1.f);
-                    m_weave_params->vscale = props.getFloat("vscale", 1.f);
-                    m_weave_params->realworld_uv = 0;
                     
 #ifdef USE_WIFFILE
                     // LOAD WIF FILE
@@ -88,6 +83,10 @@ float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
                     tlWeavePatternFromData(m_weave_params, warp_above,
                             warp_color, weft_color, 3, 3);
 #endif
+                    //Set main paramaters
+                    m_weave_params->uscale = props.getFloat("uscale", 1.f);
+                    m_weave_params->vscale = props.getFloat("vscale", 1.f);
+                    m_weave_params->realworld_uv = 0;
 
                     //Default yarn paramters
                     tlYarnType *yrn0 = &m_weave_params->yarn_types[0];

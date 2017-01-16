@@ -1,29 +1,27 @@
-    ThunderLoom plugin for Mitsuba
-    ===
-    *ThunderLoom is a physically based shader for woven cloth with added flexibility for artists. https://github.com/vidarn/ThunderLoom*
-    *It's shading model is based on the work by Piti Irawan https://www.cs.cornell.edu/~srm/publications/IrawanThesis.pdf*
+ThunderLoom plugin for Mitsuba
+===
+*ThunderLoom is a physically based shader for woven cloth with added flexibility for artists. https://github.com/vidarn/ThunderLoom*
+*It's shading model is based on the work by Piti Irawan https://www.cs.cornell.edu/~srm/publications/IrawanThesis.pdf*
 
-    This plugin gives mitsuba the `thunderloom` bsdf which uses a weaving pattern given by a WIF file. Many types of patterns are freely available from sites such as http://handweaving.net.
+This plugin gives mitsuba the `thunderloom_mitsuba` bsdf which uses a weaving pattern given by a WIF file. Many types of patterns are freely available from sites such as http://handweaving.net.
 
-    Note: This plugin has limitations compared to the 3dsMax version. Individual control over different yarn types is currently not supported.
+Note: This plugin has limitations compared to the 3dsMax version. Individual control over different yarn types is currently not supported.
 
-    #Install
-    If the compiled dynamic library file is available, installation is simple.
-    Simply move the library file to the mitsuba `plugins` directory. 
+Note2: Currently, Mitsuba and the plugin must be built together in order to work.
 
-    Usually this means,
+#Building
+In order to build the plugin, you first need the mitsuba source code and need to make sure that you are able to compile mitsuba itself. See https://www.mitsuba-renderer.org/releases/current/documentation.pdf for a guide on how to set up your system to compile Mitsuba. 
 
-    * For linux, move `thunderloom_mitsuba.so` into `path-to-mitsuba/plugins`
-    * For mac, move `thunderloom_mitsuba.dylib` into `/Applications/Mitsuba.app/plugins`
-    * For windows, move `thunderloom_mitsuba.dll` into `path-to-mitsuba/plugins`
+Once you are able to successfully compile mitsuba you can proceed.
 
-    Now the `thunderloom` bsdf should be avaiable the next time you start mitsuba. See the `example_scenes` folder for examples on how to use the bsdf.
+* Option 1. Compile mitsuba with plugin
+Make a symbolic link in the mitsuba bsdf source directory `ln -s path-to-ThunderLoom/frontends/mitsuba/src mitsubasrc/src/bsdfs/thunderloom`.
+Next add the line `plugins += env.SharedLibrary('thunderloom_mitsuba', ['thunderloom/thunderloom_mitsuba.cpp'])` to `mitsubasrc/src/bsdfs/SConscript`. Then compile mitsuba as normal. 
 
-    #Building
-    In order to build the plugin, you first need the mitsuba source code and need to make sure that you are able to compile mitsuba itself. See https://www.mitsuba-renderer.org/releases/current/documentation.pdf for a guide on how to set up your system to compile Mitsuba. 
 
-Once you are able to succesfully compile mitsuba you can proceed.
+The compiled mitsuba version will now have the bsdf.
 
+* Option 2. Build only library
 
 For linux and macOS, make sure that the mitsuba environment variables are set. 
 ```
@@ -37,4 +35,20 @@ MITSUBA_DIR=C:\Path-to-mitsubasrc\
 
 Next simply run `scons` in the root directory for the mitsuba thunderLoom plugin (where this file is!).
 
-This should compile a shared library and will be plased in a build folder.
+This should compile a shared library and will be placed in a build folder.
+
+(If there are problems, check `src/SConstruct` for troubling libraries, such as the MacOS.sdk which might not fit your system version.)
+
+
+##Install
+If the dynamic library file for your mitsuba build is available,
+simply move the library file to the mitsuba `plugins` directory. 
+
+Usually this means,
+
+        * For linux, move `thunderloom_mitsuba.so` into `path-to-mitsuba/plugins`
+        * For mac, move `thunderloom_mitsuba.dylib` into `/Applications/Mitsuba.app/plugins`
+        * For windows, move `thunderloom_mitsuba.dll` into `path-to-mitsuba/plugins`
+
+        Now the `thunderloom` bsdf should be avaiable the next time you start mitsuba. See the `example_scenes` folder for examples on how to use the bsdf.
+

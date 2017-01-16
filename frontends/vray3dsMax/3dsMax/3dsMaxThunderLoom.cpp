@@ -1,11 +1,18 @@
 //3dsMaxThunderLoom.cpp
 // This file sets up and registers the 3dsMax plugin.
 
-//The paramblock version
-const int PLUGIN_VERSION_HIGH=0;
-const int PLUGIN_VERSION_LOW=90;
-//This is the plugin version * 100
-const int PLUGIN_VERSION= PLUGIN_VERSION_HIGH*100 + PLUGIN_VERSION_LOW;
+// The paramblock version 
+// (when changes are made to the paramblock structure)
+const int PARAM_VERSION_HIGH=0;
+const int PARAM_VERSION_LOW=90;
+//This is the param version * 100
+const int PARAM_VERSION= PARAM_VERSION_HIGH*100 + PARAM_VERSION_LOW;
+
+//The plugin version (Semantic Versioning)
+const int PLUGIN_VERSION_MAJOR=0;
+const int PLUGIN_VERSION_MINOR=91;
+const int PLUGIN_VERSION_PATCH=0;
+
 
 // Check http://docs.autodesk.com/3DSMAX/16/ENU/3ds-Max-SDK-Programmer-Guide/index.html?url=files/GUID-F35959BB-2660-492F-B082-56304C70293A.htm,topicNumber=d30e52807
 // When adding new parameters
@@ -224,9 +231,12 @@ public:
 			case WM_INITDIALOG:
 			{
 				update_yarn_type_rollups();
-				wchar_t buffer[256];
-				swprintf(buffer,L"Thunder Loom version %d.%02d",PLUGIN_VERSION_HIGH,
-					PLUGIN_VERSION_LOW);
+				wchar_t buffer[512];
+				//swprintf(buffer,L"Thunder Loom v%d.%d.%d (paramblock v%d.%02d)",
+				//	PLUGIN_VERSION_MAJOR,PLUGIN_VERSION_MINOR,PLUGIN_VERSION_PATCH,
+				//	PARAM_VERSION_HIGH,PARAM_VERSION_LOW);
+				swprintf(buffer,L"Thunder Loom v%d.%d.%d",
+					PLUGIN_VERSION_MAJOR,PLUGIN_VERSION_MINOR,PLUGIN_VERSION_PATCH);
 				SetWindowText(GetDlgItem(hWnd,IDC_VERSION),buffer);
 				break;
 			}
@@ -317,7 +327,7 @@ enum {rollout_pattern, rollout_yarn_type};
 static ParamBlockDesc2 thunder_loom_param_blk_desc(
     mtl_params, _T("Test mtl params"), 0,
     &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI + P_MULTIMAP + P_VERSION,
-	PLUGIN_VERSION, 0,
+	PARAM_VERSION, 0,
     //rollouts
 	1,
 	//2,
@@ -756,7 +766,7 @@ IOResult ThunderLoomMtl::Save(ISave *isave)
 	isave->BeginChunk(YARN_TYPE_CHUNK);
 	//NOTE(Vidar):Save yarn types
 	ULONG nb;
-	isave->Write((unsigned char*)&PLUGIN_VERSION,
+	isave->Write((unsigned char*)&PARAM_VERSION,
 		sizeof(int),&nb);
 
 	isave->Write((unsigned char*)m_weave_parameters,

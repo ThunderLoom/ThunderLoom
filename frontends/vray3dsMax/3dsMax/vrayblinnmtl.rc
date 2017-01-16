@@ -108,7 +108,7 @@ BEGIN
     CONTROL         "Custom2",IDC_USCALE_EDIT,"CustEdit",0x0,61,28,22,10
     CONTROL         "Custom2",IDC_VSCALE_EDIT,"CustEdit",WS_TABSTOP,117,28,21,10
     CONTROL         "",IDC_REALWORLD_CHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,198,28,16,10
-    LTEXT           "Thunder Loom version xx",IDC_VERSION,4,4,119,8
+    LTEXT           "Thunder Loom version xx",IDC_VERSION,4,4,210,8
     LTEXT           "Tiling:",IDC_USCALE_LABEL,21,28,20,8
     CONTROL         "Custom3",IDC_USCALE_SPIN,"SpinnerControl",WS_TABSTOP,85,28,7,10
     LTEXT           "V",IDC_VSCALE_LABEL,101,28,8,8

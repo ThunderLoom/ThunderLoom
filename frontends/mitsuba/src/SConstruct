@@ -29,7 +29,7 @@ if sys.platform == 'posix' or sys.platform == 'linux2':
 	#env.AppendUnique(LINKFLAGS = '-headerpad_max_install_names')
 
 	env['SHLIBPREFIX']=''
-	build = env.SharedLibrary('thunderloom', ['cloth.cpp'])
+	build = env.SharedLibrary('thunderloom_mitsuba', ['thunderloom_mitsuba.cpp'])
 	
 	install_path = Dir('../../../build/linux/mitsuba_plugin').abspath
 	env.Install(install_path, build)
@@ -47,7 +47,7 @@ elif sys.platform == 'darwin':
 	env.AppendUnique(LINKFLAGS = ['-arch', 'x86_64', '-mmacosx-version-min=10.9', '-headerpad_max_install_names', '-stdlib=libstdc++'])
 
 	env['SHLIBPREFIX']=''
-	build = env.SharedLibrary('thunderLoom_mitsuba', ['cloth.cpp'])
+	build = env.SharedLibrary('thunderLoom_mitsuba', ['thunderLoom_mitsuba.cpp'])
 
 	install_path = Dir('../../../build/macos/mitsuba_plugin').abspath
 	print(install_path)
@@ -78,7 +78,7 @@ elif sys.platform == 'win32':
 	env.AppendUnique(LINKFLAGS = [])
 
 	env['SHLIBPREFIX']=''
-	build = env.SharedLibrary('thunderLoom_mitsuba', ['cloth.cpp'])
+	build = env.SharedLibrary('thunderloom_mitsuba', ['thunderloom_mitsuba.cpp'])
 
 	install_path = Dir('../../../build/windows/mitsuba_plugin').abspath
 	print(install_path)

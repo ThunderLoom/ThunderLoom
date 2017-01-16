@@ -1,25 +1,33 @@
-all: clear mitsuba 3dsMax2014 3dsMax2015 3dsMax2016
+all: clear mitsuba pattern_editor 3dsMax2014 3dsMax2015 3dsMax2016 3dsMax2017
 
 clear:
-	IF EXIST build\win32 rmdir /S /Q build\win32
-	mkdir build\win32
+	IF EXIST build\windows rmdir /S /Q build\windows
+	mkdir build\windows
 mitsuba:
 	scons --directory=frontends/mitsuba/ release
-	xcopy /Y /I frontends\mitsuba\blender_mtsblend build\win32\blender_mtsblend
-	copy frontends\mitsuba\README.md build\win32\README_Mitsuba.md
+	xcopy /Y /I frontends\mitsuba\blender_mtsblend build\windows\blender_mtsblend
+	copy frontends\mitsuba\README.md build\windows\README_Mitsuba.md
+
+pattern_editor:
+	msbuild frontends\standalone_pattern_editor\StandalonePatternEditor.sln /p:Configuration="Release" /p:Platform="x64"
+	copy frontends\standalone_pattern_editor\x64\Release\StandalonePatternEditor.exe build\windows\
 
 3dsMax2014:
 	msbuild frontends\vray3dsMax\vray3dsMaxThunderLoom.sln /p:Configuration="max 2014 release" /p:Platform="x64"
-	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2014 build\win32\3dsMax2014 
-	copy frontends\vray3dsMax\README.md build\win32\README_3dsMax.md
+	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2014 build\windows\3dsMax2014 
+	copy frontends\vray3dsMax\README.md build\windows\README_3dsMax.md
 
 3dsMax2015:
 	msbuild frontends\vray3dsMax\vray3dsMaxThunderLoom.sln /p:Configuration="max 2015 release" /p:Platform="x64"
-	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2015 build\win32\3dsMax2015 
-	copy frontends\vray3dsMax\README.md build\win32\README_3dsMax.md
+	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2015 build\windows\3dsMax2015 
+	copy frontends\vray3dsMax\README.md build\windows\README_3dsMax.md
 
 3dsMax2016:
 	msbuild frontends\vray3dsMax\vray3dsMaxThunderLoom.sln /p:Configuration="max 2016 release" /p:Platform="x64"
-	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2016 build\win32\3dsMax2016 
-	copy frontends\vray3dsMax\README.md build\win32\README_3dsMax.md
+	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2016 build\windows\3dsMax2016 
+	copy frontends\vray3dsMax\README.md build\windows\README_3dsMax.md
 
+3dsMax2017:
+	msbuild frontends\vray3dsMax\vray3dsMaxThunderLoom.sln /p:Configuration="max 2017 release" /p:Platform="x64"
+	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2017 build\windows\3dsMax2017 
+	copy frontends\vray3dsMax\README.md build\windows\README_3dsMax.md
