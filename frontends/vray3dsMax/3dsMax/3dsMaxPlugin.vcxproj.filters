@@ -33,9 +33,6 @@
     <ClCompile Include="VrayThunderLoomBRDF.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\woven_cloth.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Eval.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -7,16 +7,16 @@
 #include "vraycore.h"
 #include "vrayrenderer.h"
 #include "dbgprint.h"
-#include "woven_cloth.h"
+#include "thunderloom.h"
 #include "imtl.h"
 #include "object.h"
 #include "render.h"
 #include "shadedata_new.h"
 
 void EvalDiffuseFunc (const VUtils::VRayContext &rc,
-    wcWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
-	wcYarnType *yarn_type, int *yarn_type_id);
+    tlWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
+	tlYarnType *yarn_type, int *yarn_type_id);
 
 void EvalSpecularFunc ( const VUtils::VRayContext &rc,
-    const VUtils::Vector &direction, wcWeaveParameters *weave_parameters,
+    const VUtils::Vector &direction, tlWeaveParameters *weave_parameters,
     VUtils::Matrix nm, VUtils::Color *reflection_color);

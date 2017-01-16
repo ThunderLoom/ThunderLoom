@@ -28,18 +28,19 @@
 #include <mitsuba/core/fresolver.h>
 //#include <mitsuba/core/qmc.h>
 
-#include "../../../src/woven_cloth.cpp"
+#define TL_THUNDERLOOM_IMPLEMENTATION
+#include "../../../src/thunderloom.h"
 
 //TODO: Implement these in mitsuba
 //Stubbed texture eval functions for now.
-float wc_eval_texmap_mono(void *texmap, void *context) {
+float tl_eval_texmap_mono(void *texmap, void *context) {
     return 0.f;
 }
-wcColor wc_eval_texmap_color(void *texmap, void *context) {
-    wcColor col = {1.f, 0.f, 0.f};
+tlColor tl_eval_texmap_color(void *texmap, void *context) {
+    tlColor col = {1.f, 0.f, 0.f};
     return col;
 }
-float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) {
+float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) {
     return 0.f;
 }
 
@@ -58,9 +59,9 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
                             : "diffuseReflectance", Spectrum(.5f)));*/
 
                     //Set main paramaters
-                    m_weave_params.uscale = props.getFloat("uscale", 1.f);
-                    m_weave_params.vscale = props.getFloat("vscale", 1.f);
-                    m_weave_params.realworld_uv = 0;
+                    m_weave_params->uscale = props.getFloat("uscale", 1.f);
+                    m_weave_params->vscale = props.getFloat("vscale", 1.f);
+                    m_weave_params->realworld_uv = 0;
                     
 #ifdef USE_WIFFILE
                     // LOAD WIF FILE
@@ -68,9 +69,12 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
                         Thread::getThread()->getFileResolver()->
                         resolve(props.getString("wiffile")).string();
 
-                    wcWeavePatternFromFile(&m_weave_params,
-                            wiffilename.c_str());
-                    printf("--------LOAD FILE!---------\n");
+                    const char *errors;
+                    m_weave_params = tl_weave_pattern_from_file(
+                            wiffilename.c_str(), &errors);
+                    if(!m_weave_params){
+                        printf("ERROR! %s\n", errors);
+                    }
 #else
                     // Static pattern
                     // current: polyester pattern
@@ -81,12 +85,12 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
                     };
                     float warp_color[] = { 0.7f, 0.7f, 0.7f};
                     float weft_color[] = { 0.7f, 0.7f, 0.7f};
-                    wcWeavePatternFromData(&m_weave_params, warp_above,
+                    tlWeavePatternFromData(m_weave_params, warp_above,
                             warp_color, weft_color, 3, 3);
 #endif
 
                     //Default yarn paramters
-                    wcYarnType *yrn0 = &m_weave_params.yarn_types[0];
+                    tlYarnType *yrn0 = &m_weave_params->yarn_types[0];
                     yrn0->umax = props.getFloat("yrn0_bend", 0.5);
                     yrn0->psi = props.getFloat("yrn0_psi", 0.5);
                     yrn0->alpha = props.getFloat("yrn0_alpha", 0.5);
@@ -96,12 +100,7 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
                         props.getFloat("yrn0_specular_strength", 0.1f);
                     yrn0->specular_noise = 
                         props.getFloat("yrn0_specular_noise", 0.f);
-                    
-                    printf("--------Before Finalize!---------\n");
-                    printf("m_weave_params.pattern: %d\n", m_weave_params.pattern);
-                    wcFinalizeWeaveParameters(&m_weave_params);
-
-                    printf("--------Managed init!---------\n");
+                    tl_prepare(m_weave_params);
         }
 
         Cloth(Stream *stream, InstanceManager *manager)
@@ -112,7 +111,7 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
                 configure();
             }
         ~Cloth() {
-            wcFreeWeavePattern(&m_weave_params);
+            tl_free_weave_parameters(m_weave_params);
         }
 
         void configure() {
@@ -127,7 +126,7 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
             BSDF::configure();
         }
 
-        Frame getPerturbedFrame(wcPatternData data, Intersection its) const
+        Frame getPerturbedFrame(tlPatternData data, Intersection its) const
         {
 			//Get the world space coordinate vectors going along the texture u&v
             Float dDispDu = data.normal_x;
@@ -152,16 +151,16 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
         }
 
         Spectrum getDiffuseReflectance(const Intersection &its) const {
-            wcIntersectionData intersection_data;
+            tlIntersectionData intersection_data;
             intersection_data.uv_x = its.uv.x;
             intersection_data.uv_y = its.uv.y;
-            wcPatternData pattern_data = wcGetPatternData(intersection_data,
-                &m_weave_params);
+            tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
+                m_weave_params);
             int yrntype = pattern_data.yarn_type;
-            Float sstrength=wc_yarn_type_get_specular_strength(
-                        &m_weave_params, yrntype, NULL);
-            wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
-                &m_weave_params);
+            Float sstrength=tl_yarn_type_get_specular_strength(
+                        m_weave_params, yrntype, NULL);
+            tlColor diffuse = tl_eval_diffuse(intersection_data, pattern_data,
+                m_weave_params);
             Spectrum col;
             col.fromSRGB((1.f-sstrength)*diffuse.r,
                     (1.f-sstrength)*diffuse.g,
@@ -175,7 +174,7 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
                     || Frame::cosTheta(bRec.wo) <= 0)
                 return Spectrum(0.0f);
 
-            wcIntersectionData intersection_data;
+            tlIntersectionData intersection_data;
             intersection_data.uv_x = bRec.its.uv.x;
             intersection_data.uv_y = bRec.its.uv.y;
             intersection_data.wi_x = bRec.wi.x;
@@ -185,8 +184,8 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
             intersection_data.wo_y = bRec.wo.y;
             intersection_data.wo_z = bRec.wo.z;
 
-            wcPatternData pattern_data = wcGetPatternData(intersection_data,
-                    &m_weave_params);
+            tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
+                    m_weave_params);
             //Intersection perturbed(bRec.its);
             //perturbed.shFrame = getPerturbedFrame(pattern_data, bRec.its);
 
@@ -202,12 +201,12 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
             }
 
             int yrntype = pattern_data.yarn_type;
-            Float sstrength=wc_yarn_type_get_specular_strength(
-                        &m_weave_params, yrntype, NULL);
-            Spectrum specular(sstrength * wcEvalSpecular(intersection_data,
-                    pattern_data, &m_weave_params));
-            wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
-                &m_weave_params);
+            Float sstrength=tl_yarn_type_get_specular_strength(
+                        m_weave_params, yrntype, NULL);
+            Spectrum specular(sstrength * tl_eval_specular(intersection_data,
+                    pattern_data, m_weave_params));
+            tlColor diffuse = tl_eval_diffuse(intersection_data, pattern_data,
+                m_weave_params);
             Spectrum col;
             col.fromSRGB((1.f-sstrength)*diffuse.r,
                     (1.f-sstrength)*diffuse.g,
@@ -223,7 +222,7 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
                 return 0.0f;
 
             const Intersection& its = bRec.its;
-            wcIntersectionData intersection_data;
+            tlIntersectionData intersection_data;
             intersection_data.uv_x = its.uv.x;
             intersection_data.uv_y = its.uv.y;
             intersection_data.wi_x = bRec.wi.x;
@@ -233,8 +232,8 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
             intersection_data.wo_y = bRec.wo.y;
             intersection_data.wo_z = bRec.wo.z;
 
-            wcPatternData pattern_data = wcGetPatternData(intersection_data,
-                    &m_weave_params);
+            tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
+                    m_weave_params);
 
             return warp::squareToCosineHemispherePdf(bRec.wo);
             /*Intersection perturbed(its);
@@ -249,7 +248,7 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
             if (!(bRec.typeMask & EDiffuseReflection)
                     || Frame::cosTheta(bRec.wi) <= 0) return Spectrum(0.0f);
             const Intersection& its = bRec.its;
-            wcIntersectionData intersection_data;
+            tlIntersectionData intersection_data;
             intersection_data.uv_x = its.uv.x;
             intersection_data.uv_y = its.uv.y;
             intersection_data.wi_x = bRec.wi.x;
@@ -259,8 +258,8 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
             intersection_data.wo_y = bRec.wo.y;
             intersection_data.wo_z = bRec.wo.z;
 
-            wcPatternData pattern_data = wcGetPatternData(intersection_data,
-                    &m_weave_params);
+            tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
+                    m_weave_params);
             //Intersection perturbed(its);
             //perturbed.shFrame = getPerturbedFrame(pattern_data, its);
             //bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
@@ -282,12 +281,12 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
             }
             
             int yrntype = pattern_data.yarn_type;
-            Float sstrength=wc_yarn_type_get_specular_strength(
-                        &m_weave_params, yrntype, NULL);
-            Spectrum specular(sstrength * wcEvalSpecular(intersection_data,
-                    pattern_data, &m_weave_params));
-            wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
-                &m_weave_params);
+            Float sstrength=tl_yarn_type_get_specular_strength(
+                        m_weave_params, yrntype, NULL);
+            Spectrum specular(sstrength * tl_eval_specular(intersection_data,
+                    pattern_data, m_weave_params));
+            tlColor diffuse = tl_eval_diffuse(intersection_data, pattern_data,
+                m_weave_params);
             Spectrum col;
             col.fromSRGB((1.f-sstrength)*diffuse.r,
                     (1.f-sstrength)*diffuse.g,
@@ -300,7 +299,7 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
                 return Spectrum(0.0f);
 
             const Intersection& its = bRec.its;
-            wcIntersectionData intersection_data;
+            tlIntersectionData intersection_data;
             intersection_data.uv_x = its.uv.x;
             intersection_data.uv_y = its.uv.y;
             intersection_data.wi_x = bRec.wi.x;
@@ -310,8 +309,8 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
             intersection_data.wo_y = bRec.wo.y;
             intersection_data.wo_z = bRec.wo.z;
 
-            wcPatternData pattern_data = wcGetPatternData(intersection_data,
-                    &m_weave_params);
+            tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
+                    m_weave_params);
             //Intersection perturbed(its);
             //perturbed.shFrame = getPerturbedFrame(pattern_data, its);
             //bRec.wi = perturbed.toLocal(its.toWorld(bRec.wi));
@@ -334,13 +333,13 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
             }
 
             int yrntype = pattern_data.yarn_type;
-            Float sstrength=wc_yarn_type_get_specular_strength(
-                        &m_weave_params, yrntype, NULL);
+            Float sstrength=tl_yarn_type_get_specular_strength(
+                        m_weave_params, yrntype, NULL);
             //Log(EDebug, "SPECULARSTRENGTH \"%f\"", specular_strength);
-            Spectrum specular(sstrength * wcEvalSpecular(intersection_data,
-                    pattern_data, &m_weave_params));
-            wcColor diffuse = wcEvalDiffuse(intersection_data, pattern_data,
-                &m_weave_params);
+            Spectrum specular(sstrength * tl_eval_specular(intersection_data,
+                    pattern_data, m_weave_params));
+            tlColor diffuse = tl_eval_diffuse(intersection_data, pattern_data,
+                m_weave_params);
             Spectrum col;
             col.fromSRGB((1.f-sstrength)*diffuse.r,
                     (1.f-sstrength)*diffuse.g,
@@ -378,7 +377,7 @@ float wc_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context) 
         MTS_DECLARE_CLASS()
     private:
             //ref<Texture> m_reflectance;
-            wcWeaveParameters m_weave_params;
+            tlWeaveParameters *m_weave_params;
 };
 
 

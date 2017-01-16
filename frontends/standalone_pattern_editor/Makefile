@@ -1,7 +1,7 @@
 default:osx
 
 SOURCES = main.cpp macos_wrapper.mm ../dependencies/gl3w/GL/gl3w.c \
-    ../../src/woven_cloth.cpp ../dependencies/imgui/*.cpp
+    ../dependencies/imgui/*.cpp
 INCLUDES= -I../../src/ -I../dependencies/imgui -I../dependencies/gl3w -I/usr/local/include 
 LIBS    = -L/usr/local/lib -lglfw -framework Cocoa -lstdc++
 osx:

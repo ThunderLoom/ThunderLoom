@@ -919,7 +919,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\woven_cloth.cpp" />
     <ClCompile Include="..\..\dependencies\gl3w\src\gl3w.c" />
     <ClCompile Include="..\..\dependencies\imgui\imgui.cpp" />
     <ClCompile Include="..\..\dependencies\imgui\imgui_demo.cpp" />
