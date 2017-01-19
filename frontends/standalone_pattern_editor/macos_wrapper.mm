@@ -7,8 +7,6 @@ void openFileDialog(
         const char (*filters)[10],
         const int n_filters) {
 
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-
     NSOpenPanel* openDlg = [NSOpenPanel openPanel];
     [openDlg setLevel:CGShieldingWindowLevel()];
     
@@ -40,8 +38,6 @@ void openFileDialog(
         buffer[i] = file[i];
     }
     buffer[i+1] = '\0';
-
-    [pool release];
     
 }
 
@@ -51,8 +47,6 @@ void saveFileDialog(
         const char * aDefaultPathAndFile,
         const char (*filters)[10],
         const int n_filters) {
-    
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 
     NSString *suggested_url = [NSString stringWithUTF8String:aDefaultPathAndFile];
     NSSavePanel *dialog = [NSSavePanel savePanel];
@@ -76,7 +70,6 @@ void saveFileDialog(
     }
     buffer[i+1] = '\0';
     
-    [pool release];
 }
 
 
@@ -108,7 +101,6 @@ int macos_alert(const char * details, const char * msg) {
         //Ok clicked
         val = 1;
     }
-    [alert release];
     return val;
 }
 

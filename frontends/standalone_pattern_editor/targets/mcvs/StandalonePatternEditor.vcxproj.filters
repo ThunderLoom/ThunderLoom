@@ -24,19 +24,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="..\..\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\dependencies\imgui\imgui.cpp">
+    <ClCompile Include="..\..\..\dependencies\imgui\imgui.cpp">
       <Filter>Source Files\dependencies\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\dependencies\imgui\imgui_impl_glfw_gl3.cpp">
+    <ClCompile Include="..\..\..\dependencies\imgui\imgui_draw.cpp">
       <Filter>Source Files\dependencies\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\dependencies\imgui\imgui_draw.cpp">
+    <ClCompile Include="..\..\..\dependencies\imgui\imgui_impl_glfw_gl3.cpp">
       <Filter>Source Files\dependencies\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\dependencies\gl3w\src\gl3w.c">
+    <ClCompile Include="..\..\..\dependencies\gl3w\src\gl3w.c">
       <Filter>Source Files\dependencies\gl3w</Filter>
     </ClCompile>
   </ItemGroup>

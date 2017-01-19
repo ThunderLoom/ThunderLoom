@@ -148,6 +148,10 @@ static char* file_open_dialog(const char *filters,const char* title, bool save)
     const char t_filters[2][10] = {"wif", "ptn"};
     const char *suggested_path = ""; 
     macos_file_dialog(buffer, 512, suggested_path, t_filters, 2, save);
+#elif __linux__
+    //TODO: filedialogs for linux (gtk?)
+    printf("ERROR: linux file dialogs not implemented! :( \n");
+    assert(false);
 #endif
     
     return buffer;
@@ -370,7 +374,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
         panel_width,image_x,image_y,zoom);
 
     ImGuiIO& io = ImGui::GetIO();
-    int size[2] = {param->pattern_width,param->pattern_height};
+    int size[2] = {(int)param->pattern_width,(int)param->pattern_height};
 
     // Main loop
     while (!glfwWindowShouldClose(window))
