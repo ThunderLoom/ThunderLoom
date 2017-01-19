@@ -25,9 +25,11 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param);
     #if TARGET_OS_MAC
 //For macOS a small wrapper for Cocoa features (alert, save, open) is required
 //implementation in frontends/standalone_pattern_editor/macos_wrapper.mm
-extern void macos_file_dialog(char * buffer, int bufferSize,
-        const char * aDefaultPathAndFile, const char (*filters)[10],
-        const int n_filters, uint8_t save);
+extern void macos_open_file_dialog(char * buffer, int buffersize,
+        const char * adefaultpathandfile, const char (*filters)[10],
+        const int n_filters);
+extern void macos_save_file_dialog(char * buffer, int buffersize,
+        const char * defaultpathandfile, const char * extention);
 extern int macos_alert(const char * details, const char * msg);
     #endif
 #endif
@@ -147,7 +149,16 @@ static char* file_open_dialog(const char *filters,const char* title, bool save)
 #elif TARGET_OS_MAC
     const char t_filters[2][10] = {"wif", "ptn"};
     const char *suggested_path = ""; 
-    macos_file_dialog(buffer, 512, suggested_path, t_filters, 2, save);
+    const char *extention = ".ptn"; 
+    if(save){
+        macos_save_file_dialog(buffer, 512, suggested_path, extention);
+    }else{
+        macos_open_file_dialog(buffer, 512, suggested_path, t_filters, 2);
+    }
+#elif __linux__
+    //TODO: filedialogs for linux (gtk?)
+    printf("ERROR: linux file dialogs not implemented! :( \n");
+    assert(false);
 #endif
     
     return buffer;
@@ -370,7 +381,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
         panel_width,image_x,image_y,zoom);
 
     ImGuiIO& io = ImGui::GetIO();
-    int size[2] = {param->pattern_width,param->pattern_height};
+    int size[2] = {(int)param->pattern_width,(int)param->pattern_height};
 
     // Main loop
     while (!glfwWindowShouldClose(window))

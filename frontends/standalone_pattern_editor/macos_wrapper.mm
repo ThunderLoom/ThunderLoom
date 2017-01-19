@@ -1,13 +1,13 @@
 #import <Cocoa/Cocoa.h>
 
-void openFileDialog(
+void macos_open_file_dialog(
         char * buffer ,
         int bufferSize ,
         const char * aDefaultPathAndFile ,
         const char (*filters)[10],
         const int n_filters) {
-
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    
+    NSWindow *keyWindow = [[NSApplication sharedApplication] keyWindow];
 
     NSOpenPanel* openDlg = [NSOpenPanel openPanel];
     [openDlg setLevel:CGShieldingWindowLevel()];
@@ -31,67 +31,54 @@ void openFileDialog(
         NSArray *files = [openDlg URLs];
         // setAllowsMultipleSelection is set to FALSE -> only 1 file
         file = [[[files objectAtIndex:0] path] UTF8String];
+        
+        //copy file to buffer
+        int i = 0;
+        for(i = 0; file[i] != '\0'; ++i)
+        {
+            buffer[i] = file[i];
+        }
+        buffer[i+1] = '\0';
     }
 
-    //copy file to buffer
-    int i = 0;
-    for(i = 0; file[i] != '\0'; ++i)
-    {
-        buffer[i] = file[i];
-    }
-    buffer[i+1] = '\0';
-
-    [pool release];
-    
+    [keyWindow makeKeyAndOrderFront:nil];
 }
 
-void saveFileDialog(
+void macos_save_file_dialog(
         char * buffer ,
         int bufferSize ,
         const char * aDefaultPathAndFile,
-        const char (*filters)[10],
-        const int n_filters) {
+        const char * ext) {
+    NSWindow *keyWindow = [[NSApplication sharedApplication] keyWindow];
     
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-
     NSString *suggested_url = [NSString stringWithUTF8String:aDefaultPathAndFile];
+    NSString *extention = [NSString stringWithUTF8String:ext];
+
     NSSavePanel *dialog = [NSSavePanel savePanel];
+
+    printf("ext: %s \t extention: %s \n",ext, [[suggested_url lastPathComponent] UTF8String]);
 
     [dialog setExtensionHidden:NO];
     [dialog setDirectoryURL:[NSURL URLWithString:[suggested_url stringByDeletingLastPathComponent] ] ];
-    [dialog setNameFieldStringValue:[suggested_url lastPathComponent] ];
+    [dialog setNameFieldStringValue:[[suggested_url lastPathComponent] stringByAppendingString:extention]];
 
     const char *utf8Path;
     if ( [dialog runModal] == NSModalResponseOK )
     {
         NSURL *url = [dialog URL];
         utf8Path = [[url path] UTF8String];
-    }
-    
-    //copy file to buffer
-    int i = 0;
-    for(i = 0; utf8Path[i] != '\0'; ++i)
-    {
-        buffer[i] = utf8Path[i];
-    }
-    buffer[i+1] = '\0';
-    
-    [pool release];
-}
-
-
-void macos_file_dialog(char * buffer, int bufferSize,
-        const char * aDefaultPathAndFile, const char (*filters)[10],
-        const int n_filters, uint8_t save){
-
-        if (save) {
-            saveFileDialog(buffer, bufferSize, aDefaultPathAndFile, filters,
-            n_filters);
-        } else {
-            openFileDialog(buffer, bufferSize, aDefaultPathAndFile, filters,
-            n_filters);
+        
+        //copy file to buffer
+        int i = 0;
+        for(i = 0; utf8Path[i] != '\0'; ++i)
+        {
+            buffer[i] = utf8Path[i];
         }
-};
+        buffer[i+1] = '\0';
+    }
+    
+    [keyWindow makeKeyAndOrderFront:nil];
+}
 
 int macos_alert(const char * details, const char * msg) {
     //Function returns 1 if user presses OK, else 0
@@ -108,7 +95,6 @@ int macos_alert(const char * details, const char * msg) {
         //Ok clicked
         val = 1;
     }
-    [alert release];
     return val;
 }
 

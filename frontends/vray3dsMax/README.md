@@ -4,7 +4,8 @@ ThunderLoom plugin for VRay for 3dsMax
 *It's shading model is based on the work by Piti Irawan https://www.cs.cornell.edu/~srm/publications/IrawanThesis.pdf*
 
 This plugin adds the ThunderLoom material to the VRay renderer and 3dsMax.
-This includes a user interface for controlling the material in the 3dsMax material editor. 
+This includes a user interface for controlling the material in the 3dsMax material editor
+and a pattern editor. 
 
 #Install
 If the compiled material file (`thunderLoom.dlt`) is available, installation is simple.
@@ -18,7 +19,8 @@ In order to build the material plugin from source you will need...
 
 * the 3dsMax SDK corresponding to your 3dsMax version
 * vray version 3.x (for your 3dsMax version) installed, together with its SDK.
-* Visual Studio 2012
+* Visual Studio 2010 (for 3dsMax 2014)
+* Visual Studio 2012 (for 3dsMax versions later than 2014)
 
 The Visual Studio Solution file `vray3dsMaxThunderLoom.sln` has
 configurations for 3dsMax versions 2014, 2015 and 2016. It assumes default 

@@ -39,7 +39,7 @@ more information.
 
 ## Installing the frontends
 Precompiled binaries can be found under the [releases](https://github.com/vidarn/ThunderLoom/releases) tab. The zip file
-includes plugins for VRay/3dsMax (2014/2015/2016/2017).
+includes plugins for VRay/3dsMax (2014/2015/2016/2017) and for the mitsuba renderer.
 
 ### VRay/3dsMax 
 (see [frontends/vray3dsMax/README.md](https://github.com/vidarn/ThunderLoom/tree/master/frontends/vray3dsMax) for more info)
@@ -54,11 +54,14 @@ The usual path for the plugins folder is
 (see [frontends/mitsuba/README.md](https://github.com/vidarn/ThunderLoom/tree/master/frontends/mitsuba) for more info)
 
 A limited plugin for mitsuba is available.
-This gives `thunderloom` bsdf.  See the `example_scenes` folder for examples on
+This gives `thunderloom_mitsuba` bsdf.  See the `example_scenes` folder for examples on
 how to use the bsdf.
 
-Precompiled binaries of the plugin do not work with the current mitsuba release. 
-Currently, Mitsuba and the plugin must be built together.
+Binaries of the plugin need to be built against the version of mitsuba that is going to be used.
+Under [releases](https://github.com/vidarn/ThunderLoom/releases) are libraries 
+compiled against version 0.5.0 of mitsuba available at [mitsuba-renderer.org](mitsuba-renderer.org).
+
+For other versions Mitsuba and the plugin must be built together.
 See [frontends/mitsuba/blender_mtsblend/README.md](https://github.com/vidarn/ThunderLoom/tree/master/frontends/mitsuba/blender_mtsblend)
 for build instructions.
 
@@ -77,3 +80,6 @@ The source code is released under the MIT Licence.
 
 But if you happen to make something cool using this, a nice render or an 
 improved tool, please let us know! We would love to see it! :)
+
+---
+[![3 pillars with different types of cloth rendered using thunderLoom in vray/3dsMax](https://cloud.githubusercontent.com/assets/116268/22116260/3cb6fe54-de70-11e6-9d68-91ce3ddc4cb8.png)](https://cloud.githubusercontent.com/assets/116268/22116160/eef3283c-de6f-11e6-9c51-76b47e08fd79.png)

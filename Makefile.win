@@ -1,16 +1,18 @@
-all: clear mitsuba pattern_editor 3dsMax2014 3dsMax2015 3dsMax2016 3dsMax2017
+# run nmake -f Makefile.win (target) at project root
 
-clear:
-	IF EXIST build\windows rmdir /S /Q build\windows
-	mkdir build\windows
-mitsuba:
+default: windows
+
+3dsMax: 3dsMax2014 3dsMax2015 3dsMax2016 3dsMax2017
+windows: clear mitsuba_windows pattern_editor_windows 3dsMax
+
+mitsuba_windows:
 	scons --directory=frontends/mitsuba/ release
 	xcopy /Y /I frontends\mitsuba\blender_mtsblend build\windows\blender_mtsblend
 	copy frontends\mitsuba\README.md build\windows\README_Mitsuba.md
 
-pattern_editor:
-	msbuild frontends\standalone_pattern_editor\StandalonePatternEditor.sln /p:Configuration="Release" /p:Platform="x64"
-	copy frontends\standalone_pattern_editor\x64\Release\StandalonePatternEditor.exe build\windows\
+pattern_editor_windows:
+	msbuild frontends\standalone_pattern_editor\targets\mcvs\StandalonePatternEditor.sln /p:Configuration="Release" /p:Platform="x64"
+	copy frontends\standalone_pattern_editor\build\x64\Release\StandalonePatternEditor.exe build\windows\
 
 3dsMax2014:
 	msbuild frontends\vray3dsMax\vray3dsMaxThunderLoom.sln /p:Configuration="max 2014 release" /p:Platform="x64"
@@ -31,3 +33,7 @@ pattern_editor:
 	msbuild frontends\vray3dsMax\vray3dsMaxThunderLoom.sln /p:Configuration="max 2017 release" /p:Platform="x64"
 	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2017 build\windows\3dsMax2017 
 	copy frontends\vray3dsMax\README.md build\windows\README_3dsMax.md
+
+clear:
+	IF EXIST build\windows rmdir /S /Q build\windows
+	mkdir build\windows

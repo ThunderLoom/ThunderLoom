@@ -22,3 +22,5 @@ OSX: glfw can be obtained using homebrew. "brew install glfw"
 The Makefile for the standalone pattern editor is set up for this.
 Macports can also be used, just make sure to change 
 /usr/local/lib to /opt/local/lib in the Makefile.
+
+Linux: glfw and its devel files (glfw-devel) are usually available from package managers, dnf or apt-get. 

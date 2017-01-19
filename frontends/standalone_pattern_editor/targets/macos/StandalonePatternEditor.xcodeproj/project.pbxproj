@@ -1,0 +1,461 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		D0E1540D1E30EB4900C38AD9 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D0E1540A1E30EB4400C38AD9 /* MainMenu.xib */; };
+		D0E1540F1E30EB5B00C38AD9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0E1540E1E30EB5B00C38AD9 /* Assets.xcassets */; };
+		D0E154111E30EB6E00C38AD9 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0E154101E30EB6E00C38AD9 /* Info.plist */; };
+		D0E154151E30EC3700C38AD9 /* libglfw.3.2.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = D0F2D0691E30DAFA0044F13C /* libglfw.3.2.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		D0F2D0661E30D98E0044F13C /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F2D0651E30D98E0044F13C /* libstdc++.tbd */; };
+		D0F2D0681E30D9930044F13C /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F2D0671E30D9930044F13C /* Cocoa.framework */; };
+		D0F2D06A1E30DAFA0044F13C /* libglfw.3.2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F2D0691E30DAFA0044F13C /* libglfw.3.2.dylib */; };
+		D0F2D0851E30DB560044F13C /* imgui_impl_glfw_gl3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0F2D07C1E30DB460044F13C /* imgui_impl_glfw_gl3.cpp */; };
+		D0F2D0861E30DB570044F13C /* imgui_draw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0F2D07B1E30DB460044F13C /* imgui_draw.cpp */; };
+		D0F2D0871E30DB5B0044F13C /* imgui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0F2D0781E30DB460044F13C /* imgui.cpp */; };
+		D0F2D0881E30DB620044F13C /* gl3w.c in Sources */ = {isa = PBXBuildFile; fileRef = D0F2D06D1E30DB340044F13C /* gl3w.c */; };
+		D0F2D08B1E30DB800044F13C /* macos_wrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0F2D0891E30DB800044F13C /* macos_wrapper.mm */; };
+		D0F2D08C1E30DB800044F13C /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0F2D08A1E30DB800044F13C /* main.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D0E154121E30EBBA00C38AD9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				D0E154151E30EC3700C38AD9 /* libglfw.3.2.dylib in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		D04C2ABA1E30D50700F030F7 /* StandalonePatternEditor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StandalonePatternEditor.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D0E1540B1E30EB4400C38AD9 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		D0E1540E1E30EB5B00C38AD9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D0E154101E30EB6E00C38AD9 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D0F2D0651E30D98E0044F13C /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "usr/lib/libstdc++.tbd"; sourceTree = SDKROOT; };
+		D0F2D0671E30D9930044F13C /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		D0F2D0691E30DAFA0044F13C /* libglfw.3.2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.2.dylib; path = ../../../../../../../../../usr/local/Cellar/glfw/3.2.1/lib/libglfw.3.2.dylib; sourceTree = "<group>"; };
+		D0F2D06D1E30DB340044F13C /* gl3w.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl3w.c; sourceTree = "<group>"; };
+		D0F2D06E1E30DB340044F13C /* gl3w.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gl3w.h; sourceTree = "<group>"; };
+		D0F2D06F1E30DB340044F13C /* glcorearb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = glcorearb.h; sourceTree = "<group>"; };
+		D0F2D0721E30DB340044F13C /* gl3w.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gl3w.h; sourceTree = "<group>"; };
+		D0F2D0731E30DB340044F13C /* glcorearb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = glcorearb.h; sourceTree = "<group>"; };
+		D0F2D0751E30DB340044F13C /* gl3w.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl3w.c; sourceTree = "<group>"; };
+		D0F2D0771E30DB460044F13C /* imconfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = imconfig.h; sourceTree = "<group>"; };
+		D0F2D0781E30DB460044F13C /* imgui.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = imgui.cpp; sourceTree = "<group>"; };
+		D0F2D0791E30DB460044F13C /* imgui.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = imgui.h; sourceTree = "<group>"; };
+		D0F2D07A1E30DB460044F13C /* imgui_demo.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = imgui_demo.cpp; sourceTree = "<group>"; };
+		D0F2D07B1E30DB460044F13C /* imgui_draw.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = imgui_draw.cpp; sourceTree = "<group>"; };
+		D0F2D07C1E30DB460044F13C /* imgui_impl_glfw_gl3.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = imgui_impl_glfw_gl3.cpp; sourceTree = "<group>"; };
+		D0F2D07D1E30DB460044F13C /* imgui_impl_glfw_gl3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = imgui_impl_glfw_gl3.h; sourceTree = "<group>"; };
+		D0F2D07E1E30DB460044F13C /* imgui_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = imgui_internal.h; sourceTree = "<group>"; };
+		D0F2D07F1E30DB460044F13C /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		D0F2D0801E30DB460044F13C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		D0F2D0811E30DB460044F13C /* stb_rect_pack.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stb_rect_pack.h; sourceTree = "<group>"; };
+		D0F2D0821E30DB460044F13C /* stb_textedit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stb_textedit.h; sourceTree = "<group>"; };
+		D0F2D0831E30DB460044F13C /* stb_truetype.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stb_truetype.h; sourceTree = "<group>"; };
+		D0F2D0891E30DB800044F13C /* macos_wrapper.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = macos_wrapper.mm; path = ../../macos_wrapper.mm; sourceTree = "<group>"; };
+		D0F2D08A1E30DB800044F13C /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../main.cpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D04C2AB71E30D50700F030F7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D0F2D06A1E30DAFA0044F13C /* libglfw.3.2.dylib in Frameworks */,
+				D0F2D0681E30D9930044F13C /* Cocoa.framework in Frameworks */,
+				D0F2D0661E30D98E0044F13C /* libstdc++.tbd in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D04C2AB11E30D50700F030F7 = {
+			isa = PBXGroup;
+			children = (
+				D0F2D0891E30DB800044F13C /* macos_wrapper.mm */,
+				D0F2D08A1E30DB800044F13C /* main.cpp */,
+				D0E1540A1E30EB4400C38AD9 /* MainMenu.xib */,
+				D0E154101E30EB6E00C38AD9 /* Info.plist */,
+				D0E1540E1E30EB5B00C38AD9 /* Assets.xcassets */,
+				D0F2D0841E30DB4A0044F13C /* dependencies */,
+				D04C2ABB1E30D50700F030F7 /* Products */,
+				D0F2D0641E30D98E0044F13C /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		D04C2ABB1E30D50700F030F7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D04C2ABA1E30D50700F030F7 /* StandalonePatternEditor.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D0F2D0641E30D98E0044F13C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				D0F2D0691E30DAFA0044F13C /* libglfw.3.2.dylib */,
+				D0F2D0671E30D9930044F13C /* Cocoa.framework */,
+				D0F2D0651E30D98E0044F13C /* libstdc++.tbd */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D0F2D06B1E30DB340044F13C /* gl3w */ = {
+			isa = PBXGroup;
+			children = (
+				D0F2D06C1E30DB340044F13C /* GL */,
+				D0F2D0701E30DB340044F13C /* include */,
+				D0F2D0741E30DB340044F13C /* src */,
+			);
+			name = gl3w;
+			path = ../../../dependencies/gl3w;
+			sourceTree = "<group>";
+		};
+		D0F2D06C1E30DB340044F13C /* GL */ = {
+			isa = PBXGroup;
+			children = (
+				D0F2D06D1E30DB340044F13C /* gl3w.c */,
+				D0F2D06E1E30DB340044F13C /* gl3w.h */,
+				D0F2D06F1E30DB340044F13C /* glcorearb.h */,
+			);
+			path = GL;
+			sourceTree = "<group>";
+		};
+		D0F2D0701E30DB340044F13C /* include */ = {
+			isa = PBXGroup;
+			children = (
+				D0F2D0711E30DB340044F13C /* GL */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		D0F2D0711E30DB340044F13C /* GL */ = {
+			isa = PBXGroup;
+			children = (
+				D0F2D0721E30DB340044F13C /* gl3w.h */,
+				D0F2D0731E30DB340044F13C /* glcorearb.h */,
+			);
+			path = GL;
+			sourceTree = "<group>";
+		};
+		D0F2D0741E30DB340044F13C /* src */ = {
+			isa = PBXGroup;
+			children = (
+				D0F2D0751E30DB340044F13C /* gl3w.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		D0F2D0761E30DB460044F13C /* imgui */ = {
+			isa = PBXGroup;
+			children = (
+				D0F2D0771E30DB460044F13C /* imconfig.h */,
+				D0F2D0781E30DB460044F13C /* imgui.cpp */,
+				D0F2D0791E30DB460044F13C /* imgui.h */,
+				D0F2D07A1E30DB460044F13C /* imgui_demo.cpp */,
+				D0F2D07B1E30DB460044F13C /* imgui_draw.cpp */,
+				D0F2D07C1E30DB460044F13C /* imgui_impl_glfw_gl3.cpp */,
+				D0F2D07D1E30DB460044F13C /* imgui_impl_glfw_gl3.h */,
+				D0F2D07E1E30DB460044F13C /* imgui_internal.h */,
+				D0F2D07F1E30DB460044F13C /* LICENSE */,
+				D0F2D0801E30DB460044F13C /* README.md */,
+				D0F2D0811E30DB460044F13C /* stb_rect_pack.h */,
+				D0F2D0821E30DB460044F13C /* stb_textedit.h */,
+				D0F2D0831E30DB460044F13C /* stb_truetype.h */,
+			);
+			name = imgui;
+			path = ../../../dependencies/imgui;
+			sourceTree = "<group>";
+		};
+		D0F2D0841E30DB4A0044F13C /* dependencies */ = {
+			isa = PBXGroup;
+			children = (
+				D0F2D0761E30DB460044F13C /* imgui */,
+				D0F2D06B1E30DB340044F13C /* gl3w */,
+			);
+			name = dependencies;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D04C2AB91E30D50700F030F7 /* StandalonePatternEditor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D04C2ACB1E30D50800F030F7 /* Build configuration list for PBXNativeTarget "StandalonePatternEditor" */;
+			buildPhases = (
+				D04C2AB61E30D50700F030F7 /* Sources */,
+				D04C2AB71E30D50700F030F7 /* Frameworks */,
+				D04C2AB81E30D50700F030F7 /* Resources */,
+				D0E154121E30EBBA00C38AD9 /* CopyFiles */,
+				D0E154141E30EBDA00C38AD9 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = StandalonePatternEditor;
+			productName = StandalonePatternEditor;
+			productReference = D04C2ABA1E30D50700F030F7 /* StandalonePatternEditor.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D04C2AB21E30D50700F030F7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0810;
+				TargetAttributes = {
+					D04C2AB91E30D50700F030F7 = {
+						CreatedOnToolsVersion = 8.1;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = D04C2AB51E30D50700F030F7 /* Build configuration list for PBXProject "StandalonePatternEditor" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D04C2AB11E30D50700F030F7;
+			productRefGroup = D04C2ABB1E30D50700F030F7 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D04C2AB91E30D50700F030F7 /* StandalonePatternEditor */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D04C2AB81E30D50700F030F7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D0E1540F1E30EB5B00C38AD9 /* Assets.xcassets in Resources */,
+				D0E1540D1E30EB4900C38AD9 /* MainMenu.xib in Resources */,
+				D0E154111E30EB6E00C38AD9 /* Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D0E154141E30EBDA00C38AD9 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "install_name_tool -change /usr/local/opt/glfw/lib/libglfw.3.dylib @executable_path/../Frameworks/libglfw.3.2.dylib \"$BUILT_PRODUCTS_DIR/$EXECUTABLE_PATH\"";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D04C2AB61E30D50700F030F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D0F2D08C1E30DB800044F13C /* main.cpp in Sources */,
+				D0F2D08B1E30DB800044F13C /* macos_wrapper.mm in Sources */,
+				D0F2D0881E30DB620044F13C /* gl3w.c in Sources */,
+				D0F2D0871E30DB5B0044F13C /* imgui.cpp in Sources */,
+				D0F2D0861E30DB570044F13C /* imgui_draw.cpp in Sources */,
+				D0F2D0851E30DB560044F13C /* imgui_impl_glfw_gl3.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		D0E1540A1E30EB4400C38AD9 /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D0E1540B1E30EB4400C38AD9 /* Base */,
+			);
+			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		D04C2AC91E30D50800F030F7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		D04C2ACA1E30D50800F030F7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		D04C2ACC1E30D50800F030F7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				HEADER_SEARCH_PATHS = (
+					../../../../src,
+					../../../dependencies/gl3w,
+					/usr/local/include,
+					../../../dependencies/imgui,
+				);
+				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/glfw/3.2.1/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				PRODUCT_BUNDLE_IDENTIFIER = thunderloom.StandalonePatternEditor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = ../../build;
+			};
+			name = Debug;
+		};
+		D04C2ACD1E30D50800F030F7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				HEADER_SEARCH_PATHS = (
+					../../../../src,
+					../../../dependencies/gl3w,
+					/usr/local/include,
+					../../../dependencies/imgui,
+				);
+				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/glfw/3.2.1/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				PRODUCT_BUNDLE_IDENTIFIER = thunderloom.StandalonePatternEditor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = ../../build;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D04C2AB51E30D50700F030F7 /* Build configuration list for PBXProject "StandalonePatternEditor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D04C2AC91E30D50800F030F7 /* Debug */,
+				D04C2ACA1E30D50800F030F7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D04C2ACB1E30D50800F030F7 /* Build configuration list for PBXNativeTarget "StandalonePatternEditor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D04C2ACC1E30D50800F030F7 /* Debug */,
+				D04C2ACD1E30D50800F030F7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D04C2AB21E30D50700F030F7 /* Project object */;
+}
