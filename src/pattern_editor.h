@@ -158,7 +158,6 @@ static char* file_open_dialog(const char *filters,const char* title, bool save)
 #elif __linux__
     //TODO: filedialogs for linux (gtk?)
     printf("ERROR: linux file dialogs not implemented! :( \n");
-    assert(false);
 #endif
     
     return buffer;

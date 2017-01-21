@@ -10,7 +10,7 @@
 		D0E1540D1E30EB4900C38AD9 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D0E1540A1E30EB4400C38AD9 /* MainMenu.xib */; };
 		D0E1540F1E30EB5B00C38AD9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0E1540E1E30EB5B00C38AD9 /* Assets.xcassets */; };
 		D0E154111E30EB6E00C38AD9 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0E154101E30EB6E00C38AD9 /* Info.plist */; };
-		D0E154151E30EC3700C38AD9 /* libglfw.3.2.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = D0F2D0691E30DAFA0044F13C /* libglfw.3.2.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		D0E154151E30EC3700C38AD9 /* libglfw.3.2.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = D0F2D0691E30DAFA0044F13C /* libglfw.3.2.dylib */; };
 		D0F2D0661E30D98E0044F13C /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F2D0651E30D98E0044F13C /* libstdc++.tbd */; };
 		D0F2D0681E30D9930044F13C /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F2D0671E30D9930044F13C /* Cocoa.framework */; };
 		D0F2D06A1E30DAFA0044F13C /* libglfw.3.2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F2D0691E30DAFA0044F13C /* libglfw.3.2.dylib */; };
