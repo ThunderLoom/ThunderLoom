@@ -7,6 +7,9 @@ tests/*/*.exe
 tests/*/*.bin
 tests/*/*.dSYM
 
+frontends/dependencies/gl3w/*
+frontends/dependencies/glfw/*
+
 ## Xcode macos
 ##
 
