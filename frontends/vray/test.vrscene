@@ -1,0 +1,667 @@
+/////////////////////////////////////////
+// Exported by V-Ray Plugins Exporter
+// V-Ray core version is 3.52.01 built at Mar 27 15:33:53 2017
+// Exported at Sat May 06 22:50:18 2017
+/////////////////////////////////////////
+
+
+// Frame at time 1
+
+SettingsRTEngine settingRTEngine {
+  trace_depth=5;
+  gi_depth=3;
+  cpu_bundle_size=64;
+  cpu_samples_per_pixel=4;
+  gpu_bundle_size=192;
+  gpu_samples_per_pixel=8;
+  stereo_mode=0;
+  stereo_eye_distance=6.6;
+  stereo_focus=2;
+  opencl_texsize=512;
+  opencl_resizeTextures=1;
+  opencl_textureFormat=2;
+  progressive_samples_per_pixel=1;
+  undersampling=4;
+  max_render_time=0;
+  max_sample_level=0;
+  noise_threshold=0;
+  enable_mask=0;
+}
+
+SettingsRenderChannels vraySettingsRenderChannels {
+  unfiltered_fragment_method=0;
+  deep_merge_mode=0;
+  deep_merge_coeff=1;
+}
+
+SettingsOutput vraySettingsOutput {
+  img_width=960;
+  img_height=540;
+  img_pixelAspect=1;
+  img_file="untitled.png";
+  img_dir="C:/Users/peterwin/Documents/maya/projects/default/images/tmp/";
+  img_file_needFrameNumber=0;
+  img_separateAlpha=0;
+  img_noAlpha=0;
+  img_dontSaveRgbChannel=0;
+  img_deepFile=0;
+  img_rawFile=0;
+  img_rawFileVFB=1;
+  anim_start=1;
+  anim_end=1;
+  anim_frame_padding=4;
+  anim_renumber_on=0;
+  anim_renumber_start=0;
+  anim_renumber_step=1;
+  anim_ren_frame_start=0;
+  frame_start=1;
+  frames_per_second=1;
+  frames=List(1);
+  rgn_left=0;
+  rgn_width=960;
+  rgn_top=0;
+  rgn_height=540;
+  bmp_width=960;
+  bmp_height=540;
+  r_left=0;
+  r_width=960;
+  r_top=0;
+  r_height=540;
+  relements_separateFolders=0;
+  relements_separate_rgba=0;
+  relements_divider=".";
+  film_offset_x=0;
+  film_offset_y=-0;
+}
+
+SettingsOptions vraySettingsOptions {
+  geom_displacement=1;
+  geom_doHidden=1;
+  light_doLights=1;
+  light_doDefaultLights=1;
+  light_doHiddenLights=1;
+  light_doShadows=1;
+  light_disableSelfIllumination=0;
+  gi_dontRenderImage=0;
+  mtl_reflectionRefraction=1;
+  mtl_limitDepth=0;
+  mtl_maxDepth=5;
+  mtl_doMaps=1;
+  mtl_filterMaps=1;
+  mtl_SSSEnabled=1;
+  mtl_transpMaxLevels=50;
+  mtl_transpCutoff=0.001;
+  mtl_override_on=0;
+  mtl_glossy=1;
+  mtl_uninvertedNormalBump=0;
+  geom_backfaceCull=0;
+  ray_bias=0;
+  gi_texFilteringMultiplier=5;
+  misc_abortOnMissingAsset=0;
+  misc_transferAssets=0;
+  misc_useCachedAssets=1;
+  dr_assetsCacheLimitType=0;
+  dr_assetsCacheLimitValue=0;
+  dr_overwriteLocalCacheSettings=0;
+  ray_max_intensity_on=1;
+  ray_max_intensity=20;
+  probabilistic_lights_on=2;
+  num_probabilistic_lights=8;
+  probabilistic_vol_on=0;
+  probabilistic_vol_samples=20;
+  probabilistic_vol_gi_samples=3;
+  misc_lowThreadPriority=0;
+}
+
+SettingsImageSampler vraySettingsImageSampler {
+  type=3;
+  min_shade_rate=6;
+  fixed_subdivs=1;
+  dmc_minSubdivs=1;
+  dmc_maxSubdivs=24;
+  dmc_threshold=0.01;
+  dmc_adaptive_method=1;
+  subdivision_minRate=-1;
+  subdivision_maxRate=2;
+  subdivision_jitter=1;
+  subdivision_threshold=0.15;
+  subdivision_edges=1;
+  subdivision_normals=1;
+  subdivision_normals_threshold=0.1;
+  progressive_minSubdivs=1;
+  progressive_maxSubdivs=100;
+  progressive_threshold=0.01;
+  progressive_maxTime=1;
+  progressive_bundleSize=128;
+  progressive_showMask=0;
+  render_mask_mode=0;
+  render_mask_clear=1;
+}
+
+FilterLanczos aaFilter {
+  size=2;
+}
+
+CameraDefault perspShape {
+  orthographic=0;
+}
+
+SettingsCamera vraySettingsCamera {
+  type=0;
+  height=400;
+  dist=2;
+  fov=-1;
+  auto_fit=1;
+  curve=1;
+}
+
+SettingsCameraDof vraySettingsCameraDof {
+  on=0;
+  aperture=5;
+  center_bias=0;
+  focal_dist=200;
+  sides_on=0;
+  sides_num=5;
+  rotation=0;
+  anisotropy=0;
+}
+
+SettingsMotionBlur vraySettingsMotionBlur {
+  on=0;
+  geom_samples=2;
+  low_samples=1;
+}
+
+RenderView renderView {
+  transform=TransformHex("F304353F00000000F30435BF709FA9BEEC29623F709FA9BE03EC1F3F05E2EF3E03EC1F3F0000000018FAC961C2C0FD3FD97A57C99150F63F92F9C961C2C0FD3F");
+  fov=0.9500215;
+  frame_samples=2;
+  clipping=0;
+  clipping_near=0.1;
+  clipping_far=10000;
+  zoom=1;
+  orthographic=0;
+  orthographicWidth=10;
+  mayaFocalLength=35;
+  mayaApperture=1.41732;
+}
+
+SettingsVRST vraySettingsVRST {
+  compression=1;
+  bits_per_channel=16;
+}
+
+SettingsEXR vraySettingsEXR {
+  compression=3;
+  bits_per_channel=16;
+  extra_attributes="";
+  auto_data_window=0;
+  write_integer_ids=0;
+  multipart=0;
+  deep_alpha_colors=0;
+}
+
+SettingsPNG vraySettingsPNG {
+  compression=9;
+  bits_per_channel=8;
+}
+
+SettingsJPEG vraySettingsJPEG {
+  quality=100;
+}
+
+SettingsSGI vraySettingsSGI {
+  bits_per_channel=8;
+}
+
+SettingsTIFF vraySettingsTIFF {
+  bits_per_channel=16;
+  interleaved=0;
+}
+
+SettingsTGA vraySettingsTGA {
+  compression=2;
+}
+
+SettingsColorMapping vraySettingsColorMapping {
+  type=6;
+  affect_background=1;
+  dark_mult=1;
+  bright_mult=1;
+  gamma=2.2;
+  subpixel_mapping=0;
+  clamp_output=0;
+  clamp_level=1;
+  adaptation_only=2;
+  linearWorkflow=0;
+}
+
+SettingsUnitsInfo vraySettingsUnitsInfo {
+  meters_scale=0.01;
+  photometric_scale=0.002;
+  scene_upDir=Vector(0, 1, 0);
+  seconds_scale=0.04166667;
+  frames_scale=24;
+  rgb_color_space=1;
+}
+
+SettingsGI vraySettingsGI {
+  on=0;
+  refract_caustics=1;
+  reflect_caustics=0;
+  saturation=1;
+  contrast=1;
+  contrast_base=0.5;
+  primary_engine=2;
+  primary_multiplier=1;
+  secondary_engine=3;
+  secondary_multiplier=1;
+  ray_distance_on=0;
+  ray_distance=100;
+  ao_on=0;
+  ao_amount=0.8;
+  ao_radius=10;
+  ao_subdivs=8;
+}
+
+SettingsIrradianceMap vraySettingsIrradianceMap {
+  min_rate=-3;
+  max_rate=0;
+  subdivs=50;
+  interp_samples=20;
+  calc_interp_samples=10;
+  interp_frames=2;
+  color_threshold=0.3;
+  normal_threshold=0.1;
+  distance_threshold=0.1;
+  detail_enhancement=0;
+  detail_radius=60;
+  detail_subdivs_mult=0.3;
+  detail_scale=0;
+  randomize_samples=1;
+  interpolation_mode=1;
+  lookup_mode=3;
+  mode=0;
+  dont_delete=1;
+  file="";
+  show_samples=0;
+  show_calc_phase=1;
+  show_direct_light=0;
+  multiple_views=0;
+  multipass=1;
+  check_sample_visibility=0;
+  auto_save=1;
+  auto_save_file="";
+}
+
+SettingsPhotonMap vraySettingsPhotonMap {
+  bounces=10;
+  max_photons=30;
+  prefilter=0;
+  prefilter_samples=10;
+  mode=0;
+  file="";
+  auto_search_distance=1;
+  search_distance=10;
+  convex_hull_estimate=0;
+  dont_delete=1;
+  auto_save=1;
+  auto_save_file="";
+  store_direct_light=1;
+  multiplier=1;
+  max_density=0;
+  retrace_corners=0;
+  retrace_bounces=10;
+}
+
+SettingsDMCGI vraySettingsDMCGI {
+  subdivs=8;
+  depth=3;
+}
+
+SettingsLightCache vraySettingsLightCache {
+  subdivs=1000;
+  sample_size=0.01;
+  filter_type=1;
+  filter_samples=5;
+  filter_size=0.06;
+  prefilter=1;
+  prefilter_samples=20;
+  depth=100;
+  show_calc_phase=1;
+  store_direct_light=1;
+  world_scale=0;
+  mode=0;
+  file="";
+  dont_delete=1;
+  auto_save=1;
+  auto_save_file="";
+  num_passes=64;
+  use_for_glossy_rays=1;
+  premultiplied=1;
+  multiple_views=0;
+  retrace_enabled=1;
+  retrace_threshold=2;
+  retrace_leak_prevention=0.8;
+}
+
+SettingsCaustics vraySettingsCaustics {
+  on=0;
+  max_photons=60;
+  search_distance=0;
+  max_density=0;
+  multiplier=1;
+  mode=0;
+  file="";
+  dont_delete=1;
+  auto_save=1;
+  auto_save_file="";
+}
+
+SettingsDMCSampler vraySettingsDMCSampler {
+  time_dependent=1;
+  adaptive_amount=0.85;
+  adaptive_threshold=0.005;
+  adaptive_min_samples=16;
+  subdivs_mult=1;
+  div_shade_subdivs=1;
+  random_seed=0;
+  use_local_subdivs=0;
+}
+
+SettingsDefaultDisplacement vraySettingsDefaultDisplacement {
+  override_on=1;
+  edgeLength=4;
+  viewDependent=1;
+  maxSubdivs=256;
+  tightBounds=1;
+  amount=1;
+  relative=1;
+}
+
+SettingsRaycaster vraySettingsRaycaster {
+  maxLevels=80;
+  minLeafSize=0;
+  faceLevelCoef=1;
+  dynMemLimit=5000;
+  optLevel=0;
+  embreeUse=1;
+  embreeUseMB=1;
+  embreeHair=1;
+  embreeLowMemory=0;
+  embreeRayPackets=0;
+}
+
+SettingsRegionsGenerator vraySettingsRegionsGenerator {
+  xc=64;
+  yc=64;
+  xymeans=0;
+  seqtype=4;
+  reverse=0;
+  dynbuckets=1;
+}
+
+SettingsTextureCache vraySettingsTextureCache {
+  cache_size=4000;
+}
+
+SettingsHair vraySettingsHair {
+  min_hair_width=0;
+}
+
+SettingsEnvironment vraySettingsEnvironment {
+  bg_tex=AColor(0, 0, 0, 1);
+  num_environment_objects=0;
+}
+
+GeomStaticNURBS topnurbsCubeShape1@nurbs1 {
+  cvs=List(
+      List(Vector(-0.5, 0.5, 0.5), Vector(-0.5, 0.5, 0.1666667), Vector(-0.5, 0.5, -0.1666667), Vector(-0.5, 0.5, -0.5)), 
+      List(Vector(-0.1666667, 0.5, 0.5), Vector(-0.1666667, 0.5, 0.1666667), Vector(-0.1666667, 0.5, -0.1666667), Vector(-0.1666667, 0.5, -0.5)), 
+      List(Vector(0.1666667, 0.5, 0.5), Vector(0.1666667, 0.5, 0.1666667), Vector(0.1666667, 0.5, -0.1666667), Vector(0.1666667, 0.5, -0.5)), 
+      List(Vector(0.5, 0.5, 0.5), Vector(0.5, 0.5, 0.1666667), Vector(0.5, 0.5, -0.1666667), Vector(0.5, 0.5, -0.5))
+  );
+  weights=List(
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1)
+  );
+  uKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  vKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  maxSubdivDepth=22;
+  flatnessCoef=0.2;
+  uDirectionType=0;
+  vDirectionType=0;
+  uDegree=3;
+  vDegree=3;
+  generateStatic=1;
+  primary_visibility=1;
+}
+
+BRDFThunderLoom BRDFThunderLoom {
+  filepath="C:\Users\peterwin\Code\cloth-shader\example_scenes\monkeytowel\34779.wif";
+  uscale=1;
+  vscale=1;
+  bend=0.5;
+  yarnsize=1;
+  twist=0.5;
+  specular_strength=0.4;
+  specular_noise=0.4;
+  highlight_width=0.4;
+  diffuse_color=AColor(0, 0.3, 0, 1);
+  bend_on=0;
+  yarnsize_on=0;
+  twist_on=0;
+  specular_strength_on=0;
+  specular_noise_on=0;
+  highlight_width_on=0;
+  diffuse_color_on=0;
+  bend_on_float=0;
+  yarnsize_on_float=0;
+  twist_on_float=0;
+  specular_strength_on_float=0;
+  specular_noise_on_float=0;
+  highlight_width_on_float=0;
+  diffuse_color_on_float=0;
+  bends2=0.5;
+}
+
+MtlSingleBRDF BRDFThunderLoom@mtlsingle {
+  brdf=BRDFThunderLoom;
+  allow_negative_colors=1;
+}
+
+Node topnurbsCubeShape1@node {
+  transform=TransformHex("0000803F0000000000000000000000000000803F0000000000000000000000000000803F00000000000000000000000000000000000000000000000000000000");
+  geometry=topnurbsCubeShape1@nurbs1;
+  material=BRDFThunderLoom@mtlsingle;
+  nsamples=1;
+  visible=1;
+  user_attributes="";
+}
+
+GeomStaticNURBS bottomnurbsCubeShape1@nurbs2 {
+  cvs=List(
+      List(Vector(-0.5, -0.5, 0.5), Vector(-0.1666667, -0.5, 0.5), Vector(0.1666667, -0.5, 0.5), Vector(0.5, -0.5, 0.5)), 
+      List(Vector(-0.5, -0.5, 0.1666667), Vector(-0.1666667, -0.5, 0.1666667), Vector(0.1666667, -0.5, 0.1666667), Vector(0.5, -0.5, 0.1666667)), 
+      List(Vector(-0.5, -0.5, -0.1666667), Vector(-0.1666667, -0.5, -0.1666667), Vector(0.1666667, -0.5, -0.1666667), Vector(0.5, -0.5, -0.1666667)), 
+      List(Vector(-0.5, -0.5, -0.5), Vector(-0.1666667, -0.5, -0.5), Vector(0.1666667, -0.5, -0.5), Vector(0.5, -0.5, -0.5))
+  );
+  weights=List(
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1)
+  );
+  uKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  vKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  maxSubdivDepth=22;
+  flatnessCoef=0.2;
+  uDirectionType=0;
+  vDirectionType=0;
+  uDegree=3;
+  vDegree=3;
+  generateStatic=1;
+  primary_visibility=1;
+}
+
+Node bottomnurbsCubeShape1@node {
+  transform=TransformHex("0000803F0000000000000000000000000000803F0000000000000000000000000000803F00000000000000000000000000000000000000000000000000000000");
+  geometry=bottomnurbsCubeShape1@nurbs2;
+  material=BRDFThunderLoom@mtlsingle;
+  nsamples=1;
+  visible=1;
+  user_attributes="";
+}
+
+GeomStaticNURBS leftnurbsCubeShape1@nurbs3 {
+  cvs=List(
+      List(Vector(-0.5, -0.5, 0.5), Vector(-0.5, -0.1666667, 0.5), Vector(-0.5, 0.1666667, 0.5), Vector(-0.5, 0.5, 0.5)), 
+      List(Vector(-0.1666667, -0.5, 0.5), Vector(-0.1666667, -0.1666667, 0.5), Vector(-0.1666667, 0.1666667, 0.5), Vector(-0.1666667, 0.5, 0.5)), 
+      List(Vector(0.1666667, -0.5, 0.5), Vector(0.1666667, -0.1666667, 0.5), Vector(0.1666667, 0.1666667, 0.5), Vector(0.1666667, 0.5, 0.5)), 
+      List(Vector(0.5, -0.5, 0.5), Vector(0.5, -0.1666667, 0.5), Vector(0.5, 0.1666667, 0.5), Vector(0.5, 0.5, 0.5))
+  );
+  weights=List(
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1)
+  );
+  uKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  vKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  maxSubdivDepth=22;
+  flatnessCoef=0.2;
+  uDirectionType=0;
+  vDirectionType=0;
+  uDegree=3;
+  vDegree=3;
+  generateStatic=1;
+  primary_visibility=1;
+}
+
+Node leftnurbsCubeShape1@node {
+  transform=TransformHex("0000803F0000000000000000000000000000803F0000000000000000000000000000803F00000000000000000000000000000000000000000000000000000000");
+  geometry=leftnurbsCubeShape1@nurbs3;
+  material=BRDFThunderLoom@mtlsingle;
+  nsamples=1;
+  visible=1;
+  user_attributes="";
+}
+
+GeomStaticNURBS rightnurbsCubeShape1@nurbs4 {
+  cvs=List(
+      List(Vector(-0.5, -0.5, -0.5), Vector(-0.1666667, -0.5, -0.5), Vector(0.1666667, -0.5, -0.5), Vector(0.5, -0.5, -0.5)), 
+      List(Vector(-0.5, -0.1666667, -0.5), Vector(-0.1666667, -0.1666667, -0.5), Vector(0.1666667, -0.1666667, -0.5), Vector(0.5, -0.1666667, -0.5)), 
+      List(Vector(-0.5, 0.1666667, -0.5), Vector(-0.1666667, 0.1666667, -0.5), Vector(0.1666667, 0.1666667, -0.5), Vector(0.5, 0.1666667, -0.5)), 
+      List(Vector(-0.5, 0.5, -0.5), Vector(-0.1666667, 0.5, -0.5), Vector(0.1666667, 0.5, -0.5), Vector(0.5, 0.5, -0.5))
+  );
+  weights=List(
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1)
+  );
+  uKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  vKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  maxSubdivDepth=22;
+  flatnessCoef=0.2;
+  uDirectionType=0;
+  vDirectionType=0;
+  uDegree=3;
+  vDegree=3;
+  generateStatic=1;
+  primary_visibility=1;
+}
+
+Node rightnurbsCubeShape1@node {
+  transform=TransformHex("0000803F0000000000000000000000000000803F0000000000000000000000000000803F00000000000000000000000000000000000000000000000000000000");
+  geometry=rightnurbsCubeShape1@nurbs4;
+  material=BRDFThunderLoom@mtlsingle;
+  nsamples=1;
+  visible=1;
+  user_attributes="";
+}
+
+GeomStaticNURBS frontnurbsCubeShape1@nurbs5 {
+  cvs=List(
+      List(Vector(0.5, -0.5, 0.5), Vector(0.5, -0.1666667, 0.5), Vector(0.5, 0.1666667, 0.5), Vector(0.5, 0.5, 0.5)), 
+      List(Vector(0.5, -0.5, 0.1666667), Vector(0.5, -0.1666667, 0.1666667), Vector(0.5, 0.1666667, 0.1666667), Vector(0.5, 0.5, 0.1666667)), 
+      List(Vector(0.5, -0.5, -0.1666667), Vector(0.5, -0.1666667, -0.1666667), Vector(0.5, 0.1666667, -0.1666667), Vector(0.5, 0.5, -0.1666667)), 
+      List(Vector(0.5, -0.5, -0.5), Vector(0.5, -0.1666667, -0.5), Vector(0.5, 0.1666667, -0.5), Vector(0.5, 0.5, -0.5))
+  );
+  weights=List(
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1)
+  );
+  uKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  vKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  maxSubdivDepth=22;
+  flatnessCoef=0.2;
+  uDirectionType=0;
+  vDirectionType=0;
+  uDegree=3;
+  vDegree=3;
+  generateStatic=1;
+  primary_visibility=1;
+}
+
+Node frontnurbsCubeShape1@node {
+  transform=TransformHex("0000803F0000000000000000000000000000803F0000000000000000000000000000803F00000000000000000000000000000000000000000000000000000000");
+  geometry=frontnurbsCubeShape1@nurbs5;
+  material=BRDFThunderLoom@mtlsingle;
+  nsamples=1;
+  visible=1;
+  user_attributes="";
+}
+
+GeomStaticNURBS backnurbsCubeShape1@nurbs6 {
+  cvs=List(
+      List(Vector(-0.5, -0.5, 0.5), Vector(-0.5, -0.5, 0.1666667), Vector(-0.5, -0.5, -0.1666667), Vector(-0.5, -0.5, -0.5)), 
+      List(Vector(-0.5, -0.1666667, 0.5), Vector(-0.5, -0.1666667, 0.1666667), Vector(-0.5, -0.1666667, -0.1666667), Vector(-0.5, -0.1666667, -0.5)), 
+      List(Vector(-0.5, 0.1666667, 0.5), Vector(-0.5, 0.1666667, 0.1666667), Vector(-0.5, 0.1666667, -0.1666667), Vector(-0.5, 0.1666667, -0.5)), 
+      List(Vector(-0.5, 0.5, 0.5), Vector(-0.5, 0.5, 0.1666667), Vector(-0.5, 0.5, -0.1666667), Vector(-0.5, 0.5, -0.5))
+  );
+  weights=List(
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1), 
+      List(1, 1, 1, 1)
+  );
+  uKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  vKnots=ListFloatHex("ZIPC2000000011000000eAFjYEAHDfYMDAgMABcEAv0=");
+  maxSubdivDepth=22;
+  flatnessCoef=0.2;
+  uDirectionType=0;
+  vDirectionType=0;
+  uDegree=3;
+  vDegree=3;
+  generateStatic=1;
+  primary_visibility=1;
+}
+
+Node backnurbsCubeShape1@node {
+  transform=TransformHex("0000803F0000000000000000000000000000803F0000000000000000000000000000803F00000000000000000000000000000000000000000000000000000000");
+  geometry=backnurbsCubeShape1@nurbs6;
+  material=BRDFThunderLoom@mtlsingle;
+  nsamples=1;
+  visible=1;
+  user_attributes="";
+}
+
+MayaLightDirect defaultLighting {
+  color=Color(1, 1, 1);
+  transform=TransformHex("F304353F00000000F30435BF709FA9BEEC29623F709FA9BE03EC1F3F03E2EF3E03EC1F3F0000000018FAC961C2C0FD3FD97A57C99150F63F92F9C961C2C0FD3F");
+  photonSubdivs=0;
+  causticSubdivs=0;
+  shadows=0;
+}
+
+SettingsLightLinker settings_lightlinker {
+  ignored_lights=List();
+  ignored_shadow_lights=List();
+}
+
+

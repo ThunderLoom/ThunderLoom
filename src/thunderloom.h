@@ -675,6 +675,10 @@ tlWeaveParameters *tl_weave_pattern_from_file(const char *filename,const char **
             if(ptn_ok){
              fp = fopen(filename,"rb");
             }
+            if (!fp) {
+                *error = "File not found.";
+                return 0;
+            }
             fseek(fp,0,SEEK_END);
             long len = ftell(fp);
             fseek(fp,0,SEEK_SET);

@@ -34,6 +34,26 @@ pattern_editor_windows:
 	xcopy /Y /I frontends\vray3dsMax\3dsMax\build\3dsMax2017 build\windows\3dsMax2017 
 	copy frontends\vray3dsMax\README.md build\windows\README_3dsMax.md
 
-clear:
+Maya2016:
+	msbuild frontends\vray\targets\mcvs\VRayStandalone.vcxproj /p:Configuration="V-Ray for Maya2016" /p:Platform="x64"
+	xcopy "frontends\vray\build\x64\V-Ray for Maya2016\vray_thunderloom.dll" "build\windows\V-Ray for Maya2016\vray_plugin\"
+	msbuild frontends\vraymaya\targets\mcvs\VRayMayaThunderLoom.vcxproj /p:Configuration="Maya2016" /p:Platform="x64"
+	xcopy frontends\vraymaya\build\x64\Maya2016\VRayMayaThunderLoom.mll "build\windows\V-Ray for Maya2016\thunderloom_maya_module\plug-ins\"
+	xcopy frontends\vraymaya\AEVRayThunderLoomMtlTemplate.mel "build\windows\V-Ray for Maya2016\thunderloom_maya_module\scripts\"
+	copy frontends\vraymaya\ThunderLoom.mod "build\windows\V-Ray for Maya2016\"
+	copy frontends\vraymaya\vraythunderloommtl.txt "build\windows\V-Ray for Maya2016\"
+	copy frontends\vraymaya\README.md build\windows\README_Maya.md
+
+Maya2017:
+	msbuild frontends\vray\targets\mcvs\VRayStandalone.vcxproj /p:Configuration="V-Ray for Maya2017" /p:Platform="x64"
+	xcopy "frontends\vray\build\x64\V-Ray for Maya2017\vray_thunderloom.dll" "build\windows\V-Ray for Maya2017\vray_plugin\"
+	msbuild frontends\vraymaya\targets\mcvs\VRayMayaThunderLoom.vcxproj /p:Configuration="Maya2017" /p:Platform="x64"
+	xcopy frontends\vraymaya\build\x64\Maya2017\VRayMayaThunderLoom.mll "build\windows\V-Ray for Maya2017\thunderloom_maya_module\plug-ins\"
+	xcopy frontends\vraymaya\AEVRayThunderLoomMtlTemplate.mel "build\windows\V-Ray for Maya2017\thunderloom_maya_module\scripts\"
+	copy frontends\vraymaya\ThunderLoom.mod "build\windows\V-Ray for Maya2017\"
+	copy frontends\vraymaya\vraythunderloommtl.txt "build\windows\V-Ray for Maya2017\"
+	copy frontends\vraymaya\README.md build\windows\README_Maya.md
+
+clean:
 	IF EXIST build\windows rmdir /S /Q build\windows
 	mkdir build\windows

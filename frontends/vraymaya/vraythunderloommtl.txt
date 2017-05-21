@@ -1,0 +1,21 @@
+BRDFThunderLoom VRayThunderLoomMtl {
+  "filepath"                    string   "filepath"            string  INPUT
+  "uscale"                      number   "uscale"              number  INPUT
+  "vscale"                      number   "vscale"              number  INPUT
+  "bend"                        array    "bend"                array   INPUT
+  "bend_on_float"               array    "bendOn"              array   INPUT
+  "yarnsize"                    array    "yarnsize"            array   INPUT
+  "yarnsize_on_float"           array    "yarnsizeOn"          array   INPUT
+  "twist"                       array    "twist"               array   INPUT
+  "twist_on_float"              array    "twistOn"             array   INPUT
+  "specular_strength"           array    "specularStrength"    array   INPUT
+  "specular_strength_on_float"  array    "specularStrengthOn"  array   INPUT
+  "specular_noise"              array    "specularNoise"       array   INPUT
+  "specular_noise_on_float"     array    "specularNoiseOn"     array   INPUT
+  "highlight_width"             array    "highlightWidth"      array   INPUT
+  "highlight_width_on_float"    array    "highlightWidthOn"    array   INPUT
+  "diffuse_color"               3darray  "diffuseColor"        3darray INPUT
+  "diffuse_color_on_float"      array    "diffuseColorOn"      array   INPUT
+  ""                            texture  "outColor"            texture OUTPUT
+  ""                            texture  "oc"                  texture OUTPUT
+}

@@ -1,0 +1,236 @@
+global proc setTLAttributesFromFile(string $nodeDotAttr) {
+    // Gets TL values from file and sets attributes to these or default
+    // Also disconnects any maps.
+    
+    string $buffer[];
+	tokenize($nodeDotAttr, ".", $buffer);
+	string $nodeName = $buffer[0];
+    
+    string $fullAttrName = $nodeName + ".filepath";
+	string $filepath = `getAttr $fullAttrName`;
+    float $tlparams[] = `thunderLoomParseFile -fileName $filepath`;
+    int $num_yarn_types = $tlparams[0];
+
+    // Remove existing multies!
+    string $multi[] = `listAttr -multi -leaf ($nodeName + ".bend")`;
+    for($m in $multi) {
+		string $index = match("\[[0-9]+\]", $m); // Index with []
+        string $params[] = {"bend", "bendOn", "yarnsize", "yarnsizeOn", "twist", "twistOn", "specularStrength", "specularStrengthOn", "specularNoise", "specularNoiseOn", "highlightWidth", "highlightWidthOn", "diffuseColor", "diffuseColorOn"};
+        for ($param in $params) {
+            removeMultiInstance -break true ($nodeName + "." + $param + $index);
+        }
+    }
+
+    // Setup multies from file
+    updateTLAttributes($nodeDotAttr);
+
+    // Set Parameters
+        
+    print("tl params:");
+    print($tlparams);
+    int $params_per_yarn = 9;
+    int $offset = 1; //For $num_yarn_types
+    int $i;
+    for ($i=0; $i<$num_yarn_types; $i++) { //For each yarn type
+        print("i: " + $i);
+        string $index = ("[" + $i + "]");
+        setAttr ($nodeName + ".bend" + $index) $tlparams[0 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".yarnsize" + $index) $tlparams[1 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".twist" + $index) $tlparams[2 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".highlightWidth" + $index) $tlparams[3 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".specularStrength" + $index) $tlparams[4 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".specularNoise" + $index) $tlparams[5 + $i*$params_per_yarn + $offset];
+        
+        float $colr = $tlparams[6 + $i*$params_per_yarn + $offset];
+        float $colg = $tlparams[7 + $i*$params_per_yarn + $offset];
+        float $colb = $tlparams[8 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".diffuseColor" + $index) $colr $colg $colb;
+        setAttr ($nodeName + ".diffuseColorOn" + $index) 1;
+    }
+}
+
+global proc updateTLAttributes(string $nodeDotAttr)
+{
+    // Called when the filepath has changed, TODO: Change to call this when refreshing window.
+    // Get new path and ask how many yarn types there are.
+    // Create controls for each yarn type.
+	
+    string $buffer[];
+	tokenize($nodeDotAttr, ".", $buffer);
+	string $nodeName = $buffer[0];
+
+    string $fullAttrName = $nodeName + ".filepath";
+	string $filepath = `getAttr $fullAttrName`;
+    float $params[] = `thunderLoomParseFile -fileName $filepath`;
+    int $num_yarn_types = $params[0];
+
+    int $i;
+    for ($i=0; $i<$num_yarn_types; $i++) {
+        int $nextAvailable = $i;
+        // Create a plug by accessing it
+        //string $plugName = $nodeDotAttr + "[" + $nextAvailable + "]";
+        string $index = "[" + $nextAvailable + "]";
+        catchQuiet( `getAttr -type ($nodeName + ".bend" + $index)`);
+        catchQuiet( `getAttr -type ($nodeName + ".bendOn" + $index)`);
+        
+        catchQuiet( `getAttr -type ($nodeName + ".specularStrength" + $index)`);
+        catchQuiet( `getAttr -type ($nodeName + ".specularStrengthOn" + $index)`);
+
+        //TODO setAttr and disconnect any maps -command ("removeMultiInstance -break true " + $nodeName + "." + $attrWithIdx);
+    }
+}
+
+global proc AEVRayThunderLoomMtlTemplate(string $nodeName )
+{
+    editorTemplate -beginScrollLayout;
+    
+    editorTemplate -beginLayout "Pattern" -collapse false;
+    editorTemplate -callCustom "AEBrowseFileButton" "AEBrowseFileButtonRepl" "browseFile";
+    editorTemplate -label "Filepath" -addControl "filepath"; //The second string argument is optional, and can be used to specify a command (or script) to be executed when the attribute is changed.
+    editorTemplate -label "uscale" -addControl "uscale";
+    editorTemplate -label "vscale" -addControl "vscale";
+    editorTemplate -endLayout;
+
+
+    //editorTemplate -beginLayout "Common Yarn Settings" -collapse false;
+    //editorTemplate -label "Diffuse Color" -addControl "diffuseColor";
+    //editorTemplate -label "Specular Strength" -addControl "specularStrength";
+    //editorTemplate -label "Specular Noise" -addControl "specularNoise";
+    //editorTemplate -label "Highlight Width" -addControl "highlightWidth";
+    //editorTemplate -label "Bend" -addControl "bend";
+    //editorTemplate -label "Twist" -addControl "twist";
+    
+    editorTemplate -callCustom "AELoadYarnTypesCompound" "AELoadYarnTypesCompoundRepl" "bend";
+    //editorTemplate -endLayout;
+
+    // TODO: in the c++ plugin. Register Maya API commands that parse the input file. 
+    // We can then request the params for each yarn type and generate interface with the correct prefilled values.
+
+    editorTemplate -addExtraControls;
+
+    editorTemplate -endScrollLayout;
+}
+
+//TODO: Make a special bend_on_maya property in vray that is a float array. So that we can pass a long the on value.
+
+global proc AELoadYarnTypesCompound(string $nodeDotAttr) {
+    // Inspired by vrayAECompoundMultiNew in vrayAEFunctions.mel
+	string $buffer[];
+	tokenize($nodeDotAttr, ".", $buffer);
+	string $nodeName = $buffer[0];
+
+    columnLayout -adjustableColumn 1 tlMultiCompAttrFrame;
+    //create frame for whole multi attr
+    frameLayout -l "Yarn Types" -collapse false vrayListFrame;
+        //maya like -> row layouf for "New Item" button
+        rowLayout -nc 1 tlButtonLayout;
+            button -label "Reset Yarn Types From File" -command ("setTLAttributesFromFile(\"" + $nodeDotAttr + "\")") tlResetYarnParamsBtn;
+            //button -label "Refresh" -command ("updateTLAttributes(\"" + $nodeDotAttr + "\")") tlLoadYarnParamsBtn;
+        setParent ..;
+    setParent ..;
+    setParent ..;
+
+    //force replace
+    updateTLAttributes($nodeDotAttr);
+    AELoadYarnTypesCompoundRepl($nodeDotAttr);
+}
+
+global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
+	string $buffer[];
+	tokenize($nodeDotAttr, ".", $buffer);
+	string $nodeName = $buffer[0];
+	//button -e -command ("updateTLAttributes(\"" + $nodeDotAttr + "\")") tlLoadYarnParamsBtn;
+	button -e -command ("setTLAttributesFromFile(\"" + $nodeDotAttr + "\")") tlResetYarnParamsBtn;
+
+    string $controlLayout = `setParent -q`;
+    $controlLayout += ("|tlMultiCompAttrFrame|vrayListFrame");
+	if (!`layout -exists $controlLayout`) {
+			return;
+	}
+
+    // Delete existing...
+    string $currentChildren[] = `layout -q -childArray $controlLayout`;
+    for($ch in $currentChildren) {
+        if($ch != "tlButtonLayout") {
+            deleteUI $ch;
+        }
+    }
+
+    setParent $controlLayout;
+    int $elementsCnt = `getAttr -size $nodeDotAttr`;
+    if($elementsCnt > 0) {
+		//	The return value looks like this: {rgb[0], rgb[0].r, rgb[0].g, rgb[0].b, rgb[3], ... }
+		// when we use it with -leaf results is something like { rgb[0], r, g b, rgb[6] ...}
+		string $multi[] = `listAttr -multi -leaf $nodeDotAttr`;
+		for($m in $multi) {
+            //call function to create controls here.
+			string $buffer = match("\[[0-9]+\]", $m);
+			int $index = match("[0-9]+", $m);
+			
+            if(size($buffer) > 0) {
+                string $frame_title = "Yarn Type " + $index;
+                if($index == "0"){
+                    $frame_title = "Default Yarn Type Settings";
+                }
+                string $yarn_frame = `frameLayout -collapse false -label $frame_title`;
+	    		columnLayout;
+                    // Diffuse color
+                    rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
+                        {
+                            int $visible = 1;
+                            if ($index == "0") {
+                                $visible = 0;
+                            }
+                            string $ctrl_on = `checkBox -visible $visible -label "Used" ("yrn" + $buffer + "diffuseColorOn")`;
+                            connectControl $ctrl_on ($nodeName + ".diffuseColorOn" + $buffer);
+                        }
+                        attrColorSliderGrp -label "diffuseColor" -attribute ($nodeName + ".diffuseColor" + $buffer);
+                    setParent..;
+
+                    string $params[] = {"bend", "yarnsize", "twist", "specularStrength", "specularNoise", "highlightWidth"};
+                    for ($param in $params) {
+                        rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
+                            int $visible = 1;
+                            if ($index == "0") {
+                                $visible = 0;
+                            }
+                            string $ctrl_on = `checkBox -visible $visible -label "Used" ("yrn" + $buffer + $param + "On")`;
+                            connectControl $ctrl_on ($nodeName + "." + $param + "On" + $buffer);
+                            string $ctrl_f = `attrControlGrp -label $param -attribute ($nodeName + "." + $param + $buffer)`;
+                        setParent..;
+                    }
+                setParent..;
+                setParent..;
+			}
+		}
+	}
+	setParent ..;
+	setParent ..;
+}
+
+global proc AEBrowseFileButton(string $nodeDotAttr) {
+	string $buffer[];
+	tokenize($nodeDotAttr, ".", $buffer);
+	string $nodeName = $buffer[0];
+    button -label "Browse File" -command ("browseFile(\"" + $nodeName + "\")") tlFileBrowseBtn;
+}
+
+global proc AEBrowseFileButtonRepl(string $nodeDotAttr) {
+	string $buffer[];
+	tokenize($nodeDotAttr, ".", $buffer);
+	string $nodeName = $buffer[0];
+	//button -e -attribute $nodeDotAttr -command ("browseFile(\"" + $nodeName + "\")");
+	button -e -command ("browseFile(\"" + $nodeName + "\")") tlFileBrowseBtn;
+}
+
+global proc browseFile(string $nodeName) {
+    //string $loc = `fileDialog -dm "*.ptn,*.wif"`;
+	string $filepath_before = `getAttr ($nodeName + ".filepath")`;
+    string $loc = `fileDialog -dm "*"`;
+    setAttr -type "string" ($nodeName + ".filepath") $loc;
+
+    if ($filepath_before != $loc) {
+        setTLAttributesFromFile($nodeName + ".filepath"); 
+    }
+}
+

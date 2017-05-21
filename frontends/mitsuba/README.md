@@ -7,11 +7,18 @@ This plugin gives mitsuba the `thunderloom_mitsuba` bsdf which uses a weaving pa
 
 Note: This plugin has limitations compared to the 3dsMax version. Individual control over different yarn types is currently not supported.
 
-##Install
+## Install
 
 Binaries of the plugin need to be built against the version of mitsuba that is going to be used.
 Under [releases](https://github.com/vidarn/ThunderLoom/releases) are libraries 
 compiled against version 0.5.0 of mitsuba available at [mitsuba-renderer.org](mitsuba-renderer.org).
+
+For other versions Mitsuba and the plugin must be built together. See the build
+instructions.
+
+Additionally there is a small patch file available for `mtsblend`
+(a blender/mitsuba) plugin which adds UI for the shader in blender. 
+See [frontends/mitsuba/blender_mtsblend/README.md](https://github.com/vidarn/ThunderLoom/tree/master/frontends/mitsuba/blender_mtsblend) for more info.
 
 
 If the dynamic library file for your mitsuba build is available,
@@ -25,8 +32,7 @@ Usually this means,
 
 Now the `thunderloom_mitsuba` bsdf should be avaiable the next time you start mitsuba. See the `example_scenes` folder for examples on how to use the bsdf.
 
-
-#Building
+# Building
 In order to build the plugin, you first need the mitsuba source code and need to make sure that you are able to compile mitsuba itself. See https://www.mitsuba-renderer.org/releases/current/documentation.pdf for a guide on how to set up your system to compile Mitsuba. 
 
 Once you are able to successfully compile mitsuba you can proceed.

@@ -27,47 +27,24 @@ such as [handweaving.net](http://handweaving.net).
 
 * Frontends/plugins
 
-Two plugins using this library have been made. Giving two common rendering
-pipelines a shader for woven cloth. Currently the 3dsMax/VRay frontend is the
-most fully featured. A plugin for Mitsuba has also been created, but this
-is lacking many features compared to the 3dsMax frontend, it was first mainly 
-created for as a proof of concept of having a core library support multiple renderes. 
-There is also a pattern editor which can be used on its own to create or alter 
-weaving patterns.
+Three plugins using this library have been made. V-Ray for 3dsMax, 
+V-Ray for Maya and a limited plugin for Mitsuba, which includes a patch for the
+`mtslbend` plugin for Blender. There is also a pattern editor
+which can be used on its own to create or alter weaving patterns.
 See the subfolders for these frontends for
 more information. 
 
 ## Installing the frontends
 Precompiled binaries can be found under the [releases](https://github.com/vidarn/ThunderLoom/releases) tab. The zip file
-includes plugins for VRay/3dsMax (2014/2015/2016/2017) and for the mitsuba renderer.
+includes plugins for V-Ray for 3dsMax (2014/2015/2016/2017) and for the mitsuba renderer.
 
-### VRay/3dsMax 
-(see [frontends/vray3dsMax/README.md](https://github.com/vidarn/ThunderLoom/tree/master/frontends/vray3dsMax) for more info)
+See the respective README files for specific install instructions.
 
-Move the `thunderLoom.dlt` file corresponding to your 3dsMax version to the
-`vrayplugins` folder at your 3dsMax install location. 
-
-The usual path for the plugins folder is
-`C:\Program Files\Autodesk\3dsMax (VERSION)\plugins\vrayplugins`.
-
-### Mitsuba
-(see [frontends/mitsuba/README.md](https://github.com/vidarn/ThunderLoom/tree/master/frontends/mitsuba) for more info)
-
-A limited plugin for mitsuba is available.
-This gives `thunderloom_mitsuba` bsdf.  See the `example_scenes` folder for examples on
-how to use the bsdf.
-
-Binaries of the plugin need to be built against the version of mitsuba that is going to be used.
-Under [releases](https://github.com/vidarn/ThunderLoom/releases) are libraries 
-compiled against version 0.5.0 of mitsuba available at [mitsuba-renderer.org](mitsuba-renderer.org).
-
-For other versions Mitsuba and the plugin must be built together.
-See [frontends/mitsuba/blender_mtsblend/README.md](https://github.com/vidarn/ThunderLoom/tree/master/frontends/mitsuba/blender_mtsblend)
-for build instructions.
-
-Additionally there is a small patch file available for `mtsblend`
-(a blender/mitsuba) plugin which adds UI for the shader in blender. 
-See [frontends/mitsuba/blender_mtsblend/README.md](https://github.com/vidarn/ThunderLoom/tree/master/frontends/mitsuba/blender_mtsblend) for more info.
+* [plugin for V-Ray for 3dsMax](https://github.com/vidarn/ThunderLoom/tree/master/frontends/vray3dsMax)
+* [plugin for V-Ray for Maya](https://github.com/vidarn/ThunderLoom/tree/master/frontends/vraymaya)
+* [plugin for V-Ray Standalone](https://github.com/vidarn/ThunderLoom/tree/master/frontends/vray)
+* [plugin for Mistuba](https://github.com/vidarn/ThunderLoom/tree/master/frontends/mitsuba)
+* [patch for mtsblend](https://github.com/vidarn/ThunderLoom/tree/master/frontends/mitsuba/blender_mtsblend)
 
 ## Library
 The source code for the library and core is found in the 'src' folder. 
