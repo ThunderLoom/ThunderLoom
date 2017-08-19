@@ -31,6 +31,10 @@ private:
 	static MObject m_yarnsize_on;
 	static MObject m_twist;
 	static MObject m_twist_on;
+	static MObject m_alpha;
+	static MObject m_alpha_on;
+	static MObject m_beta;
+	static MObject m_beta_on;
 	static MObject m_specular_strength;
 	static MObject m_specular_strength_on;
 	static MObject m_specular_noise;

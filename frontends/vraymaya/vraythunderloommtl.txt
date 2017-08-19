@@ -8,6 +8,10 @@ BRDFThunderLoom VRayThunderLoomMtl {
   "yarnsize_on_float"           array    "yarnsizeOn"          array   INPUT
   "twist"                       array    "twist"               array   INPUT
   "twist_on_float"              array    "twistOn"             array   INPUT
+  "phase_alpha"                 array    "alpha"               array   INPUT
+  "phase_alpha_on_float"        array    "alphaOn"             array   INPUT
+  "phase_beta"                  array    "beta"                array   INPUT
+  "phase_beta_on_float"         array    "betaOn"              array   INPUT
   "specular_strength"           array    "specularStrength"    array   INPUT
   "specular_strength_on_float"  array    "specularStrengthOn"  array   INPUT
   "specular_noise"              array    "specularNoise"       array   INPUT

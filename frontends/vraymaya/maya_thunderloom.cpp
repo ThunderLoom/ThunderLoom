@@ -40,6 +40,10 @@ MObject VRayThunderLoom::m_yarnsize;
 MObject VRayThunderLoom::m_yarnsize_on;
 MObject VRayThunderLoom::m_twist;
 MObject VRayThunderLoom::m_twist_on;
+MObject VRayThunderLoom::m_alpha;
+MObject VRayThunderLoom::m_alpha_on;
+MObject VRayThunderLoom::m_beta;
+MObject VRayThunderLoom::m_beta_on;
 MObject VRayThunderLoom::m_specular_strength;
 MObject VRayThunderLoom::m_specular_strength_on;
 MObject VRayThunderLoom::m_specular_noise;
@@ -162,6 +166,8 @@ MStatus VRayThunderLoom::initialize() {
         TL_MAYA_SET_BOOL_PARAM(m_yarnsize_on, yarnsizeOn, sizo)\
         TL_MAYA_SET_PARAM(m_twist, twist, psi, 0.5f)\
         TL_MAYA_SET_BOOL_PARAM(m_twist_on, twistOn, psio)\
+        TL_MAYA_SET_BOOL_PARAM(m_alpha_on, alphaOn, alphao)\
+        TL_MAYA_SET_BOOL_PARAM(m_beta_on, betaOn, betao)\
         TL_MAYA_SET_PARAM(m_specular_strength, specularStrength, str, 0.4f)\
         TL_MAYA_SET_BOOL_PARAM(m_specular_strength_on, specularStrengthOn, stro)\
         TL_MAYA_SET_PARAM(m_specular_noise, specularNoise, noi, 0.4f)\
@@ -175,6 +181,29 @@ TL_MAYA_FLOAT_PARAMS
 #undef TL_MAYA_FLOAT_PARAMS
 #undef TL_MAYA_SET_PARAM
     
+    m_alpha = nAttr.create("alpha", "alpha", MFnNumericData::kFloat);
+    CHECK_MSTATUS(nAttr.setMin(0.0f));
+    CHECK_MSTATUS(nAttr.setMax(2.0f));
+    CHECK_MSTATUS(nAttr.setDefault(0.05f));
+    CHECK_MSTATUS(nAttr.setKeyable(true));
+    CHECK_MSTATUS(nAttr.setStorable(true));
+    CHECK_MSTATUS(nAttr.setReadable(true));
+    CHECK_MSTATUS(nAttr.setWritable(true));
+    CHECK_MSTATUS(nAttr.setArray(true));
+    CHECK_MSTATUS(addAttribute(m_alpha));
+    CHECK_MSTATUS(attributeAffects(m_alpha, m_outColor));
+    
+    m_beta = nAttr.create("beta", "beta", MFnNumericData::kFloat);
+    CHECK_MSTATUS(nAttr.setMin(0.0f));
+    CHECK_MSTATUS(nAttr.setMax(6.0f));
+    CHECK_MSTATUS(nAttr.setDefault(4.f));
+    CHECK_MSTATUS(nAttr.setKeyable(true));
+    CHECK_MSTATUS(nAttr.setStorable(true));
+    CHECK_MSTATUS(nAttr.setReadable(true));
+    CHECK_MSTATUS(nAttr.setWritable(true));
+    CHECK_MSTATUS(nAttr.setArray(true));
+    CHECK_MSTATUS(addAttribute(m_beta));
+    CHECK_MSTATUS(attributeAffects(m_beta, m_outColor));
     
     /*
     m_uscale = nAttr.create("uscale", "usc", MFnNumericData::kFloat);
@@ -399,8 +428,8 @@ MStatus ThunderLoomCommand::doIt( const MArgList& args ) {
                     MPxCommand::appendToResult(yarn_type->umax);
                     MPxCommand::appendToResult(yarn_type->yarnsize);
                     MPxCommand::appendToResult(yarn_type->psi);
-                    //MPxCommand::appendToResult(yarn_type->alpha);
-                    //MPxCommand::appendToResult(yarn_type->beta);
+                    MPxCommand::appendToResult(yarn_type->alpha);
+                    MPxCommand::appendToResult(yarn_type->beta);
                     MPxCommand::appendToResult(yarn_type->delta_x);
                     MPxCommand::appendToResult(yarn_type->specular_strength);
                     MPxCommand::appendToResult(yarn_type->specular_noise);

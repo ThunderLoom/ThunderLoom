@@ -28,7 +28,7 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         
     print("tl params:");
     print($tlparams);
-    int $params_per_yarn = 9;
+    int $params_per_yarn = 11;
     int $offset = 1; //For $num_yarn_types
     int $i;
     for ($i=0; $i<$num_yarn_types; $i++) { //For each yarn type
@@ -37,13 +37,15 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         setAttr ($nodeName + ".bend" + $index) $tlparams[0 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".yarnsize" + $index) $tlparams[1 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".twist" + $index) $tlparams[2 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".highlightWidth" + $index) $tlparams[3 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".specularStrength" + $index) $tlparams[4 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".specularNoise" + $index) $tlparams[5 + $i*$params_per_yarn + $offset];
+        //setAttr ($nodeName + ".alpha" + $index) $tlparams[3 + $i*$params_per_yarn + $offset];
+        //setAttr ($nodeName + ".beta" + $index) $tlparams[4 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".highlightWidth" + $index) $tlparams[5 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".specularStrength" + $index) $tlparams[6 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".specularNoise" + $index) $tlparams[7 + $i*$params_per_yarn + $offset];
         
-        float $colr = $tlparams[6 + $i*$params_per_yarn + $offset];
-        float $colg = $tlparams[7 + $i*$params_per_yarn + $offset];
-        float $colb = $tlparams[8 + $i*$params_per_yarn + $offset];
+        float $colr = $tlparams[8 + $i*$params_per_yarn + $offset];
+        float $colg = $tlparams[9 + $i*$params_per_yarn + $offset];
+        float $colb = $tlparams[10 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".diffuseColor" + $index) $colr $colg $colb;
         setAttr ($nodeName + ".diffuseColorOn" + $index) 1;
     }
@@ -187,7 +189,7 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                         attrColorSliderGrp -label "diffuseColor" -attribute ($nodeName + ".diffuseColor" + $buffer);
                     setParent..;
 
-                    string $params[] = {"bend", "yarnsize", "twist", "specularStrength", "specularNoise", "highlightWidth"};
+                    string $params[] = {"bend", "yarnsize", "twist", "alpha", "beta", "specularStrength", "specularNoise", "highlightWidth"};
                     for ($param in $params) {
                         rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
                             int $visible = 1;
