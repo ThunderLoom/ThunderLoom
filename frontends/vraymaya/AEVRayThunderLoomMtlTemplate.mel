@@ -37,8 +37,8 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         setAttr ($nodeName + ".bend" + $index) $tlparams[0 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".yarnsize" + $index) $tlparams[1 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".twist" + $index) $tlparams[2 + $i*$params_per_yarn + $offset];
-        //setAttr ($nodeName + ".alpha" + $index) $tlparams[3 + $i*$params_per_yarn + $offset];
-        //setAttr ($nodeName + ".beta" + $index) $tlparams[4 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".alpha" + $index) $tlparams[3 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".beta" + $index) $tlparams[4 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".highlightWidth" + $index) $tlparams[5 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".specularStrength" + $index) $tlparams[6 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".specularNoise" + $index) $tlparams[7 + $i*$params_per_yarn + $offset];
