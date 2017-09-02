@@ -71,12 +71,6 @@ VUtils::Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction,
 
     VUtils::Color ret(0.f,0.f,0.f);
 
-    //DEBUG
-    //lightColor.makeZero();
-    //origLightColor.makeZero();
-    //return ret;
-    //DEBUG
-
     float cs = direction * rc.rayresult.normal;
     cs = cs < 0.0f ? 0.0f : cs;
 
@@ -87,7 +81,7 @@ VUtils::Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction,
         if (rc.rayparams.localRayType & RT_IS_GATHERING_POINT){
             float probReflection=k;
             //NOTE(Vidar): Multiple importance sampling factor
-            k = getReflectionWeight(probLight, probReflection);
+            k = cs*getReflectionWeight(probLight, probReflection);
         }
         ret += diffuse_color * k;
     }
