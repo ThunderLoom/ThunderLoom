@@ -114,6 +114,16 @@ VUtils::Color MyBaseBSDF::eval(const VRayContext &rc, const Vector &direction,
 void MyBaseBSDF::traceForward(VRayContext &rc, int doDiffuse) {
 	BRDFSampler::traceForward(rc, doDiffuse);
 	if (doDiffuse) rc.mtlresult.color+=rc.evalDiffuse()*diffuse_color;
+    Fragment *f=rc.mtlresult.fragment;
+    if(f){
+        VUtils::Color raw_gi=rc.evalDiffuse();
+        VUtils::Color diffuse_gi=raw_gi*diffuse_color;
+        f->setChannelDataByAlias(REG_CHAN_VFB_RAWGI,&raw_gi);
+        f->setChannelDataByAlias(REG_CHAN_VFB_RAWTOTALLIGHT,&raw_gi);
+        f->setChannelDataByAlias(REG_CHAN_VFB_GI,&diffuse_gi);
+        f->setChannelDataByAlias(REG_CHAN_VFB_TOTALLIGHT,&diffuse_gi);
+        f->setChannelDataByAlias(REG_CHAN_VFB_DIFFUSE,&diffuse_color);
+    }
 }
 
 int MyBaseBSDF::getNumSamples(const VRayContext &rc, int doDiffuse) {
