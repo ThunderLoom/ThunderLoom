@@ -482,7 +482,7 @@ Color BRDFThunderLoomSampler::eval(const VR::VRayContext &rc, const Vector &dire
         if (rc.rayparams.localRayType & RT_IS_GATHERING_POINT) {
             float probReflection=k;
             //Note(Vidar): Mutliple importance sampling factor
-            k = getReflectionWeight(probLight, probReflection);
+            k = cs*getReflectionWeight(probLight, probReflection);
         }
         ret += m_diffuse_color * k;
     }
@@ -560,6 +560,16 @@ Color BRDFThunderLoomSampler::eval(const VR::VRayContext &rc, const Vector &dire
 void BRDFThunderLoomSampler::traceForward(VR::VRayContext &rc, int doDiffuse) {
 	BRDFSampler::traceForward(rc, doDiffuse);
 	if (doDiffuse) rc.mtlresult.color+=rc.evalDiffuse()*m_diffuse_color;
+    Fragment *f=rc.mtlresult.fragment;
+    if(f){
+        VUtils::Color raw_gi=rc.evalDiffuse();
+        VUtils::Color diffuse_gi=raw_gi*m_diffuse_color;
+        f->setChannelDataByAlias(REG_CHAN_VFB_RAWGI,&raw_gi);
+        f->setChannelDataByAlias(REG_CHAN_VFB_RAWTOTALLIGHT,&raw_gi);
+        f->setChannelDataByAlias(REG_CHAN_VFB_GI,&diffuse_gi);
+        f->setChannelDataByAlias(REG_CHAN_VFB_TOTALLIGHT,&diffuse_gi);
+        f->setChannelDataByAlias(REG_CHAN_VFB_DIFFUSE,&raw_gi);
+    }
 }
 
 // Returns the number of desired samples for evaluating the BRDF.
