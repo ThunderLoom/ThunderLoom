@@ -254,6 +254,68 @@ public:
 			case WM_COMMAND:
 			{
 				switch(LOWORD(wParam)){
+                    case IDC_WIFFILE_BUTTON:
+                    {
+                        switch(HIWORD(wParam)){
+                            case BN_CLICKED:
+                            {
+                                char *filename = (char*)calloc(512,sizeof(char));
+                                OPENFILENAMEA openfilename={0};
+                                openfilename.lStructSize=sizeof(OPENFILENAMEA);
+                                openfilename.hwndOwner=NULL;
+                                static const char *filters=
+                                    "Pattern Files | *.WIF;*.PTN\0*.WIF;*.PTN\0"
+                                    "All Files | *.*\0*.*\0"
+                                    ;
+                                openfilename.lpstrFilter=filters;
+                                openfilename.lpstrFile=filename;
+                                openfilename.lpstrDefExt="ptn";
+                                openfilename.nMaxFile=512;
+                                openfilename.lpstrTitle="Load pattern";
+                                GetOpenFileNameA(&openfilename);
+                                if(filename[0]!=0){
+                                    const char *error=0;
+                                    tlWeaveParameters *param =
+                                        tl_weave_pattern_from_file(filename,&error);
+                                    if(error){
+                                        MessageBoxA(NULL,error,"ERROR!",MB_OK|MB_ICONERROR);
+                                    } else{
+                                        //TODO(Vidar):Make this into a function, it is identical to the
+                                        // code when closing the pattern editor, below
+                                        //NOTE(Vidar):Set parameters...
+                                        sm->m_weave_parameters=param;
+                                        int realworld;
+                                        sm->pblock->GetValue(mtl_realworld,0,realworld,
+                                            sm->ivalid);
+                                        sm->m_weave_parameters->realworld_uv=realworld;
+                                        sm->pblock->GetValue(mtl_uscale,0,
+                                            sm->m_weave_parameters->uscale,
+                                            sm->ivalid);
+                                        sm->pblock->GetValue(mtl_vscale,0,
+                                            sm->m_weave_parameters->vscale,
+                                            sm->ivalid);
+                                        int num_yarn_types=sm->m_weave_parameters->
+                                            num_yarn_types;
+                                        sm->m_yarn_type_rollup_open[0]=1;
+                                        for(int i=1;i<num_yarn_types;i++){
+                                            sm->m_yarn_type_rollup_open[i]=0;
+                                        }
+                                        //TODO(Peter): Test this with more complicate wif files!
+                                        //Set count for subtexmaps
+                                        sm->pblock->SetCount(texmaps,
+                                            num_yarn_types* NUMBER_OF_YRN_TEXMAPS);
+                                        map->Invalidate();
+                                        update_yarn_type_rollups();
+                                        //NOTE(Vidar): Hack to update the preview ball
+                                        sm->pblock->SetValue(mtl_dummy,0,0.5f);
+                                    }
+                                }
+                                free(filename);
+                                break;
+                            }
+                        }
+                        break;
+                    }
 					case IDC_PATTERNEDITOR_BUTTON:
 					{
 						switch(HIWORD(wParam)){
