@@ -163,32 +163,6 @@ static char* file_open_dialog(const char *filters,const char* title, bool save)
     return buffer;
 }
 
-//TODO(Vidar):Move to woven_cloth.cpp..
-static unsigned char * tl_pattern_to_ptn_file(tlWeaveParameters *param, long *ret_len){
-    int version = 1; //NOTE(Vidar): The current version of the file format...
-    int pattern_size = param->pattern_width*param->pattern_height;
-
-#define TL_PTN_ENTRIES \
-    TL_PTN_ENTRY(&version,int,1)\
-    TL_PTN_ENTRY(param,tlWeaveParameters,1)\
-    TL_PTN_ENTRY(param->yarn_types,tlYarnType,param->num_yarn_types)\
-    TL_PTN_ENTRY(param->pattern,PatternEntry,pattern_size)\
-
-    long len = 0;
-#define TL_PTN_ENTRY(name,type,num) len += sizeof(type)*num;
-    TL_PTN_ENTRIES
-#undef TL_PTN_ENTRY
-
-    unsigned char *data = (unsigned char *)calloc(1,len);
-    unsigned char *dest = data;
-#define TL_PTN_ENTRY(name,type,num) memcpy(dest,name,sizeof(type)*num);\
-    dest += sizeof(type)*num;
-    TL_PTN_ENTRIES
-#undef TL_PTN_ENTRY
-
-    *ret_len = len;
-    return data;
-}
 
 static void save_ptn_file(const char *filename,tlWeaveParameters *param){
     long len=0;

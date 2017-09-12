@@ -35,14 +35,11 @@ void EvalDiffuseFunc (const VUtils::VRayContext &rc,
         weave_parameters);
 	*yarn_type_id = pattern_data.yarn_type;
 	*yarn_type = weave_parameters->yarn_types[pattern_data.yarn_type];
-    float specular_strength = tl_yarn_type_get_specular_strength(
-        weave_parameters,pattern_data.yarn_type,&sc);
     tlColor d = 
         tl_eval_diffuse( intersection_data, pattern_data, weave_parameters);
-    float factor = (1.f - specular_strength);
-    diffuse_color->r = factor*d.r;
-    diffuse_color->g = factor*d.g;
-    diffuse_color->b = factor*d.b;
+    diffuse_color->r = d.r;
+    diffuse_color->g = d.g;
+    diffuse_color->b = d.b;
 }
 
 void EvalSpecularFunc ( const VUtils::VRayContext &rc,
@@ -103,14 +100,10 @@ VUtils::Matrix nm, VUtils::Color *reflection_color)
 
     tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
         weave_parameters);
-	//DBOUT("pattern_data.yarn_hit: "<< pattern_data.yarn_hit);
-    float specular_strength = tl_yarn_type_get_specular_strength(
-        weave_parameters,pattern_data.yarn_type,&sc);
-    float s = specular_strength *
-        tl_eval_specular(intersection_data, pattern_data, weave_parameters);
-    reflection_color->r = s;
-    reflection_color->g = s;
-    reflection_color->b = s;
+    tlColor s = tl_eval_specular(intersection_data, pattern_data, weave_parameters);
+    reflection_color->r = s.r;
+    reflection_color->g = s.g;
+    reflection_color->b = s.b;
 }
 
 class SCTexture: public ShadeContext {

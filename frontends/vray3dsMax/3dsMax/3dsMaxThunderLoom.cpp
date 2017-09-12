@@ -3,14 +3,14 @@
 
 // The paramblock version 
 // (when changes are made to the paramblock structure)
-const int PARAM_VERSION_HIGH=0;
+const int PARAM_VERSION_HIGH=2;
 const int PARAM_VERSION_LOW=90;
 //This is the param version * 100
 const int PARAM_VERSION= PARAM_VERSION_HIGH*100 + PARAM_VERSION_LOW;
 
 //The plugin version (Semantic Versioning)
 const int PLUGIN_VERSION_MAJOR=0;
-const int PLUGIN_VERSION_MINOR=91;
+const int PLUGIN_VERSION_MINOR=92;
 const int PLUGIN_VERSION_PATCH=0;
 
 
@@ -254,7 +254,7 @@ public:
 			case WM_COMMAND:
 			{
 				switch(LOWORD(wParam)){
-					case IDC_WIFFILE_BUTTON:
+					case IDC_PATTERNEDITOR_BUTTON:
 					{
 						switch(HIWORD(wParam)){
 							case BN_CLICKED:
@@ -264,6 +264,7 @@ public:
 								sm->m_weave_parameters = 
 									tl_pattern_editor(sm->m_weave_parameters);
 								EnableWindow(parent_hwnd,true);
+                                SetForegroundWindow(parent_hwnd);
 								//NOTE(Vidar):Set parameters...
 								int realworld;
 								sm->pblock->GetValue(mtl_realworld,0,realworld,
@@ -549,7 +550,8 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     case IDC_##name##_SWATCH:\
                     yarn_type->name.r = (float)GetRValue(col)/255.f;\
                     yarn_type->name.g = (float)GetGValue(col)/255.f;\
-                    yarn_type->name.b = (float)GetBValue(col)/255.f;
+                    yarn_type->name.b = (float)GetBValue(col)/255.f;\
+                    break;
                 TL_YARN_PARAMETERS
                 #undef TL_FLOAT_PARAM
                 #undef TL_COLOR_PARAM
@@ -765,17 +767,15 @@ IOResult ThunderLoomMtl::Save(ISave *isave)
 	isave->EndChunk();
 	isave->BeginChunk(YARN_TYPE_CHUNK);
 	//NOTE(Vidar):Save yarn types
+    long len=0;
+    unsigned char *data = tl_pattern_to_ptn_file(m_weave_parameters,&len);
 	ULONG nb;
-	isave->Write((unsigned char*)&PARAM_VERSION,
+    int version=2;
+	isave->Write((unsigned char*)&version,
 		sizeof(int),&nb);
 
-	isave->Write((unsigned char*)m_weave_parameters,
-		sizeof(tlWeaveParameters), &nb);
-    isave->Write((unsigned char*)m_weave_parameters->yarn_types,
-		sizeof(tlYarnType)*m_weave_parameters->num_yarn_types, &nb);
-    isave->Write((unsigned char*)m_weave_parameters->pattern,
-		sizeof(PatternEntry)*m_weave_parameters->pattern_width
-		*m_weave_parameters->pattern_height, &nb);
+    isave->Write(data,len,&nb);
+    free(data);
     isave->EndChunk();
 	return IO_OK;
 }	
@@ -795,7 +795,31 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 				int version;
 				iload->Read((unsigned char*)&version,
 					sizeof(int), &nb);
+                unsigned long len=iload->CurChunkLengthRemaining();
+                const char *error_buffer=0;
+                if(version==90){
+                    unsigned char *data=(unsigned char *)calloc(len+sizeof(int),1);
+                    *(int*)data=1;
+                    iload->Read(data+sizeof(int),len,&nb);
+                    m_weave_parameters=tl_weave_pattern_from_ptn(data,len,&error_buffer);
+                    free(data);
+                }else{
+                    unsigned char *data=(unsigned char *)calloc(len,1);
+                    *(int*)data=1;
+                    iload->Read(data,len,&nb);
+                    m_weave_parameters=tl_weave_pattern_from_ptn(data,len,&error_buffer);
+                    free(data);
+                }
+                //TODO(Vidar):Initialize m_weave_parameters to default pattern if there was an error
+                // (if it is 0)
+                if(error_buffer!=0){
+                    OutputDebugStringA("Error:\n");
+                    OutputDebugStringA(error_buffer);
+                    OutputDebugStringA("\n");
+                }
+                
 				//NOTE(Vidar):Load m_weave_parameters
+                /*
 				tlWeaveParameters *params = (tlWeaveParameters*)calloc(1,sizeof(tlWeaveParameters));
 				iload->Read((unsigned char*)params,
 					sizeof(tlWeaveParameters), &nb);
@@ -810,6 +834,7 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 				iload->Read((unsigned char*)params->pattern,
 					num_entries * sizeof(PatternEntry), &nb);
 				m_weave_parameters = params;
+                */
 				break;
 			}
 		}
