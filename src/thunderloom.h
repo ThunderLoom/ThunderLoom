@@ -45,6 +45,7 @@ void tl_free_weave_parameters(tlWeaveParameters *params);
 #define TL_FABRIC_PARAMETERS\
 	TL_FLOAT_PARAM(uscale)\
 	TL_FLOAT_PARAM(vscale)\
+	TL_FLOAT_PARAM(uvrotation)\
 	TL_FLOAT_PARAM(intensity_fineness)\
 	TL_INT_PARAM(realworld_uv)
 
@@ -899,7 +900,7 @@ static unsigned char * tl_pattern_to_ptn_file(tlWeaveParameters *param,
 struct tlPtnConverter
 {
     uint32_t src_version, target_version, src_size, target_size;
-    char *src_name,*target_name;
+    const char *src_name,*target_name;
     unsigned char*(*func)(unsigned char *data);
 };
 
@@ -929,7 +930,7 @@ unsigned char *tl_read_ptn_section(void *out, unsigned char* data,
         uint32_t size     = ((uint32_t*)data)[2];
         uint32_t version  = ((uint32_t*)data)[3];
         data += 4*sizeof(uint32_t);
-        char *name = (char*)data;
+        const char *name = (char*)data;
         printf("  name: %s\n",name);
         data += name_len;
         tlPtnEntry *entry = entries;
@@ -1295,8 +1296,6 @@ tlYarnSegment tl_get_yarn_segment(float total_u, float total_v,
 
     float unscaled_u = intersection_data->uv_x;
     float unscaled_v = intersection_data->uv_y;
-    //float toffset_u = unscaled_u - u/params->uscale;
-    //float toffset_v = unscaled_v - v/params->vscale;
     
     int32_t current_x = origin_x;
     int32_t current_y = origin_y;
@@ -1496,12 +1495,18 @@ tlPatternData tl_get_pattern_data(tlIntersectionData intersection_data,
         v_scale = params->vscale;
     }
 
-    //scaled and non-repeating uv patterns.
-    float total_u = uv_x*u_scale;
-    float total_v = uv_y*v_scale;
+    float rot=params->uvrotation/180.f*M_PI;
+    float tmp_u=uv_x;
+    float tmp_v=uv_y;
+    uv_x=(tmp_u*cosf(rot)-tmp_v*sinf(rot))*u_scale;
+    uv_y=(tmp_u*sinf(rot)+tmp_v*cosf(rot))*v_scale;
 
-    float u_repeat = fmod(uv_x*u_scale,1.f);
-    float v_repeat = fmod(uv_y*v_scale,1.f);
+    //scaled and non-repeating uv patterns.
+    float total_u = uv_x;
+    float total_v = uv_y;
+
+    float u_repeat = fmod(uv_x,1.f);
+    float v_repeat = fmod(uv_y,1.f);
     if (u_repeat < 0.f) {
         u_repeat = u_repeat - floor(u_repeat);
     }
@@ -1509,8 +1514,8 @@ tlPatternData tl_get_pattern_data(tlIntersectionData intersection_data,
         v_repeat = v_repeat - floor(v_repeat);
     }
     //non-repeating pattern index (used for specular noise)
-    uint32_t total_pattern_x = uv_x*u_scale*params->pattern_width;
-    uint32_t total_pattern_y = uv_y*v_scale*params->pattern_height;
+    uint32_t total_pattern_x = uv_x*params->pattern_width;
+    uint32_t total_pattern_y = uv_y*params->pattern_height;
     //pattern index
     uint32_t pattern_x = (uint32_t)(u_repeat*(float)(params->pattern_width));
     uint32_t pattern_y = (uint32_t)(v_repeat*(float)(params->pattern_height));

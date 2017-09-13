@@ -294,6 +294,9 @@ public:
                                         sm->pblock->GetValue(mtl_vscale,0,
                                             sm->m_weave_parameters->vscale,
                                             sm->ivalid);
+                                        sm->pblock->GetValue(mtl_uvrotation,0,
+                                            sm->m_weave_parameters->uvrotation,
+                                            sm->ivalid);
                                         int num_yarn_types=sm->m_weave_parameters->
                                             num_yarn_types;
                                         sm->m_yarn_type_rollup_open[0]=1;
@@ -338,6 +341,9 @@ public:
 								sm->pblock->GetValue(mtl_vscale,0,
 									sm->m_weave_parameters->vscale,
 									sm->ivalid);
+                                sm->pblock->GetValue(mtl_uvrotation,0,
+                                    sm->m_weave_parameters->uvrotation,
+                                    sm->ivalid);
 								int num_yarn_types=sm->m_weave_parameters->
 									num_yarn_types;
 								sm->m_yarn_type_rollup_open[0]=1;
@@ -406,49 +412,18 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
         p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
     PB_END,
-    mtl_dummy, _FT("dummy"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 1.f,
-    PB_END,
-    mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
-        p_default, FALSE,
-        p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
-    PB_END,
-    texmaps, _T("yarnmaplist"), TYPE_TEXMAP_TAB, 0, P_VARIABLE_SIZE, 0,
-		//no ui, for the array
-		//handled through Proc
-    PB_END,
-PB_END
-);									 
-
-/*//Set up paramblock to handle storing values and managing ui elements for us
-static ParamBlockDesc2 thunder_loom_param_blk_desc(
-    mtl_params, _T("Test mtl params"), 0,
-    &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI + P_VERSION,
-	PLUGIN_VERSION,
-	1,
-    rollout_pattern,   IDD_BLENDMTL, IDS_PATTERN, 0, 0,
-		new PatternRolloutDlgProc(), 
-    mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 1.f,
-        p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_USCALE_EDIT, IDC_USCALE_SPIN, 0.1f,
-    PB_END,
-    mtl_vscale, _FT("vscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 1.f,
-        p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
-    PB_END,
-    mtl_dummy, _FT("dummy"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 1.f,
-    PB_END,
-    mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
-        p_default, FALSE,
-        p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
-    PB_END,
-    mtl_intensity_fineness, _FT("specularnoise"), TYPE_FLOAT, P_ANIMATABLE, 0,
+    mtl_uvrotation, _FT("uvrotation"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.f,
-		p_range, 0.0f, 10.f,
-		p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULARNOISE_EDIT, IDC_SPECULARNOISE_SPIN, 0.1f,
+        p_range, -360.f, 360.f,
+        p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_UVROTATION_EDIT, IDC_UVROTATION_SPIN, 0.1f,
+    PB_END,
+    mtl_dummy, _FT("dummy"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 1.f,
+    PB_END,
+    mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
+        p_default, FALSE,
+        p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
     PB_END,
     texmaps, _T("yarnmaplist"), TYPE_TEXMAP_TAB, 0, P_VARIABLE_SIZE, 0,
 		//no ui, for the array
@@ -456,7 +431,6 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
     PB_END,
 PB_END
 );									 
-*/
 
 INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -769,6 +743,12 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 							ivalid);
 						break;
 					}
+					case mtl_uvrotation:
+					{
+						pblock->GetValue(mtl_uvrotation,0,m_weave_parameters->uvrotation,
+							ivalid);
+						break;
+					}
 				}
 			}
 			break;
@@ -867,7 +847,6 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
                     free(data);
                 }else{
                     unsigned char *data=(unsigned char *)calloc(len,1);
-                    *(int*)data=1;
                     iload->Read(data,len,&nb);
                     m_weave_parameters=tl_weave_pattern_from_ptn(data,len,&error_buffer);
                     free(data);

@@ -52,7 +52,10 @@
 #define IDC_specular_strength_SPIN2     1017
 #define IDC_VSCALE_SPIN                 1018
 #define IDC_umax_EDIT                   1019
+#define IDC_UVROTATION_EDIT             1019
 #define IDC_umax_SPIN                   1020
+#define IDC_VSCALE_SPIN2                1020
+#define IDC_UVROTATION_SPIN             1020
 #define IDC_VERSION                     1021
 #define IDC_yarnsize_EDIT               1021
 #define IDC_PATTERN_GROUP               1022
@@ -93,7 +96,6 @@
 #define cs_blend5                       1054
 #define IDC_WIFFILE_BUTTON              1055
 #define IDC_YRN_TEX_SPECULAR_BUTTON     1056
-#define IDC_WIFFILE_BUTTON2             1056
 #define IDC_PATTERNEDITOR_BUTTON        1056
 #define ed_texmap_blend_mult5           1057
 #define IDC_YARNTYPE_COMBO              1058

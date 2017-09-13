@@ -55,6 +55,7 @@ enum {
 	mtl_realworld,
     mtl_uscale,
     mtl_vscale,
+    mtl_uvrotation,
 	mtl_yarn_type,
     mtl_intensity_fineness,
 	//mtl_texmap_diffuse,
