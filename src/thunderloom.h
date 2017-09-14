@@ -899,7 +899,7 @@ static unsigned char * tl_pattern_to_ptn_file(tlWeaveParameters *param,
 struct tlPtnConverter
 {
     uint32_t src_version, target_version, src_size, target_size;
-    char *src_name,*target_name;
+    const char *src_name,*target_name;
     unsigned char*(*func)(unsigned char *data);
 };
 
@@ -929,7 +929,7 @@ unsigned char *tl_read_ptn_section(void *out, unsigned char* data,
         uint32_t size     = ((uint32_t*)data)[2];
         uint32_t version  = ((uint32_t*)data)[3];
         data += 4*sizeof(uint32_t);
-        char *name = (char*)data;
+        const char *name = (char*)data;
         printf("  name: %s\n",name);
         data += name_len;
         tlPtnEntry *entry = entries;
@@ -1076,8 +1076,8 @@ static tlWeaveParameters *tl_pattern_from_ptn_file_v1(unsigned char *data,
         write_commands[2+i].data = data;
         data += yarn_typev091_len;
     }
-    tlPtnEntry ptn_entry_patternv091 = {3,0,2*sizeof(uint8_t)*pattern_size,1,
-        "tlPattern"};
+    tlPtnEntry ptn_entry_patternv091 = {3,0,
+        (uint32_t)(2*sizeof(uint8_t)*pattern_size),1, "tlPattern"};
     tlPtnEntry pattern_entry = ptn_entry_pattern;
     pattern_entry.size      *= pattern_size;
     write_commands[1].entry  = &ptn_entry_patternv091;
