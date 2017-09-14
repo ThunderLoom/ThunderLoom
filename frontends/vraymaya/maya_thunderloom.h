@@ -25,6 +25,7 @@ private:
 	static MObject m_filepath;
 	static MObject m_uscale;
 	static MObject m_vscale;
+	static MObject m_uvrotation;
 	static MObject m_bend;
 	static MObject m_bend_on;
 	static MObject m_yarnsize;

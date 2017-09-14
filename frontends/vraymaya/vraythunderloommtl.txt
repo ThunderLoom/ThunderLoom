@@ -2,6 +2,7 @@ BRDFThunderLoom VRayThunderLoomMtl {
   "filepath"                    string   "filepath"            string  INPUT
   "uscale"                      number   "uscale"              number  INPUT
   "vscale"                      number   "vscale"              number  INPUT
+  "uvrotation"                  number   "uvrotation"          number  INPUT
   "bend"                        array    "bend"                array   INPUT
   "bend_on_float"               array    "bendOn"              array   INPUT
   "yarnsize"                    array    "yarnsize"            array   INPUT

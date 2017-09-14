@@ -92,6 +92,7 @@ global proc AEVRayThunderLoomMtlTemplate(string $nodeName )
     editorTemplate -label "Filepath" -addControl "filepath"; //The second string argument is optional, and can be used to specify a command (or script) to be executed when the attribute is changed.
     editorTemplate -label "uscale" -addControl "uscale";
     editorTemplate -label "vscale" -addControl "vscale";
+    editorTemplate -label "uvrotation" -addControl "uvrotation";
     editorTemplate -endLayout;
 
 

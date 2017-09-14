@@ -61,8 +61,9 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         //addParamPlugin("test_bsdf", EXT_BSDF, -1, "A Test BSDF.");
         //addParamFloat("testfloat", 1.0f, -1, "A Test parameter.");
         addParamString("filepath", "", -1, "File path to pattern file");
-        addParamFloat("uscale", 1.f, -1, "Scalefactor for u coordinate");
-        addParamFloat("vscale", 1.f, -1, "Scalefactor for v coordinate");
+        addParamFloat("uscale", 1.f, -1, "Scale factor for u coordinate");
+        addParamFloat("vscale", 1.f, -1, "Scale factor for v coordinate");
+        addParamFloat("uvrotation", 1.f, -1, "Rotation of the uv coordinates");
         
         // Yarn settings.
         // These are to be stored as lists in the .vrscene file. The index in
@@ -121,6 +122,7 @@ struct BRDFThunderLoom: VRayBSDF {
         paramList->setParamCache("filepath", &m_filepath);
         paramList->setParamCache("uscale", &m_uscale);
         paramList->setParamCache("vscale", &m_vscale);
+        paramList->setParamCache("uvrotation", &m_uvrotation);
         
         paramList->setParamCache("bend", &yrn0.umax);
         paramList->setParamCache("yarnsize", &yrn0.yarnsize);
@@ -130,14 +132,6 @@ struct BRDFThunderLoom: VRayBSDF {
         paramList->setParamCache("specular_noise", &yrn0.specular_noise);
         paramList->setParamCache("diffuse_color", &yrn0.color);
         
-        /*paramList->setParamCache("bend_on", &yrn0.umax);
-        paramList->setParamCache("yarnsize_on", &yrn0.yarnsize);
-        paramList->setParamCache("twist_on", &yrn0.psi);
-        paramList->setParamCache("highlight_width_on", &yrn0.delta_x);
-        paramList->setParamCache("specular_strength_on", &yrn0.specular_strength);
-        paramList->setParamCache("specular_noise_on", &yrn0.specular_noise);
-        paramList->setParamCache("diffuse_color_on", &yrn0.color);*/
-
     }
 
     tlWeaveParameters *m_tl_wparams;
@@ -166,7 +160,7 @@ private:
     BRDFPool<BRDFThunderLoomSampler> pool;
     float testfloat;
     CharString m_filepath;
-    float m_uscale, m_vscale;
+    float m_uscale, m_vscale, m_uvrotation;
     //DefFloatListParam bends;
     FloatList bends2;
 
@@ -258,6 +252,7 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     if (m_tl_wparams) {
         m_tl_wparams->uscale = 1.f;
         m_tl_wparams->vscale = 1.f;
+        m_tl_wparams->uvrotation = 0.f;
         m_tl_wparams->realworld_uv = 0;
         tl_prepare(m_tl_wparams);
     }
@@ -270,8 +265,10 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     
     VRayPluginParameter* uscale = this->getParameter("uscale");
     VRayPluginParameter* vscale = this->getParameter("vscale");
+    VRayPluginParameter* uvrotation = this->getParameter("uvrotation");
     m_tl_wparams->uscale = uscale->getFloat();
     m_tl_wparams->vscale = vscale->getFloat();
+    m_tl_wparams->uvrotation = uvrotation->getFloat();
 
     // Yarn type params
     VRayPluginParameter* bend = this->getParameter("bend");

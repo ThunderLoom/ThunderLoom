@@ -34,6 +34,7 @@ MString VRayThunderLoom::classification("shader/surface/utility/:swatch/VRayMtlS
 MObject VRayThunderLoom::m_filepath;
 MObject VRayThunderLoom::m_uscale;
 MObject VRayThunderLoom::m_vscale;
+MObject VRayThunderLoom::m_uvrotation;
 MObject VRayThunderLoom::m_bend;
 MObject VRayThunderLoom::m_bend_on;
 MObject VRayThunderLoom::m_yarnsize;
@@ -129,6 +130,15 @@ MStatus VRayThunderLoom::initialize() {
     CHECK_MSTATUS(nAttr.setWritable(true));
     CHECK_MSTATUS(addAttribute(m_vscale));
     CHECK_MSTATUS(attributeAffects(m_vscale, m_outColor));
+
+    m_uvrotation = nAttr.create("uvrotation", "uvr", MFnNumericData::kFloat);
+    CHECK_MSTATUS(nAttr.setDefault(0.f));
+    CHECK_MSTATUS(nAttr.setKeyable(true));
+    CHECK_MSTATUS(nAttr.setStorable(true));
+    CHECK_MSTATUS(nAttr.setReadable(true));
+    CHECK_MSTATUS(nAttr.setWritable(true));
+    CHECK_MSTATUS(addAttribute(m_uvrotation));
+    CHECK_MSTATUS(attributeAffects(m_uvrotation, m_outColor));
    
 
 // Float array values
