@@ -15,7 +15,7 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
     string $multi[] = `listAttr -multi -leaf ($nodeName + ".bend")`;
     for($m in $multi) {
 		string $index = match("\[[0-9]+\]", $m); // Index with []
-        string $params[] = {"bend", "bendOn", "yarnsize", "yarnsizeOn", "twist", "twistOn", "specularStrength", "specularStrengthOn", "specularNoise", "specularNoiseOn", "highlightWidth", "highlightWidthOn", "diffuseColor", "diffuseColorOn"};
+        string $params[] = {"bend", "bendOn", "yarnsize", "yarnsizeOn", "twist", "twistOn", "specularColor", "specularColorOn", "specularNoise", "specularNoiseOn", "highlightWidth", "highlightWidthOn", "diffuseColor", "diffuseColorOn"};
         for ($param in $params) {
             removeMultiInstance -break true ($nodeName + "." + $param + $index);
         }
@@ -28,7 +28,7 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         
     print("tl params:");
     print($tlparams);
-    int $params_per_yarn = 9;
+    int $params_per_yarn = 11;
     int $offset = 1; //For $num_yarn_types
     int $i;
     for ($i=0; $i<$num_yarn_types; $i++) { //For each yarn type
@@ -38,12 +38,15 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         setAttr ($nodeName + ".yarnsize" + $index) $tlparams[1 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".twist" + $index) $tlparams[2 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".highlightWidth" + $index) $tlparams[3 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".specularStrength" + $index) $tlparams[4 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".specularNoise" + $index) $tlparams[5 + $i*$params_per_yarn + $offset];
+        float $specr = $tlparams[4 + $i*$params_per_yarn + $offset];
+        float $specg = $tlparams[5 + $i*$params_per_yarn + $offset];
+        float $specb = $tlparams[6 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".specularColor" + $index) $specr $specg $specb;
+        setAttr ($nodeName + ".specularNoise" + $index) $tlparams[7 + $i*$params_per_yarn + $offset];
         
-        float $colr = $tlparams[6 + $i*$params_per_yarn + $offset];
-        float $colg = $tlparams[7 + $i*$params_per_yarn + $offset];
-        float $colb = $tlparams[8 + $i*$params_per_yarn + $offset];
+        float $colr = $tlparams[8  + $i*$params_per_yarn + $offset];
+        float $colg = $tlparams[9  + $i*$params_per_yarn + $offset];
+        float $colb = $tlparams[10 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".diffuseColor" + $index) $colr $colg $colb;
         setAttr ($nodeName + ".diffuseColorOn" + $index) 1;
     }
@@ -73,8 +76,8 @@ global proc updateTLAttributes(string $nodeDotAttr)
         catchQuiet( `getAttr -type ($nodeName + ".bend" + $index)`);
         catchQuiet( `getAttr -type ($nodeName + ".bendOn" + $index)`);
         
-        catchQuiet( `getAttr -type ($nodeName + ".specularStrength" + $index)`);
-        catchQuiet( `getAttr -type ($nodeName + ".specularStrengthOn" + $index)`);
+        catchQuiet( `getAttr -type ($nodeName + ".specularColor" + $index)`);
+        catchQuiet( `getAttr -type ($nodeName + ".specularColorOn" + $index)`);
 
         //TODO setAttr and disconnect any maps -command ("removeMultiInstance -break true " + $nodeName + "." + $attrWithIdx);
     }
@@ -92,14 +95,6 @@ global proc AEVRayThunderLoomMtlTemplate(string $nodeName )
     editorTemplate -endLayout;
 
 
-    //editorTemplate -beginLayout "Common Yarn Settings" -collapse false;
-    //editorTemplate -label "Diffuse Color" -addControl "diffuseColor";
-    //editorTemplate -label "Specular Strength" -addControl "specularStrength";
-    //editorTemplate -label "Specular Noise" -addControl "specularNoise";
-    //editorTemplate -label "Highlight Width" -addControl "highlightWidth";
-    //editorTemplate -label "Bend" -addControl "bend";
-    //editorTemplate -label "Twist" -addControl "twist";
-    
     editorTemplate -callCustom "AELoadYarnTypesCompound" "AELoadYarnTypesCompoundRepl" "bend";
     //editorTemplate -endLayout;
 
@@ -174,6 +169,19 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                 }
                 string $yarn_frame = `frameLayout -collapse false -label $frame_title`;
 	    		columnLayout;
+                    // Specular color
+                    rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
+                        {
+                            int $visible = 1;
+                            if ($index == "0") {
+                                $visible = 0;
+                            }
+                            string $ctrl_on = `checkBox -visible $visible -label "Used" ("yrn" + $buffer + "specularColorOn")`;
+                            connectControl $ctrl_on ($nodeName + ".specularColorOn" + $buffer);
+                        }
+                        attrColorSliderGrp -label "specularColor" -attribute ($nodeName + ".specularColor" + $buffer);
+                    setParent..;
+
                     // Diffuse color
                     rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
                         {
@@ -187,7 +195,7 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                         attrColorSliderGrp -label "diffuseColor" -attribute ($nodeName + ".diffuseColor" + $buffer);
                     setParent..;
 
-                    string $params[] = {"bend", "yarnsize", "twist", "specularStrength", "specularNoise", "highlightWidth"};
+                    string $params[] = {"bend", "yarnsize", "twist", "specularNoise", "highlightWidth"};
                     for ($param in $params) {
                         rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
                             int $visible = 1;

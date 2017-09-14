@@ -1077,8 +1077,8 @@ static tlWeaveParameters *tl_pattern_from_ptn_file_v1(unsigned char *data,
         write_commands[2+i].data = data;
         data += yarn_typev091_len;
     }
-    tlPtnEntry ptn_entry_patternv091 = {3,0,2*sizeof(uint8_t)*pattern_size,1,
-        "tlPattern"};
+    tlPtnEntry ptn_entry_patternv091 = {3,0,
+        (uint32_t)(2*sizeof(uint8_t)*pattern_size),1, "tlPattern"};
     tlPtnEntry pattern_entry = ptn_entry_pattern;
     pattern_entry.size      *= pattern_size;
     write_commands[1].entry  = &ptn_entry_patternv091;

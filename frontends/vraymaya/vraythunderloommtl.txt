@@ -8,8 +8,8 @@ BRDFThunderLoom VRayThunderLoomMtl {
   "yarnsize_on_float"           array    "yarnsizeOn"          array   INPUT
   "twist"                       array    "twist"               array   INPUT
   "twist_on_float"              array    "twistOn"             array   INPUT
-  "specular_strength"           array    "specularStrength"    array   INPUT
-  "specular_strength_on_float"  array    "specularStrengthOn"  array   INPUT
+  "specular_color"              3darray  "specularColor"       3darray INPUT
+  "specular_color_on_float"     array    "specularColorOn"     array   INPUT
   "specular_noise"              array    "specularNoise"       array   INPUT
   "specular_noise_on_float"     array    "specularNoiseOn"     array   INPUT
   "highlight_width"             array    "highlightWidth"      array   INPUT

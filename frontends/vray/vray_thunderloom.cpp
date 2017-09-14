@@ -25,7 +25,6 @@ class BRDFThunderLoomSampler: public BRDFSampler, public BSDFSampler {
     Vector m_uv;
     Transform m_uv_tm;
     Color m_diffuse_color;
-    float m_specular_strength;
     tlYarnType m_yarn_type;
     int m_yarn_type_id;
 
@@ -71,7 +70,7 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("bend", 0.5, -1, "How much each visible yarn segment gets bent.");
         addParamTextureFloat("yarnsize", 1.0, -1, "Width of yarn.");
         addParamTextureFloat("twist", 0.5, -1, "How strongly to simulate the twisting nature of the yarn. Usually synthetic yarns, such as polyester, have less twist than organic yarns, such as cotton.");
-        addParamTextureFloat("specular_strength", 0.4, -1, "Strength of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
+        addParamTexture("specular_color", Color(0.4f, 0.4f, 0.4f), -1, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
         addParamTextureFloat("specular_noise", 0.4, -1, "Noise on specular reflections.");
         addParamTextureFloat("highlight_width", 0.4, -1, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
         //addParamColor("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
@@ -82,7 +81,7 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamBool("bend_on",                 false, -1, "");
         addParamBool("yarnsize_on",             false, -1, "");
         addParamBool("twist_on",                false, -1, "");
-        addParamBool("specular_strength_on",    false, -1, "");
+        addParamBool("specular_color_on",       false, -1, "");
         addParamBool("specular_noise_on",       false, -1, "");
         addParamBool("highlight_width_on",      false, -1, "");
         addParamBool("diffuse_color_on",        false, -1, "");
@@ -94,7 +93,7 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("bend_on_float",                 false, -1, "");
         addParamTextureFloat("yarnsize_on_float",             false, -1, "");
         addParamTextureFloat("twist_on_float",                false, -1, "");
-        addParamTextureFloat("specular_strength_on_float",    false, -1, "");
+        addParamTextureFloat("specular_color_on_float",       false, -1, "");
         addParamTextureFloat("specular_noise_on_float",       false, -1, "");
         addParamTextureFloat("highlight_width_on_float",      false, -1, "");
         addParamTextureFloat("diffuse_color_on_float",        false, -1, "");
@@ -111,7 +110,7 @@ typedef struct {
     float alpha;
     float beta;
     float delta_x;
-    float specular_strength;
+    Color specular_color;
     float specular_noise;
     Color color;
 } tlIntermediateYrnParam;
@@ -127,7 +126,7 @@ struct BRDFThunderLoom: VRayBSDF {
         paramList->setParamCache("yarnsize", &yrn0.yarnsize);
         paramList->setParamCache("twist", &yrn0.psi);
         paramList->setParamCache("highlight_width", &yrn0.delta_x);
-        paramList->setParamCache("specular_strength", &yrn0.specular_strength);
+        paramList->setParamCache("specular_color", &yrn0.specular_color);
         paramList->setParamCache("specular_noise", &yrn0.specular_noise);
         paramList->setParamCache("diffuse_color", &yrn0.color);
         
@@ -287,9 +286,9 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     VRayPluginParameter* twist_on = this->getParameter("twist_on");
     VRayPluginParameter* twist_on_float = this->getParameter("twist_on_float");
 
-    VRayPluginParameter* specular_strength = this->getParameter("specular_strength");
-    VRayPluginParameter* specular_strength_on = this->getParameter("specular_strength_on");
-    VRayPluginParameter* specular_strength_on_float = this->getParameter("specular_strength_on_float");
+    VRayPluginParameter* specular_color = this->getParameter("specular_color");
+    VRayPluginParameter* specular_color_on = this->getParameter("specular_color_on");
+    VRayPluginParameter* specular_color_on_float = this->getParameter("specular_color_on_float");
 
     VRayPluginParameter* specular_noise = this->getParameter("specular_noise");
     VRayPluginParameter* specular_noise_on = this->getParameter("specular_noise_on");
@@ -325,13 +324,25 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
         TL_VRAY_SET_PARAM(yarnsize, yarnsize)\
         TL_VRAY_SET_PARAM(twist, psi)\
         TL_VRAY_SET_PARAM(highlight_width, delta_x)\
-        TL_VRAY_SET_PARAM(specular_strength, specular_strength)\
         TL_VRAY_SET_PARAM(specular_noise, specular_noise)\
 
 TL_VRAY_FLOAT_PARAMS
 
 #undef TL_VRAY_FLOAT_PARAMS
 #undef TL_VRAY_SET_PARAM
+
+        if (is_param_valid(specular_color, i)) {
+            if (!set_texparam(specular_color, &yarn_type->specular_color_texmap, i)) {
+                Color tmp_specular_color = specular_color->getColor(i);
+                tlColor tl_specular_color;
+                tl_specular_color.r = tmp_specular_color.r; tl_specular_color.g = tmp_specular_color.g; tl_specular_color.b = tmp_specular_color.b;
+                yarn_type->color = tl_specular_color;
+            }
+        }
+        if (is_param_valid(specular_color_on, i))
+            yarn_type->specular_color_enabled = get_bool(specular_color_on, i, rc);
+        else if (is_param_valid(specular_color_on_float, i))
+            yarn_type->specular_color_enabled = get_bool(specular_color_on_float, i, rc);
 
         if (is_param_valid(diffuse_color, i)) {
             if (!set_texparam(diffuse_color, &yarn_type->color_texmap, i)) {
@@ -422,12 +433,10 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
 
     m_yarn_type_id = pattern_data.yarn_type;
     m_yarn_type = m_tl_wparams->yarn_types[pattern_data.yarn_type];
-    m_specular_strength = tl_yarn_type_get_specular_strength(m_tl_wparams, pattern_data.yarn_type, intersection_data.context);
     tlColor d = tl_eval_diffuse( intersection_data, pattern_data, m_tl_wparams);
-    float factor = (1.f - m_specular_strength);
-    m_diffuse_color.r = factor*d.r;
-    m_diffuse_color.g = factor*d.g;
-    m_diffuse_color.b = factor*d.b;
+    m_diffuse_color.r = d.r;
+    m_diffuse_color.g = d.g;
+    m_diffuse_color.b = d.b;
 
     return;
 }
@@ -448,10 +457,11 @@ Color BRDFThunderLoomSampler::getDiffuseColor(Color &lightColor) {
 
 // Total amount of light reflected by the surface.
 Color BRDFThunderLoomSampler::getLightMult(Color &lightColor) {
-    float s = m_yarn_type.specular_strength;
-    if(!m_yarn_type.specular_strength_enabled
+    //TODO(Vidar):Make this work properly
+    float s = m_yarn_type.specular_color.r;
+    if(!m_yarn_type.specular_color_enabled
         && m_tl_wparams->num_yarn_types > 0){
-        s = m_tl_wparams->yarn_types[0].specular_strength;
+        s = m_tl_wparams->yarn_types[0].specular_color.r;
     }
     Color ret = (m_diffuse_color + Color(s,s,s)) * lightColor;
     
@@ -534,14 +544,12 @@ Color BRDFThunderLoomSampler::eval(const VR::VRayContext &rc, const Vector &dire
 
         tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
                 m_tl_wparams);
-        float specular_strength = tl_yarn_type_get_specular_strength(
-                m_tl_wparams, pattern_data.yarn_type, intersection_data.context);
-        float s = specular_strength * 
+        tlColor s = 
             tl_eval_specular(intersection_data, pattern_data, m_tl_wparams);
 
-        reflect_color.r = s;
-        reflect_color.g = s;
-        reflect_color.b = s;
+        reflect_color.r = s.r;
+        reflect_color.g = s.g;
+        reflect_color.b = s.b;
 
         //NOTE(Vidar): Multiple importance sampling factor
         float weight = getReflectionWeight(probLight,probReflection);
