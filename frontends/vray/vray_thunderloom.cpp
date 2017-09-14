@@ -457,15 +457,12 @@ Color BRDFThunderLoomSampler::getDiffuseColor(Color &lightColor) {
 
 // Total amount of light reflected by the surface.
 Color BRDFThunderLoomSampler::getLightMult(Color &lightColor) {
-    //TODO(Vidar):Make this work properly
-    float s = m_yarn_type.specular_color.r;
+    tlColor s = m_yarn_type.specular_color;
     if(!m_yarn_type.specular_color_enabled
         && m_tl_wparams->num_yarn_types > 0){
-        s = m_tl_wparams->yarn_types[0].specular_color.r;
+        s = m_tl_wparams->yarn_types[0].specular_color;
     }
-    Color ret = (m_diffuse_color + Color(s,s,s)) * lightColor;
-    
-    //lightColor is amount of light transmitted through the BRDF.
+    VUtils::Color ret = (m_diffuse_color + Color(s.r,s.g,s.b)) * lightColor;
     lightColor.makeZero();
     return ret;
 }
