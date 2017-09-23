@@ -491,7 +491,8 @@ void wif_get_pattern(tlWeaveParameters *param, WeaveData *data, uint32_t *w,
             yarn_types[c].name##_enabled = 0;
 		#define TL_COLOR_PARAM(name)
             TL_YARN_PARAMETERS
-		#undef YARN_TYPE_PARAM
+		#undef TL_FLOAT_PARAM
+		#undef TL_COLOR_PARAM
         }
         for(y=0;y<*h;y++){
             for(x=0;x<*w;x++){

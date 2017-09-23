@@ -3,14 +3,14 @@
 
 // The paramblock version 
 // (when changes are made to the paramblock structure)
-const int PARAM_VERSION_HIGH=0;
+const int PARAM_VERSION_HIGH=2;
 const int PARAM_VERSION_LOW=90;
 //This is the param version * 100
 const int PARAM_VERSION= PARAM_VERSION_HIGH*100 + PARAM_VERSION_LOW;
 
 //The plugin version (Semantic Versioning)
 const int PLUGIN_VERSION_MAJOR=0;
-const int PLUGIN_VERSION_MINOR=91;
+const int PLUGIN_VERSION_MINOR=92;
 const int PLUGIN_VERSION_PATCH=0;
 
 
@@ -254,7 +254,72 @@ public:
 			case WM_COMMAND:
 			{
 				switch(LOWORD(wParam)){
-					case IDC_WIFFILE_BUTTON:
+                    case IDC_WIFFILE_BUTTON:
+                    {
+                        switch(HIWORD(wParam)){
+                            case BN_CLICKED:
+                            {
+                                char *filename = (char*)calloc(512,sizeof(char));
+                                OPENFILENAMEA openfilename={0};
+                                openfilename.lStructSize=sizeof(OPENFILENAMEA);
+                                openfilename.hwndOwner=NULL;
+                                static const char *filters=
+                                    "Pattern Files | *.WIF;*.PTN\0*.WIF;*.PTN\0"
+                                    "All Files | *.*\0*.*\0"
+                                    ;
+                                openfilename.lpstrFilter=filters;
+                                openfilename.lpstrFile=filename;
+                                openfilename.lpstrDefExt="ptn";
+                                openfilename.nMaxFile=512;
+                                openfilename.lpstrTitle="Load pattern";
+                                GetOpenFileNameA(&openfilename);
+                                if(filename[0]!=0){
+                                    const char *error=0;
+                                    tlWeaveParameters *param =
+                                        tl_weave_pattern_from_file(filename,&error);
+                                    if(error){
+                                        MessageBoxA(NULL,error,"ERROR!",MB_OK|MB_ICONERROR);
+                                    } else{
+                                        //TODO(Vidar):Make this into a function, it is identical to the
+                                        // code when closing the pattern editor, below
+                                        //NOTE(Vidar):Set parameters...
+                                        sm->m_weave_parameters=param;
+                                        int realworld;
+                                        sm->pblock->GetValue(mtl_realworld,0,realworld,
+                                            sm->ivalid);
+                                        sm->m_weave_parameters->realworld_uv=realworld;
+                                        sm->pblock->GetValue(mtl_uscale,0,
+                                            sm->m_weave_parameters->uscale,
+                                            sm->ivalid);
+                                        sm->pblock->GetValue(mtl_vscale,0,
+                                            sm->m_weave_parameters->vscale,
+                                            sm->ivalid);
+                                        sm->pblock->GetValue(mtl_uvrotation,0,
+                                            sm->m_weave_parameters->uvrotation,
+                                            sm->ivalid);
+                                        int num_yarn_types=sm->m_weave_parameters->
+                                            num_yarn_types;
+                                        sm->m_yarn_type_rollup_open[0]=1;
+                                        for(int i=1;i<num_yarn_types;i++){
+                                            sm->m_yarn_type_rollup_open[i]=0;
+                                        }
+                                        //TODO(Peter): Test this with more complicate wif files!
+                                        //Set count for subtexmaps
+                                        sm->pblock->SetCount(texmaps,
+                                            num_yarn_types* NUMBER_OF_YRN_TEXMAPS);
+                                        map->Invalidate();
+                                        update_yarn_type_rollups();
+                                        //NOTE(Vidar): Hack to update the preview ball
+                                        sm->pblock->SetValue(mtl_dummy,0,0.5f);
+                                    }
+                                }
+                                free(filename);
+                                break;
+                            }
+                        }
+                        break;
+                    }
+					case IDC_PATTERNEDITOR_BUTTON:
 					{
 						switch(HIWORD(wParam)){
 							case BN_CLICKED:
@@ -264,6 +329,7 @@ public:
 								sm->m_weave_parameters = 
 									tl_pattern_editor(sm->m_weave_parameters);
 								EnableWindow(parent_hwnd,true);
+                                SetForegroundWindow(parent_hwnd);
 								//NOTE(Vidar):Set parameters...
 								int realworld;
 								sm->pblock->GetValue(mtl_realworld,0,realworld,
@@ -275,6 +341,9 @@ public:
 								sm->pblock->GetValue(mtl_vscale,0,
 									sm->m_weave_parameters->vscale,
 									sm->ivalid);
+                                sm->pblock->GetValue(mtl_uvrotation,0,
+                                    sm->m_weave_parameters->uvrotation,
+                                    sm->ivalid);
 								int num_yarn_types=sm->m_weave_parameters->
 									num_yarn_types;
 								sm->m_yarn_type_rollup_open[0]=1;
@@ -343,49 +412,18 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
         p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
 			IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
     PB_END,
-    mtl_dummy, _FT("dummy"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 1.f,
-    PB_END,
-    mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
-        p_default, FALSE,
-        p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
-    PB_END,
-    texmaps, _T("yarnmaplist"), TYPE_TEXMAP_TAB, 0, P_VARIABLE_SIZE, 0,
-		//no ui, for the array
-		//handled through Proc
-    PB_END,
-PB_END
-);									 
-
-/*//Set up paramblock to handle storing values and managing ui elements for us
-static ParamBlockDesc2 thunder_loom_param_blk_desc(
-    mtl_params, _T("Test mtl params"), 0,
-    &thunderLoomDesc, P_AUTO_CONSTRUCT + P_AUTO_UI + P_VERSION,
-	PLUGIN_VERSION,
-	1,
-    rollout_pattern,   IDD_BLENDMTL, IDS_PATTERN, 0, 0,
-		new PatternRolloutDlgProc(), 
-    mtl_uscale, _FT("uscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 1.f,
-        p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_USCALE_EDIT, IDC_USCALE_SPIN, 0.1f,
-    PB_END,
-    mtl_vscale, _FT("vscale"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 1.f,
-        p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
-			IDC_VSCALE_EDIT, IDC_VSCALE_SPIN, 0.1f,
-    PB_END,
-    mtl_dummy, _FT("dummy"), TYPE_FLOAT, P_ANIMATABLE, 0,
-        p_default, 1.f,
-    PB_END,
-    mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
-        p_default, FALSE,
-        p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
-    PB_END,
-    mtl_intensity_fineness, _FT("specularnoise"), TYPE_FLOAT, P_ANIMATABLE, 0,
+    mtl_uvrotation, _FT("uvrotation"), TYPE_FLOAT, P_ANIMATABLE, 0,
         p_default, 0.f,
-		p_range, 0.0f, 10.f,
-		p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT, IDC_SPECULARNOISE_EDIT, IDC_SPECULARNOISE_SPIN, 0.1f,
+        p_range, -360.f, 360.f,
+        p_ui, rollout_pattern, TYPE_SPINNER, EDITTYPE_FLOAT,
+			IDC_UVROTATION_EDIT, IDC_UVROTATION_SPIN, 0.1f,
+    PB_END,
+    mtl_dummy, _FT("dummy"), TYPE_FLOAT, P_ANIMATABLE, 0,
+        p_default, 1.f,
+    PB_END,
+    mtl_realworld, _FT("realworld"), TYPE_BOOL, 0, 0,
+        p_default, FALSE,
+        p_ui, rollout_pattern, TYPE_SINGLECHEKBOX, IDC_REALWORLD_CHECK,
     PB_END,
     texmaps, _T("yarnmaplist"), TYPE_TEXMAP_TAB, 0, P_VARIABLE_SIZE, 0,
 		//no ui, for the array
@@ -393,7 +431,6 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
     PB_END,
 PB_END
 );									 
-*/
 
 INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -549,7 +586,8 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     case IDC_##name##_SWATCH:\
                     yarn_type->name.r = (float)GetRValue(col)/255.f;\
                     yarn_type->name.g = (float)GetGValue(col)/255.f;\
-                    yarn_type->name.b = (float)GetBValue(col)/255.f;
+                    yarn_type->name.b = (float)GetBValue(col)/255.f;\
+                    break;
                 TL_YARN_PARAMETERS
                 #undef TL_FLOAT_PARAM
                 #undef TL_COLOR_PARAM
@@ -705,6 +743,12 @@ RefResult ThunderLoomMtl::NotifyRefChanged(NOTIFY_REF_CHANGED_ARGS) {
 							ivalid);
 						break;
 					}
+					case mtl_uvrotation:
+					{
+						pblock->GetValue(mtl_uvrotation,0,m_weave_parameters->uvrotation,
+							ivalid);
+						break;
+					}
 				}
 			}
 			break;
@@ -765,17 +809,15 @@ IOResult ThunderLoomMtl::Save(ISave *isave)
 	isave->EndChunk();
 	isave->BeginChunk(YARN_TYPE_CHUNK);
 	//NOTE(Vidar):Save yarn types
+    long len=0;
+    unsigned char *data = tl_pattern_to_ptn_file(m_weave_parameters,&len);
 	ULONG nb;
-	isave->Write((unsigned char*)&PARAM_VERSION,
+    int version=2;
+	isave->Write((unsigned char*)&version,
 		sizeof(int),&nb);
 
-	isave->Write((unsigned char*)m_weave_parameters,
-		sizeof(tlWeaveParameters), &nb);
-    isave->Write((unsigned char*)m_weave_parameters->yarn_types,
-		sizeof(tlYarnType)*m_weave_parameters->num_yarn_types, &nb);
-    isave->Write((unsigned char*)m_weave_parameters->pattern,
-		sizeof(PatternEntry)*m_weave_parameters->pattern_width
-		*m_weave_parameters->pattern_height, &nb);
+    isave->Write(data,len,&nb);
+    free(data);
     isave->EndChunk();
 	return IO_OK;
 }	
@@ -795,7 +837,30 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 				int version;
 				iload->Read((unsigned char*)&version,
 					sizeof(int), &nb);
+                unsigned long len=iload->CurChunkLengthRemaining();
+                const char *error_buffer=0;
+                if(version==90){
+                    unsigned char *data=(unsigned char *)calloc(len+sizeof(int),1);
+                    *(int*)data=1;
+                    iload->Read(data+sizeof(int),len,&nb);
+                    m_weave_parameters=tl_weave_pattern_from_ptn(data,len,&error_buffer);
+                    free(data);
+                }else{
+                    unsigned char *data=(unsigned char *)calloc(len,1);
+                    iload->Read(data,len,&nb);
+                    m_weave_parameters=tl_weave_pattern_from_ptn(data,len,&error_buffer);
+                    free(data);
+                }
+                //TODO(Vidar):Initialize m_weave_parameters to default pattern if there was an error
+                // (if it is 0)
+                if(error_buffer!=0){
+                    OutputDebugStringA("Error:\n");
+                    OutputDebugStringA(error_buffer);
+                    OutputDebugStringA("\n");
+                }
+                
 				//NOTE(Vidar):Load m_weave_parameters
+                /*
 				tlWeaveParameters *params = (tlWeaveParameters*)calloc(1,sizeof(tlWeaveParameters));
 				iload->Read((unsigned char*)params,
 					sizeof(tlWeaveParameters), &nb);
@@ -810,6 +875,7 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
 				iload->Read((unsigned char*)params->pattern,
 					num_entries * sizeof(PatternEntry), &nb);
 				m_weave_parameters = params;
+                */
 				break;
 			}
 		}

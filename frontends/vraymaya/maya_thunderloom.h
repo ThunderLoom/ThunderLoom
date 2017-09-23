@@ -25,14 +25,15 @@ private:
 	static MObject m_filepath;
 	static MObject m_uscale;
 	static MObject m_vscale;
+	static MObject m_uvrotation;
 	static MObject m_bend;
 	static MObject m_bend_on;
 	static MObject m_yarnsize;
 	static MObject m_yarnsize_on;
 	static MObject m_twist;
 	static MObject m_twist_on;
-	static MObject m_specular_strength;
-	static MObject m_specular_strength_on;
+	static MObject m_specular_color;
+	static MObject m_specular_color_on;
 	static MObject m_specular_noise;
 	static MObject m_specular_noise_on;
 	static MObject m_highlight_width;

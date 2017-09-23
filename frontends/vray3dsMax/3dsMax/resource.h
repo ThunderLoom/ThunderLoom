@@ -52,7 +52,10 @@
 #define IDC_specular_strength_SPIN2     1017
 #define IDC_VSCALE_SPIN                 1018
 #define IDC_umax_EDIT                   1019
+#define IDC_UVROTATION_EDIT             1019
 #define IDC_umax_SPIN                   1020
+#define IDC_VSCALE_SPIN2                1020
+#define IDC_UVROTATION_SPIN             1020
 #define IDC_VERSION                     1021
 #define IDC_yarnsize_EDIT               1021
 #define IDC_PATTERN_GROUP               1022
@@ -93,6 +96,7 @@
 #define cs_blend5                       1054
 #define IDC_WIFFILE_BUTTON              1055
 #define IDC_YRN_TEX_SPECULAR_BUTTON     1056
+#define IDC_PATTERNEDITOR_BUTTON        1056
 #define ed_texmap_blend_mult5           1057
 #define IDC_YARNTYPE_COMBO              1058
 #define cs_blend6                       1059
@@ -102,6 +106,7 @@
 #define cs_blend7                       1063
 #define IDC_color_SWATCH                1064
 #define ed_texmap_blend_mult7           1065
+#define IDC_specular_color_SWATCH       1065
 #define IDC_YRN_TEX_specular_strength_LABEL 1066
 #define IDC_CUSTOM1                     1067
 #define cs_blend8                       1068
@@ -126,6 +131,7 @@
 #define IDC_SIMPLE_SPIN                 1088
 #define IDC_color_OVERRIDE              1089
 #define sp_texmap_blend_mult1           1090
+#define IDC_specular_color_OVERRIDE     1090
 #define IDC_YRN_TEX_SIZE_BUTTON2        1091
 #define sp_texmap_blend_mult2           1092
 #define IDC_YRN_TEX_DIFFUSE_LABEL2      1093
@@ -176,6 +182,7 @@
 #define IDC_YRN_TEX_color_BUTTON        1197
 #define IDC_YRN_TEX_specular_strength_BUTTON 1199
 #define IDC_YRN_TEX_yarnsize_BUTTON     1200
+#define IDC_YRN_TEX_specular_color_BUTTON 1202
 
 // Next default values for new objects
 // 
@@ -183,7 +190,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        112
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1202
+#define _APS_NEXT_CONTROL_VALUE         1203
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

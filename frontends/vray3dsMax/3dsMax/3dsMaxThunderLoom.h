@@ -27,7 +27,7 @@
 //for each uv position. These paramters are good to vary using texture maps
 #define YARN_TYPE_TEXMAP_PARAMETERS\
 	YARN_TYPE_TEXMAP(color)\
-	YARN_TYPE_TEXMAP(specular_strength)\
+	YARN_TYPE_TEXMAP(specular_color)\
 	YARN_TYPE_TEXMAP(yarnsize)
 enum {
 #define YARN_TYPE_TEXMAP(param) yrn_texmaps_##param,
@@ -55,6 +55,7 @@ enum {
 	mtl_realworld,
     mtl_uscale,
     mtl_vscale,
+    mtl_uvrotation,
 	mtl_yarn_type,
     mtl_intensity_fineness,
 	//mtl_texmap_diffuse,

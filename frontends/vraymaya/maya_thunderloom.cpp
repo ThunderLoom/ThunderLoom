@@ -32,14 +32,15 @@ MString VRayThunderLoom::classification("shader/surface/utility/:swatch/VRayMtlS
 MObject VRayThunderLoom::m_filepath;
 MObject VRayThunderLoom::m_uscale;
 MObject VRayThunderLoom::m_vscale;
+MObject VRayThunderLoom::m_uvrotation;
 MObject VRayThunderLoom::m_bend;
 MObject VRayThunderLoom::m_bend_on;
 MObject VRayThunderLoom::m_yarnsize;
 MObject VRayThunderLoom::m_yarnsize_on;
 MObject VRayThunderLoom::m_twist;
 MObject VRayThunderLoom::m_twist_on;
-MObject VRayThunderLoom::m_specular_strength;
-MObject VRayThunderLoom::m_specular_strength_on;
+MObject VRayThunderLoom::m_specular_color;
+MObject VRayThunderLoom::m_specular_color_on;
 MObject VRayThunderLoom::m_specular_noise;
 MObject VRayThunderLoom::m_specular_noise_on;
 MObject VRayThunderLoom::m_highlight_width;
@@ -127,6 +128,15 @@ MStatus VRayThunderLoom::initialize() {
     CHECK_MSTATUS(nAttr.setWritable(true));
     CHECK_MSTATUS(addAttribute(m_vscale));
     CHECK_MSTATUS(attributeAffects(m_vscale, m_outColor));
+
+    m_uvrotation = nAttr.create("uvrotation", "uvr", MFnNumericData::kFloat);
+    CHECK_MSTATUS(nAttr.setDefault(0.f));
+    CHECK_MSTATUS(nAttr.setKeyable(true));
+    CHECK_MSTATUS(nAttr.setStorable(true));
+    CHECK_MSTATUS(nAttr.setReadable(true));
+    CHECK_MSTATUS(nAttr.setWritable(true));
+    CHECK_MSTATUS(addAttribute(m_uvrotation));
+    CHECK_MSTATUS(attributeAffects(m_uvrotation, m_outColor));
    
 
 // Float array values
@@ -160,8 +170,7 @@ MStatus VRayThunderLoom::initialize() {
         TL_MAYA_SET_BOOL_PARAM(m_yarnsize_on, yarnsizeOn, sizo)\
         TL_MAYA_SET_PARAM(m_twist, twist, psi, 0.5f)\
         TL_MAYA_SET_BOOL_PARAM(m_twist_on, twistOn, psio)\
-        TL_MAYA_SET_PARAM(m_specular_strength, specularStrength, str, 0.4f)\
-        TL_MAYA_SET_BOOL_PARAM(m_specular_strength_on, specularStrengthOn, stro)\
+        TL_MAYA_SET_BOOL_PARAM(m_specular_color_on, specularColorOn, sclo)\
         TL_MAYA_SET_PARAM(m_specular_noise, specularNoise, noi, 0.4f)\
         TL_MAYA_SET_BOOL_PARAM(m_specular_noise_on, specularNoiseOn, noio)\
         TL_MAYA_SET_PARAM(m_highlight_width, highlightWidth, hlw, 0.4f)\
@@ -173,134 +182,6 @@ TL_MAYA_FLOAT_PARAMS
 #undef TL_MAYA_FLOAT_PARAMS
 #undef TL_MAYA_SET_PARAM
     
-    
-    /*
-    m_uscale = nAttr.create("uscale", "usc", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setDefault(1.f));
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    
-    m_vscale = nAttr.create("vscale", "vsc", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setDefault(1.f));
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));*/
-
-    /*
-    m_yarnsize = nAttr.create("yarnsize", "siz", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setMin(0.0f));
-    CHECK_MSTATUS(nAttr.setMax(1.0f));
-    CHECK_MSTATUS(nAttr.setDefault(0.5f));
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    CHECK_MSTATUS(nAttr.setArray(true));
-    CHECK_MSTATUS(addAttribute(m_yarnsize));
-    CHECK_MSTATUS(attributeAffects(m_yarnsize, m_outColor));
-    
-    m_yarnsize_on = nAttr.create("yarnsizeOn", "sio", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setDefault(0.0f));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    CHECK_MSTATUS(nAttr.setArray(true));
-    CHECK_MSTATUS(addAttribute(m_yarnsize_on));
-    CHECK_MSTATUS(attributeAffects(m_yarnsize_on, m_outColor));*/
-
-    
-    /*m_bend = nAttr.create("bend", "bnd", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setMin(0.0f));
-    CHECK_MSTATUS(nAttr.setMax(1.0f));
-    CHECK_MSTATUS(nAttr.setDefault(0.5f));
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    CHECK_MSTATUS(nAttr.setArray(true));
-    CHECK_MSTATUS(addAttribute(m_bend));
-    CHECK_MSTATUS(attributeAffects(m_bend, m_outColor));
-    
-    m_bend_on = nAttr.create("bendOn", "bno", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setDefault(0.0f));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    CHECK_MSTATUS(nAttr.setArray(true));
-    CHECK_MSTATUS(addAttribute(m_bend_on));
-    CHECK_MSTATUS(attributeAffects(m_bend_on, m_outColor));
-    
-    m_specular_strength = nAttr.create("specularStrength", "str", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setMin(0.0f));
-    CHECK_MSTATUS(nAttr.setMax(1.0f));
-    CHECK_MSTATUS(nAttr.setDefault(0.4f));
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    CHECK_MSTATUS(nAttr.setArray(true));
-    CHECK_MSTATUS(addAttribute(m_specular_strength));
-    CHECK_MSTATUS(attributeAffects(m_specular_strength, m_outColor));
-    
-    m_specular_strength_on = nAttr.create("specularStrengthOn", "stro", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setDefault(0.0f));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    CHECK_MSTATUS(nAttr.setArray(true));
-    CHECK_MSTATUS(addAttribute(m_specular_strength_on));
-    CHECK_MSTATUS(attributeAffects(m_specular_strength_on, m_outColor));
-    */
-    
-    /*
-    m_yarnsize = nAttr.create("yarnsize", "siz", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setMin(0.0f));
-    CHECK_MSTATUS(nAttr.setMax(1.0f));
-    CHECK_MSTATUS(nAttr.setDefault(1.f));
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    
-    m_twist = nAttr.create("twist", "psi", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setMin(0.0f));
-    CHECK_MSTATUS(nAttr.setMax(1.0f));
-    CHECK_MSTATUS(nAttr.setDefault(0.5f));
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    
-    m_specular_strength = nAttr.create("specularStrength", "str", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setMin(0.0f));
-    CHECK_MSTATUS(nAttr.setMax(1.0f));
-    CHECK_MSTATUS(nAttr.setDefault(0.4f));
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-
-    m_specular_noise = nAttr.create("specularNoise", "noi", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setMin(0.0f));
-    CHECK_MSTATUS(nAttr.setMax(1.0f));
-    CHECK_MSTATUS(nAttr.setDefault(0.4f));
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    
-    m_highlight_width = nAttr.create("highlightWidth", "hlw", MFnNumericData::kFloat);
-    CHECK_MSTATUS(nAttr.setMin(0.0f));
-    CHECK_MSTATUS(nAttr.setMax(1.0f));
-    CHECK_MSTATUS(nAttr.setDefault(0.4f));
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));*/
-    
     m_diffuse_color = nAttr.createColor("diffuseColor", "dcl");
     CHECK_MSTATUS(nAttr.setKeyable(true));
     CHECK_MSTATUS(nAttr.setStorable(true));
@@ -311,31 +192,15 @@ TL_MAYA_FLOAT_PARAMS
     CHECK_MSTATUS(addAttribute(m_diffuse_color));
     CHECK_MSTATUS(attributeAffects(m_diffuse_color, m_outColor));
 
-    
-    // Add the attributes
-    /*
-    CHECK_MSTATUS(addAttribute(m_uscale));
-    CHECK_MSTATUS(addAttribute(m_vscale));
-    CHECK_MSTATUS(addAttribute(m_bend));
-    CHECK_MSTATUS(addAttribute(m_bend_on));
-    CHECK_MSTATUS(addAttribute(m_yarnsize));
-    CHECK_MSTATUS(addAttribute(m_twist));
-    CHECK_MSTATUS(addAttribute(m_specular_strength));
-    CHECK_MSTATUS(addAttribute(m_specular_noise));
-    CHECK_MSTATUS(addAttribute(m_highlight_width));
-    CHECK_MSTATUS(addAttribute(m_diffuse_color));*/
-
-
-    // Attribute affects
-    /*CHECK_MSTATUS(attributeAffects(m_uscale, m_outColor));
-    CHECK_MSTATUS(attributeAffects(m_vscale, m_outColor));
-    //CHECK_MSTATUS(attributeAffects(m_bend, m_outColor));
-    CHECK_MSTATUS(attributeAffects(m_bend_on, m_outColor));
-    CHECK_MSTATUS(attributeAffects(m_yarnsize, m_outColor));
-    CHECK_MSTATUS(attributeAffects(m_twist, m_outColor));
-    CHECK_MSTATUS(attributeAffects(m_specular_strength, m_outColor));
-    CHECK_MSTATUS(attributeAffects(m_highlight_width, m_outColor));
-    CHECK_MSTATUS(attributeAffects(m_diffuse_color, m_outColor));*/
+    m_specular_color = nAttr.createColor("specularColor", "scl");
+    CHECK_MSTATUS(nAttr.setKeyable(true));
+    CHECK_MSTATUS(nAttr.setStorable(true));
+    CHECK_MSTATUS(nAttr.setReadable(true));
+    CHECK_MSTATUS(nAttr.setWritable(true));
+    CHECK_MSTATUS(nAttr.setDefault(0.4f, 0.4f, 0.4f));
+    CHECK_MSTATUS(nAttr.setArray(true));
+    CHECK_MSTATUS(addAttribute(m_specular_color));
+    CHECK_MSTATUS(attributeAffects(m_specular_color, m_outColor));
 
     return MS::kSuccess;
 }
@@ -397,10 +262,10 @@ MStatus ThunderLoomCommand::doIt( const MArgList& args ) {
                     MPxCommand::appendToResult(yarn_type->umax);
                     MPxCommand::appendToResult(yarn_type->yarnsize);
                     MPxCommand::appendToResult(yarn_type->psi);
-                    //MPxCommand::appendToResult(yarn_type->alpha);
-                    //MPxCommand::appendToResult(yarn_type->beta);
                     MPxCommand::appendToResult(yarn_type->delta_x);
-                    MPxCommand::appendToResult(yarn_type->specular_strength);
+                    MPxCommand::appendToResult(yarn_type->specular_color.r);
+                    MPxCommand::appendToResult(yarn_type->specular_color.g);
+                    MPxCommand::appendToResult(yarn_type->specular_color.b);
                     MPxCommand::appendToResult(yarn_type->specular_noise);
                     MPxCommand::appendToResult(yarn_type->color.r);
                     MPxCommand::appendToResult(yarn_type->color.g);
