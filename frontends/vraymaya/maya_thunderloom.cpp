@@ -16,11 +16,9 @@
 #include <maya/MFloatVector.h>
 
 // V-Ray headers
-//#include "vraybase.h"
-//#include "vrayblinn.h"
-//#include "vrayplugins.h"
-
+#include "vraybase.h"
 #include "maya_thunderloom.h"
+#include "vrayplugins.h"
 
 #define TL_THUNDERLOOM_IMPLEMENTATION
 #define TL_NO_TEXTURE_CALLBACKS

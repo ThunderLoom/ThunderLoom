@@ -19,6 +19,7 @@ class BRDFThunderLoomSampler: public BRDFSampler, public BSDFSampler {
     int orig_backside;
     Vector normal, gnormal;
     Matrix nm, inm;
+    int nmInited;
 
     // Assigned in init()
     tlWeaveParameters* m_tl_wparams;
@@ -386,14 +387,7 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
         gnormal = -gnormal;
     }
     
-    // Compute normal matrix, generates matrix for transforming from normal
-    // space to world coordinates.
-    if (rc.rayparams.viewDir*normal>0.0f) {
-        makeNormalMatrix(gnormal, nm);
-    } else {
-        makeNormalMatrix(normal, nm);
-    }
-    inm = inverse(nm);
+    nmInited = 0;
 
     // Use context rc to load and evalute tl. Cache common variables in
     // instance varaibles.
@@ -472,11 +466,19 @@ Color BRDFThunderLoomSampler::eval(const VR::VRayContext &rc, const Vector &dire
 
     Color ret(0.f, 0.f, 0.f);
 
-    float cs = direction * rc.rayresult.normal;
-    cs = cs < 0.0f ? 0.0f : cs;
+    const Vector &vecN = normal;
+    const Vector &vecL = direction;
+    float NL = dotf(vecN, vecL);
+
+    NL = VR::clamp(NL, -1.0f, 1.0f); // make sure acosf won't return NaN
+
+    float cs = NL;
+    if (cs < 0.0f)
+        cs = 0.0f;
+
+    float k = cs;
 
     if (flags & FBRDF_DIFFUSE) {
-        float k = cs;
         // Apply combined sampling ONLY if GI is on which will pick up the rest
         // of the result.
         if (rc.rayparams.localRayType & RT_IS_GATHERING_POINT) {
@@ -591,11 +593,33 @@ VR::VRayContext* BRDFThunderLoomSampler::getNewContext(const VR::VRayContext &rc
 
 // This sets up the given context for tracing a ray for BRDF integration.
 ValidType BRDFThunderLoomSampler::setupContext(const VR::VRayContext &rc, VR::VRayContext &nrc, float uc, int doDiffuse) {
-    Vector dir = getDiffuseDir(uc, BRDFSampler::getDMCParam(nrc,1),nrc.rayparams.rayProbability);
+    /*Vector dir = getDiffuseDir(uc, BRDFSampler::getDMCParam(nrc,1),nrc.rayparams.rayProbability);
     if (dir*gnormal<0.0f) return false;
     VR::getReflectDerivs(rc.rayparams.viewDir, dir, rc.rayparams.dDdx, rc.rayparams.dDdy, nrc.rayparams.dDdx, nrc.rayparams.dDdy);
     nrc.rayparams.tracedRay.dir=nrc.rayparams.viewDir=dir;
-    return true;
+    return true;*/
+
+    VR::Vector dir;
+    if (rc.rayresult.getSurfaceHit()!=2) {
+        if (!nmInited) {
+            makeNormalMatrix(rc.rayresult.normal, nm);
+            nmInited=true;
+        }
+        dir=nm*VR::getDiffuseDir(uc, getDMCParam(nrc, 1), nrc.rayparams.rayProbability);
+    } else {
+        dir=VR::getSphereDir(2.0f*(uc-0.5f), getDMCParam(nrc, 1));
+        nrc.rayparams.rayProbability=0.5f;
+    }
+
+    if (dotf(dir, rc.rayresult.gnormal)>-1e-3f || rc.rayresult.getSurfaceHit()==2) {
+        VR::getReflectDerivs(rc.rayparams.viewDir, dir, rc.rayparams.dDdx, rc.rayparams.dDdy, nrc.rayparams.dDdx, nrc.rayparams.dDdy);
+        int rDistOn=rc.vray->getSequenceData().params.gi.rayDistanceOn;
+        float rDist=rDistOn?rc.vray->getSequenceData().params.gi.rayDistance:LARGE_FLOAT;
+        VR::setTracedDir(nrc, dir, 0.0f, rDist, true);
+        return true;
+    }
+
+    return false;
 }
 
 RenderChannelsInfo* BRDFThunderLoomSampler::getRenderChannels(void) { return &RenderChannelsInfo::reflectChannels; }

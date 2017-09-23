@@ -1,13 +1,16 @@
 // Check for 64-bit OS and define the Bits64_ macro required by Maya headers
-//#include "defines.h"
-//#ifdef X64
-//#define Bits64_
-//#endif
+#include "defines.h"
+#ifdef X64
+#define Bits64_
+#endif
 
 // Maya headers
 #include <maya/MFnPlugin.h>
 #include <maya/MPxLocatorNode.h>
 #include <maya/MGlobal.h>
+
+// V-Ray headers
+#include "vraybase.h"
 
 #define VERSION 0.93.0
 #define STR_HELPER(x) #x

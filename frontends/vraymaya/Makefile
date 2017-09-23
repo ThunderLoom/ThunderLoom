@@ -29,6 +29,7 @@ flameShader_SOURCES  := maya_pluginmain.cpp maya_thunderloom.cpp
 flameShader_OBJECTS  := maya_pluginmain.o maya_thunderloom.o
 flameShader_PLUGIN   := maya_vraypluginmain.$(EXT)
 flameShader_MAKEFILE := ./Makefile
+flameShader_EXTRA_INCLUDES := -I/Applications/ChaosGroup/V-Ray/Maya2017/include/
 
 #
 # Include the optional per-plugin Makefile.inc
