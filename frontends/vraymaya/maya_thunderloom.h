@@ -40,6 +40,8 @@ private:
 	static MObject m_highlight_width_on;
 	static MObject m_diffuse_color;
 	static MObject m_diffuse_color_on;
+    static MObject m_diffuse_color_amount;
+ 	static MObject m_diffuse_color_amount_on;
 
 	static MObject m_outColor;
 	static MObject m_outTransparency;

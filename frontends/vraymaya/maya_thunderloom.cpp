@@ -47,6 +47,8 @@ MObject VRayThunderLoom::m_highlight_width;
 MObject VRayThunderLoom::m_highlight_width_on;
 MObject VRayThunderLoom::m_diffuse_color;
 MObject VRayThunderLoom::m_diffuse_color_on;
+MObject VRayThunderLoom::m_diffuse_color_amount;
+MObject VRayThunderLoom::m_diffuse_color_amount_on;
 
 MObject VRayThunderLoom::m_outColor;
 MObject VRayThunderLoom::m_outTransparency;
@@ -175,7 +177,9 @@ MStatus VRayThunderLoom::initialize() {
         TL_MAYA_SET_BOOL_PARAM(m_specular_noise_on, specularNoiseOn, noio)\
         TL_MAYA_SET_PARAM(m_highlight_width, highlightWidth, hlw, 0.4f)\
         TL_MAYA_SET_BOOL_PARAM(m_highlight_width_on, highlightWidthOn, hlwo) \
-        TL_MAYA_SET_BOOL_PARAM(m_diffuse_color_on, diffuseColorOn, dclo)
+        TL_MAYA_SET_BOOL_PARAM(m_diffuse_color_on, diffuseColorOn, dclo) \
+        TL_MAYA_SET_PARAM(m_diffuse_color_amount, diffuseColorAmount, mul, 1.f)\
+        TL_MAYA_SET_BOOL_PARAM(m_diffuse_color_amount_on, diffuseColorAmountOn, mulo)\
 
 TL_MAYA_FLOAT_PARAMS
 
@@ -270,6 +274,7 @@ MStatus ThunderLoomCommand::doIt( const MArgList& args ) {
                     MPxCommand::appendToResult(yarn_type->color.r);
                     MPxCommand::appendToResult(yarn_type->color.g);
                     MPxCommand::appendToResult(yarn_type->color.b);
+                    MPxCommand::appendToResult(yarn_type->color_amount);
                 }
                 //MPxCommand::appendToResult(tl_wparams->vscale);
             }

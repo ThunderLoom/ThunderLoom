@@ -77,7 +77,8 @@ void tl_free_weave_parameters(tlWeaveParameters *params);
 	TL_FLOAT_PARAM(delta_x)\
 	TL_COLOR_PARAM(specular_color)\
 	TL_FLOAT_PARAM(specular_noise)\
-    TL_COLOR_PARAM(color)
+    TL_COLOR_PARAM(color) \
+	TL_FLOAT_PARAM(color_amount)
 
 /* --- Intersection data ---
  * During rendering, before calling tl_shade, the tlIntersectionData struct
@@ -243,6 +244,7 @@ tlYarnType tl_default_yarn_type =
     {0.4f, 0.4f, 0.4f},  //specular color
     0.f,   //specular_noise
     {0.3f, 0.3f, 0.3f},  //color
+    1.f,   //color_amount
     0
 };
 
@@ -1778,7 +1780,6 @@ float tl_eval_staple_specular(tlIntersectionData intersection_data,
 tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
         tlPatternData data, const tlWeaveParameters *params)
 {
-    float value = intersection_data.wi_z;
 
 	tlYarnType *yarn_type = params->yarn_types + data.yarn_type;
     if(!yarn_type->color_enabled || !data.yarn_hit){
@@ -1786,15 +1787,28 @@ tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
     }
 
     tlColor color = {
-        yarn_type->color.r * value,
-        yarn_type->color.g * value,
-        yarn_type->color.b * value
+        yarn_type->color.r,
+        yarn_type->color.g,
+        yarn_type->color.b
     };
 	if(yarn_type->color_texmap){
 		color = tl_eval_texmap_color(yarn_type->color_texmap,
             intersection_data.context);
-		color.r*=value; color.g*=value; color.b*=value;
 	}
+
+    // Apply multiplier
+    float color_amount = tl_yarn_type_get_color_amount(params, data.yarn_type,
+            intersection_data.context);
+    if (color_amount != 1.f) {
+        color.r *= color_amount;
+        color.g *= color_amount;
+        color.b *= color_amount;
+    }
+    
+    float value = intersection_data.wi_z;
+    color.r *= value;
+    color.g *= value;
+    color.b *= value;
 
     //NOTE(Vidar): We use the max of the specular color for dimming the diffuse
     tlColor specular_color=tl_yarn_type_get_specular_color(params,

@@ -75,8 +75,8 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTexture("specular_color", Color(0.4f, 0.4f, 0.4f), -1, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
         addParamTextureFloat("specular_noise", 0.4, -1, "Noise on specular reflections.");
         addParamTextureFloat("highlight_width", 0.4, -1, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
-        //addParamColor("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
         addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
+        addParamTextureFloat("diffuse_color_amount", 1.0, -1, "Factor to multiply diffuse color with.");
         
         // Stored as lists, just like above. These parameters allow us to 
         // specify what parameters we want to override, for a specific yarn.
@@ -87,6 +87,7 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamBool("specular_noise_on",       false, -1, "");
         addParamBool("highlight_width_on",      false, -1, "");
         addParamBool("diffuse_color_on",        false, -1, "");
+        addParamBool("diffuse_color_amount_on",   false, -1, "");
 
         // MAYA FIX
         // It seems that only float params can be retrieved from Maya into the 
@@ -99,6 +100,7 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("specular_noise_on_float",       false, -1, "");
         addParamTextureFloat("highlight_width_on_float",      false, -1, "");
         addParamTextureFloat("diffuse_color_on_float",        false, -1, "");
+        addParamTextureFloat("diffuse_color_amount_on_float",   false, -1, "");
         
         addParamFloat("bends2", 0.5, -1, "");
     }
@@ -114,6 +116,7 @@ typedef struct {
     float delta_x;
     Color specular_color;
     float specular_noise;
+    float color_amount;
     Color color;
 } tlIntermediateYrnParam;
 
@@ -132,6 +135,7 @@ struct BRDFThunderLoom: VRayBSDF {
         paramList->setParamCache("specular_color", &yrn0.specular_color);
         paramList->setParamCache("specular_noise", &yrn0.specular_noise);
         paramList->setParamCache("diffuse_color", &yrn0.color);
+        paramList->setParamCache("diffuse_color_amount", &yrn0.color_amount);
         
     }
 
@@ -219,7 +223,7 @@ int get_bool(VRayPluginParameter * param, int i, VRayContext& rc) {
     // For maya support ([param]_on_float), float arrays are sent as textures.
     void* tex;
     if (set_texparam(param, &tex, i)) {
-        // param was texture and text is a pointer to it.
+        // param was texture and tex is a pointer to it.
         // Get texture value
         if (tl_eval_texmap_mono_lookup(tex, 0.f, 0.f, &rc))
             return 1;
@@ -299,6 +303,10 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     VRayPluginParameter* diffuse_color = this->getParameter("diffuse_color");
     VRayPluginParameter* diffuse_color_on = this->getParameter("diffuse_color_on");
     VRayPluginParameter* diffuse_color_on_float = this->getParameter("diffuse_color_on_float");
+    
+    VRayPluginParameter* diffuse_color_amount = this->getParameter("diffuse_color_amount");
+    VRayPluginParameter* diffuse_color_amount_on = this->getParameter("diffuse_color_amount_on");
+    VRayPluginParameter* diffuse_color_amount_on_float = this->getParameter("diffuse_color_amount_on_float");
 
 
     // Loop through yarn types and set parameters from list
@@ -323,6 +331,7 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
         TL_VRAY_SET_PARAM(twist, psi)\
         TL_VRAY_SET_PARAM(highlight_width, delta_x)\
         TL_VRAY_SET_PARAM(specular_noise, specular_noise)\
+        TL_VRAY_SET_PARAM(diffuse_color_amount, color_amount)\
 
 TL_VRAY_FLOAT_PARAMS
 
