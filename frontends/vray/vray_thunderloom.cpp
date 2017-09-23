@@ -73,6 +73,7 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("yarnsize", 1.0, -1, "Width of yarn.");
         addParamTextureFloat("twist", 0.5, -1, "How strongly to simulate the twisting nature of the yarn. Usually synthetic yarns, such as polyester, have less twist than organic yarns, such as cotton.");
         addParamTexture("specular_color", Color(0.4f, 0.4f, 0.4f), -1, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
+        addParamTextureFloat("specular_color_amount", 1.0, -1, "Factor to multiply specular color with.");
         addParamTextureFloat("specular_noise", 0.4, -1, "Noise on specular reflections.");
         addParamTextureFloat("highlight_width", 0.4, -1, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
         addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
@@ -80,14 +81,15 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         
         // Stored as lists, just like above. These parameters allow us to 
         // specify what parameters we want to override, for a specific yarn.
-        addParamBool("bend_on",                 false, -1, "");
-        addParamBool("yarnsize_on",             false, -1, "");
-        addParamBool("twist_on",                false, -1, "");
-        addParamBool("specular_color_on",       false, -1, "");
-        addParamBool("specular_noise_on",       false, -1, "");
-        addParamBool("highlight_width_on",      false, -1, "");
-        addParamBool("diffuse_color_on",        false, -1, "");
-        addParamBool("diffuse_color_amount_on",   false, -1, "");
+        addParamBool("bend_on",                     false, -1, "");
+        addParamBool("yarnsize_on",                 false, -1, "");
+        addParamBool("twist_on",                    false, -1, "");
+        addParamBool("specular_color_on",           false, -1, "");
+        addParamBool("specular_color_amount_on",    false, -1, "");
+        addParamBool("specular_noise_on",           false, -1, "");
+        addParamBool("highlight_width_on",          false, -1, "");
+        addParamBool("diffuse_color_on",            false, -1, "");
+        addParamBool("diffuse_color_amount_on",     false, -1, "");
 
         // MAYA FIX
         // It seems that only float params can be retrieved from Maya into the 
@@ -97,10 +99,11 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("yarnsize_on_float",             false, -1, "");
         addParamTextureFloat("twist_on_float",                false, -1, "");
         addParamTextureFloat("specular_color_on_float",       false, -1, "");
+        addParamTextureFloat("speclar_color_amount_on_float", false, -1, "");
         addParamTextureFloat("specular_noise_on_float",       false, -1, "");
         addParamTextureFloat("highlight_width_on_float",      false, -1, "");
         addParamTextureFloat("diffuse_color_on_float",        false, -1, "");
-        addParamTextureFloat("diffuse_color_amount_on_float",   false, -1, "");
+        addParamTextureFloat("diffuse_color_amount_on_float", false, -1, "");
         
         addParamFloat("bends2", 0.5, -1, "");
     }
@@ -115,6 +118,7 @@ typedef struct {
     float beta;
     float delta_x;
     Color specular_color;
+    float specular_amount;
     float specular_noise;
     float color_amount;
     Color color;
@@ -133,6 +137,7 @@ struct BRDFThunderLoom: VRayBSDF {
         paramList->setParamCache("twist", &yrn0.psi);
         paramList->setParamCache("highlight_width", &yrn0.delta_x);
         paramList->setParamCache("specular_color", &yrn0.specular_color);
+        paramList->setParamCache("specular_color_amount", &yrn0.specular_amount);
         paramList->setParamCache("specular_noise", &yrn0.specular_noise);
         paramList->setParamCache("diffuse_color", &yrn0.color);
         paramList->setParamCache("diffuse_color_amount", &yrn0.color_amount);
@@ -291,6 +296,10 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     VRayPluginParameter* specular_color = this->getParameter("specular_color");
     VRayPluginParameter* specular_color_on = this->getParameter("specular_color_on");
     VRayPluginParameter* specular_color_on_float = this->getParameter("specular_color_on_float");
+    
+    VRayPluginParameter* specular_color_amount = this->getParameter("specular_color_amount");
+    VRayPluginParameter* specular_color_amount_on = this->getParameter("specular_color_amount_on");
+    VRayPluginParameter* specular_color_amount_on_float = this->getParameter("specular_color_amount_on_float");
 
     VRayPluginParameter* specular_noise = this->getParameter("specular_noise");
     VRayPluginParameter* specular_noise_on = this->getParameter("specular_noise_on");
@@ -330,6 +339,7 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
         TL_VRAY_SET_PARAM(yarnsize, yarnsize)\
         TL_VRAY_SET_PARAM(twist, psi)\
         TL_VRAY_SET_PARAM(highlight_width, delta_x)\
+        TL_VRAY_SET_PARAM(specular_color_amount, specular_amount)\
         TL_VRAY_SET_PARAM(specular_noise, specular_noise)\
         TL_VRAY_SET_PARAM(diffuse_color_amount, color_amount)\
 

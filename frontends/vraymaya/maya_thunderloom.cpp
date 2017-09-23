@@ -41,6 +41,8 @@ MObject VRayThunderLoom::m_twist;
 MObject VRayThunderLoom::m_twist_on;
 MObject VRayThunderLoom::m_specular_color;
 MObject VRayThunderLoom::m_specular_color_on;
+MObject VRayThunderLoom::m_specular_color_amount;
+MObject VRayThunderLoom::m_specular_color_amount_on;
 MObject VRayThunderLoom::m_specular_noise;
 MObject VRayThunderLoom::m_specular_noise_on;
 MObject VRayThunderLoom::m_highlight_width;
@@ -173,6 +175,8 @@ MStatus VRayThunderLoom::initialize() {
         TL_MAYA_SET_PARAM(m_twist, twist, psi, 0.5f)\
         TL_MAYA_SET_BOOL_PARAM(m_twist_on, twistOn, psio)\
         TL_MAYA_SET_BOOL_PARAM(m_specular_color_on, specularColorOn, sclo)\
+        TL_MAYA_SET_PARAM(m_specular_color_amount, specularColorAmount, smul, 1.f)\
+        TL_MAYA_SET_BOOL_PARAM(m_specular_color_amount_on, specularColorAmountOn, smulo)\
         TL_MAYA_SET_PARAM(m_specular_noise, specularNoise, noi, 0.4f)\
         TL_MAYA_SET_BOOL_PARAM(m_specular_noise_on, specularNoiseOn, noio)\
         TL_MAYA_SET_PARAM(m_highlight_width, highlightWidth, hlw, 0.4f)\
@@ -270,13 +274,13 @@ MStatus ThunderLoomCommand::doIt( const MArgList& args ) {
                     MPxCommand::appendToResult(yarn_type->specular_color.r);
                     MPxCommand::appendToResult(yarn_type->specular_color.g);
                     MPxCommand::appendToResult(yarn_type->specular_color.b);
+                    MPxCommand::appendToResult(yarn_type->specular_amount);
                     MPxCommand::appendToResult(yarn_type->specular_noise);
                     MPxCommand::appendToResult(yarn_type->color.r);
                     MPxCommand::appendToResult(yarn_type->color.g);
                     MPxCommand::appendToResult(yarn_type->color.b);
                     MPxCommand::appendToResult(yarn_type->color_amount);
                 }
-                //MPxCommand::appendToResult(tl_wparams->vscale);
             }
         }
     } else {

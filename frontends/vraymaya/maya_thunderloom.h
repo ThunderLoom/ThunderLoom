@@ -34,6 +34,8 @@ private:
 	static MObject m_twist_on;
 	static MObject m_specular_color;
 	static MObject m_specular_color_on;
+    static MObject m_specular_color_amount;
+ 	static MObject m_specular_color_amount_on;
 	static MObject m_specular_noise;
 	static MObject m_specular_noise_on;
 	static MObject m_highlight_width;

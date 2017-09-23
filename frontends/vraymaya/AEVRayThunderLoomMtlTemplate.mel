@@ -24,6 +24,8 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         "twistOn",
         "specularColor",
         "specularColorOn",
+        "specularColorAmount",
+        "specularColorAmountOn",
         "specularNoise",
         "specularNoiseOn",
         "highlightWidth",
@@ -45,7 +47,7 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         
     print("tl params:");
     print($tlparams);
-    int $params_per_yarn = 12; //Should match number of params being added in for loop.
+    int $params_per_yarn = 13; //Should match number of params being added in for loop.
     int $offset = 1; //For $num_yarn_types
     int $i;
     for ($i=0; $i<$num_yarn_types; $i++) { //For each yarn type
@@ -59,16 +61,17 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         float $specg = $tlparams[5 + $i*$params_per_yarn + $offset];
         float $specb = $tlparams[6 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".specularColor" + $index) $specr $specg $specb;
-        setAttr ($nodeName + ".specularNoise" + $index) $tlparams[7 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".specularColorAmount" + $index) $tlparams[7 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".specularNoise" + $index) $tlparams[8 + $i*$params_per_yarn + $offset];
 
         
-        float $colr = $tlparams[8  + $i*$params_per_yarn + $offset];
-        float $colg = $tlparams[9  + $i*$params_per_yarn + $offset];
-        float $colb = $tlparams[10 + $i*$params_per_yarn + $offset];
+        float $colr = $tlparams[9  + $i*$params_per_yarn + $offset];
+        float $colg = $tlparams[10  + $i*$params_per_yarn + $offset];
+        float $colb = $tlparams[11 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".diffuseColor" + $index) $colr $colg $colb;
         setAttr ($nodeName + ".diffuseColorOn" + $index) 1;
         
-        setAttr ($nodeName + ".diffuseColorAmount" + $index) $tlparams[11 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".diffuseColorAmount" + $index) $tlparams[12 + $i*$params_per_yarn + $offset];
     }
 }
 
@@ -142,6 +145,18 @@ global proc AELoadYarnTypesCompound(string $nodeDotAttr) {
     AELoadYarnTypesCompoundRepl($nodeDotAttr);
 }
 
+proc addParam(string $param, string $buffer, string $index, string $nodeName) {
+    rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
+        int $visible = 1;
+        if ($index == "0") {
+            $visible = 0;
+        }
+        string $ctrl_on = `checkBox -visible $visible -label "Used" ("yrn" + $buffer + $param + "On")`;
+        connectControl $ctrl_on ($nodeName + "." + $param + "On" + $buffer);
+        string $ctrl_f = `attrControlGrp -label $param -attribute ($nodeName + "." + $param + $buffer)`;
+    setParent..;
+}
+
 global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
 	string $buffer[];
 	tokenize($nodeDotAttr, ".", $buffer);
@@ -162,16 +177,17 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
         }
     }
 
+
     setParent $controlLayout;
     int $elementsCnt = `getAttr -size $nodeDotAttr`;
     if($elementsCnt > 0) {
-		//	The return value looks like this: {rgb[0], rgb[0].r, rgb[0].g, rgb[0].b, rgb[3], ... }
-		// when we use it with -leaf results is something like { rgb[0], r, g b, rgb[6] ...}
+		//	The return value of listAttr looks like this: {rgb[0], rgb[0].r, rgb[0].g, rgb[0].b, rgb[3], ... }
+		// when we use it with -leaf results is something like { rgb[0], r, g, b, rgb[6] ...}
 		string $multi[] = `listAttr -multi -leaf $nodeDotAttr`;
 		for($m in $multi) {
             //call function to create controls here.
-			string $buffer = match("\[[0-9]+\]", $m);
-			int $index = match("[0-9]+", $m);
+			string $buffer = match("\[[0-9]+\]", $m); // Yarn type index as string with brackets [].
+			int $index = match("[0-9]+", $m); // Yarn type index
 			
             if(size($buffer) > 0) {
                 string $frame_title = "Yarn Type " + $index;
@@ -192,6 +208,9 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                         }
                         attrColorSliderGrp -label "specularColor" -attribute ($nodeName + ".specularColor" + $buffer);
                     setParent..;
+                        
+                    addParam("specularColorAmount", $buffer, $index, $nodeName);
+
 
                     // Diffuse color
                     rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
@@ -205,18 +224,12 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                         }
                         attrColorSliderGrp -label "diffuseColor" -attribute ($nodeName + ".diffuseColor" + $buffer);
                     setParent..;
+                    
+                    addParam("diffuseColorAmount", $buffer, $index, $nodeName);
 
-                    string $params[] = {"diffuseColorAmount", "bend", "yarnsize", "twist", "specularNoise", "highlightWidth"};
+                    string $params[] = {"bend", "yarnsize", "twist", "specularNoise", "highlightWidth"};
                     for ($param in $params) {
-                        rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
-                            int $visible = 1;
-                            if ($index == "0") {
-                                $visible = 0;
-                            }
-                            string $ctrl_on = `checkBox -visible $visible -label "Used" ("yrn" + $buffer + $param + "On")`;
-                            connectControl $ctrl_on ($nodeName + "." + $param + "On" + $buffer);
-                            string $ctrl_f = `attrControlGrp -label $param -attribute ($nodeName + "." + $param + $buffer)`;
-                        setParent..;
+                        addParam($param, $buffer, $index, $nodeName);
                     }
                 setParent..;
                 setParent..;

@@ -76,6 +76,7 @@ void tl_free_weave_parameters(tlWeaveParameters *params);
 	TL_FLOAT_PARAM(beta)\
 	TL_FLOAT_PARAM(delta_x)\
 	TL_COLOR_PARAM(specular_color)\
+	TL_FLOAT_PARAM(specular_amount)\
 	TL_FLOAT_PARAM(specular_noise)\
     TL_COLOR_PARAM(color) \
 	TL_FLOAT_PARAM(color_amount)
@@ -242,6 +243,7 @@ tlYarnType tl_default_yarn_type =
 	4.f,   //beta
 	0.3f,  //delta_x
     {0.4f, 0.4f, 0.4f},  //specular color
+    1.f,   //specular_amount
     0.f,   //specular_noise
     {0.3f, 0.3f, 0.3f},  //color
     1.f,   //color_amount
@@ -1817,6 +1819,9 @@ tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
         specular_color.r : specular_color.g;
     specular_strength=specular_color.b>specular_strength ?
         specular_color.b : specular_strength;
+    float specular_amount = tl_yarn_type_get_specular_amount(params,
+        data.yarn_type,intersection_data.context);
+    specular_strength *= specular_amount;
 
     float specular_strength_complement=1.f-specular_strength;
     color.r*=specular_strength_complement;
@@ -1859,7 +1864,9 @@ tlColor tl_eval_specular(tlIntersectionData intersection_data,
     }
     tlColor specular_color=tl_yarn_type_get_specular_color(params,
         data.yarn_type,intersection_data.context);
-	float factor = reflection * params->specular_normalization * noise;
+    float specular_amount = tl_yarn_type_get_specular_amount(params,
+        data.yarn_type,intersection_data.context);
+	float factor = reflection * params->specular_normalization * noise * specular_amount;
     ret.r=specular_color.r*factor;
     ret.g=specular_color.g*factor;
     ret.b=specular_color.b*factor;
