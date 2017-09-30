@@ -650,28 +650,45 @@ RenderChannelsInfo* BRDFThunderLoomSampler::getRenderChannels(void) { return &Re
 
 
 
-// Called when a texture is applied to a float parameter.
-float tl_eval_texmap_mono(void* texmap, void* context) {
-    if (context) {
-        VR::VRayContext *rc = (VR::VRayContext *)context;
 
-        PluginBase* plug = static_cast<PluginBase *>(texmap);
-        TextureInterface* tex = queryInterface<TextureInterface>(plug, EXT_TEXTURE);
-        TextureFloatInterface* texf = queryInterface<TextureFloatInterface>(plug, EXT_TEXTURE_FLOAT);
+// Following is used to to allow custom uv lookups in texture maps, see...
+// https://forums.chaosgroup.com/forum/v-ray-for-maya-forums/v-ray-for-maya-sdk/76255-texture-lookup-with-uv-on-non-bitmap-textures
+struct MyShadeData: public VRayShadeData, public MappedSurface {
+    VRayContext *rcc;
+    VRayShadeData *oldShadeData;
+    Vector uvw;
 
-        //TextureInterface* tex = static_cast<TextureInterface *>(GET_INTERFACE(plug, EXT_TEXTURE));
-        //TextureFloatInterface* texf = static_cast<TextureFloatInterface *>(GET_INTERFACE(plug, EXT_TEXTURE_FLOAT));
-
-        if (tex)
-            return tex->getTexColor(*rc).color.r;
-        else if (texf) {
-            return texf->getTexFloat(*rc);
-            //return 0.f;
-        }
+    MyShadeData(const VRayContext &rc, const Vector &uvw):uvw(uvw) {
+        oldShadeData=rc.rayresult.sd;
+        rcc=const_cast<VRayContext*>(&rc);
+        rcc->rayresult.sd=static_cast<VRayShadeData*>(this);
     }
 
-    return 1.f;
-}
+    ~MyShadeData() {
+        rcc->rayresult.sd=oldShadeData;
+    }
+
+    PluginBase* getPlugin(void) VRAY_OVERRIDE { return (PluginBase*) this; }
+    PluginInterface* newInterface(InterfaceID id) VRAY_OVERRIDE {
+        if (id==EXT_MAPPED_SURFACE) return static_cast<MappedSurface*>(this);
+        return oldShadeData? oldShadeData->newInterface(id) : VRayShadeData::newInterface(id);
+    }
+
+    // From MappedSurface
+    Transform getLocalUVWTransform(const VR::VRayContext &rc, int channel) VRAY_OVERRIDE {
+        bool valid=true;
+
+        // Note that here we initialize the matrix to zero. This will effectively kill any
+        // texture filtering. If you want texture filtering, you will need to come up with
+        // a suitable way to initialize the Matrix portion of the transform to a matrix that
+        // converts world-space changes in the shading point to changes in UVWs.
+        Transform res(0);
+
+        // Set the explicit UVWs
+        res.offs=uvw;
+        return res;
+    }
+};
 
 struct tlShadeData: VR::VRayShadeData {
     tlShadeData(float u, float v) {
@@ -691,6 +708,26 @@ struct tlShadeData: VR::VRayShadeData {
     float u, v;
 };
 
+
+// Called when a texture is applied to a float parameter.
+float tl_eval_texmap_mono(void* texmap, void* context) {
+    if (context) {
+        VR::VRayContext *rc = (VR::VRayContext *)context;
+
+        PluginBase* plug = static_cast<PluginBase *>(texmap);
+        TextureInterface* tex = queryInterface<TextureInterface>(plug, EXT_TEXTURE);
+        TextureFloatInterface* texf = queryInterface<TextureFloatInterface>(plug, EXT_TEXTURE_FLOAT);
+
+        if (tex)
+            return tex->getTexColor(*rc).color.r;
+        else if (texf) {
+            return texf->getTexFloat(*rc);
+        }
+    }
+
+    return 1.f;
+}
+
 float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context)
 {
     // Used to freely lookup in the texture map, using given u and v coords.
@@ -700,41 +737,26 @@ float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context)
     // V-Ray for Maya seems to only send arrays via textures. For Maya 
     // compatibly this function is also used to evaluate constant values
     // passed as float textures.
-    
-    //TODO(Peter): !!!! Get proper texture lookup working! I am having trouble
-    // finding a solution to this.
 
-    // Attempt 1
-    // Create a VRayContext with theese coordinates and custom shadeData.
-    // VRayContext rc;
-    // tlShadeData sData = tlShadeData(u, v);
-    // rc.rayresult.setShadeData(static_cast<VR::VRayShadeData*>(&sData));
-    // float val = tl_eval_texmap_mono(texmap, &rc);
-    // return val;
-    // Does not seem to work.
+    if (context) {
+        VR::VRayContext *rc = (VR::VRayContext *)context;
+
+        PluginBase* plug = static_cast<PluginBase *>(texmap);
+        TextureInterface* tex = queryInterface<TextureInterface>(plug, EXT_TEXTURE);
+        TextureFloatInterface* texf = queryInterface<TextureFloatInterface>(plug, EXT_TEXTURE_FLOAT);
     
-    // Attempt 2
-    // Check if texture is subclass of MappedTexture. 
-    // See vray_plugins/textures/common/basetexture.h, The MappedTexture class
-    // defines a getMappedFilteredColor virtual functions which I assume all 
-    // textures of interest are derived from, eg TexChecker.
-    // This does not use interfaces, and would not be so compatible with other
-    // textures.
-    // PluginBase* plug = static_cast<PluginBase *>(texmap);
-    // //MappedTexture* mapped_tex = &texmap;
-    // MappedTexture* mapped_tex = dynamic_cast<MappedTexture*>(plug);
-    // if (mapped_tex) {
-    //     printf("Is a mapped texture");
-    //     VR::Vector uvw = VR::Vector(0.6,0.0,0.0);
-    //     VR::Vector duvw = VR::Vector(0.0,0.0,0.0);
-    //     mapped_tex->getMappedFilteredColor(rc, uvw, duvw);
-    //     printf("Is a mapped texture");
-    // }
-    
-    // Idea
-    // Overload UVWGen interface of the texmap.
-    
-    return tl_eval_texmap_mono(texmap, context);
+        VR::Vector uvw=VR::Vector(u, v, 0.f);
+        MyShadeData myShadeData(*rc, uvw);
+
+        if (tex) {
+            printf("tex\n");
+            return tex->getTexColor(*rc).color.r; 
+        } else if (texf) {
+            printf("texf: %f \n", texf->getTexFloat(*rc));
+            return texf->getTexFloat(*rc);
+        }
+    }
+    return 1.f;
 }
 
 tlColor tl_eval_texmap_color(void *texmap, void *context)
@@ -753,12 +775,6 @@ tlColor tl_eval_texmap_color(void *texmap, void *context)
 
     return ret;
 }
-
-
-
-
-
-
 
 //NOTE(Vidar):Return the correct BRDF depending on which side of the surface
 // was hit...
