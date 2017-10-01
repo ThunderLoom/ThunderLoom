@@ -349,6 +349,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
     float projection[16];
     int panel_width=240;
     int display_w, display_h;
+    int window_w, window_h;
     glfwGetFramebufferSize(window, &display_w, &display_h);
     get_projection_matrix(projection,display_w,display_h,
         panel_width,image_x,image_y,zoom);
@@ -363,6 +364,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
         ImGui_ImplGlfwGL3_NewFrame();
 
         glfwGetFramebufferSize(window, &display_w, &display_h);
+        glfwGetWindowSize(window, &window_w, &window_h);
 
         {
             ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -491,8 +493,8 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
         if(!io.WantCaptureMouse){
             double xpos,ypos;
             glfwGetCursorPos(window,&xpos,&ypos);
-            xpos=(xpos)/display_w;
-            ypos/=display_h;
+            xpos/=(double)window_w;
+            ypos/=(double)window_h;
             double delta_x=(xpos-last_cursor_x);
             double delta_y=(ypos-last_cursor_y);
             float scale=2.f*powf(2.f,zoom);

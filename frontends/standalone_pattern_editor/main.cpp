@@ -24,8 +24,8 @@ int main(int argc, char **argv)
 	uint32_t pattern_width = 2;
 	uint32_t pattern_height = 2;
 	tlColor yarn_colors[2];
-	yarn_colors[0].r = 1.f; yarn_colors[0].g = 0.f; yarn_colors[0].b = 0.f;
-	yarn_colors[1].r = 0.f; yarn_colors[1].g = 0.f; yarn_colors[1].b = 1.f;
+	yarn_colors[0].r = 0.6f; yarn_colors[0].g = 0.6f; yarn_colors[0].b = 0.6f;
+	yarn_colors[1].r = 0.2f; yarn_colors[1].g = 0.2f; yarn_colors[1].b = 0.2f;
 	uint32_t num_yarn_types = 2;
 	tlWeaveParameters* params = tl_weave_pattern_from_data(
 		warp_above,yarn_type,num_yarn_types,yarn_colors,
