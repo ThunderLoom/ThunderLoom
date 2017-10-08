@@ -697,7 +697,6 @@ struct tlShadeData: VR::VRayShadeData {
     }
 
     VR::Vector getUVWCoords(const VR::VRayContext &rc, int channel) {
-        printf("get uvwcoords");
         return VR::Vector(this->u, this->v, 0.f);
     }
     
@@ -749,10 +748,8 @@ float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context)
         MyShadeData myShadeData(*rc, uvw);
 
         if (tex) {
-            printf("tex\n");
             return tex->getTexColor(*rc).color.r; 
         } else if (texf) {
-            printf("texf: %f \n", texf->getTexFloat(*rc));
             return texf->getTexFloat(*rc);
         }
     }
