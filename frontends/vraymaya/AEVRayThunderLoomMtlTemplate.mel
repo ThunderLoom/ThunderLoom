@@ -38,7 +38,8 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         setAttr ($nodeName + ".yarnsize" + $index) $tlparams[1 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".twist" + $index) $tlparams[2 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".alpha" + $index) $tlparams[3 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".beta" + $index) $tlparams[4 + $i*$params_per_yarn + $offset];
+        // We leave Beta out, since it's the ratio between alpha and beta that matters (since we are normalizing).
+        //setAttr ($nodeName + ".beta" + $index) $tlparams[4 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".highlightWidth" + $index) $tlparams[5 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".specularStrength" + $index) $tlparams[6 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".specularNoise" + $index) $tlparams[7 + $i*$params_per_yarn + $offset];
@@ -189,7 +190,7 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                         attrColorSliderGrp -label "diffuseColor" -attribute ($nodeName + ".diffuseColor" + $buffer);
                     setParent..;
 
-                    string $params[] = {"bend", "yarnsize", "twist", "alpha", "beta", "specularStrength", "specularNoise", "highlightWidth"};
+                    string $params[] = {"bend", "yarnsize", "twist", "alpha", "specularStrength", "specularNoise", "highlightWidth"};
                     for ($param in $params) {
                         rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
                             int $visible = 1;
