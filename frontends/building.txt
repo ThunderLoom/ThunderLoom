@@ -1,0 +1,14 @@
+1. Generate build files
+
+mkdir _build
+cd _build
+cmake -DMAYA_VERSION=2017 ..
+
+On Windows: 
+cmake -DMAYA_VERSION=2017 -D3DSMAX_VERSION=2017 -G "Visual Studio 11 Win64" ..
+
+2. Compile projects
+
+cmake --build . --config relwithdebinfo
+
+Output will be in a newly created release folder.

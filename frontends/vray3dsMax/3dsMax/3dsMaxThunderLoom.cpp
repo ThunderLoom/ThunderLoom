@@ -7,18 +7,16 @@ const int PARAM_VERSION_HIGH=2;
 const int PARAM_VERSION_LOW=90;
 //This is the param version * 100
 const int PARAM_VERSION= PARAM_VERSION_HIGH*100 + PARAM_VERSION_LOW;
-
-//The plugin version (Semantic Versioning)
-const int PLUGIN_VERSION_MAJOR=0;
-const int PLUGIN_VERSION_MINOR=92;
-const int PLUGIN_VERSION_PATCH=0;
-
-
 // Check http://docs.autodesk.com/3DSMAX/16/ENU/3ds-Max-SDK-Programmer-Guide/index.html?url=files/GUID-F35959BB-2660-492F-B082-56304C70293A.htm,topicNumber=d30e52807
 // When adding new parameters
 
 #define TL_THUNDERLOOM_IMPLEMENTATION
 #include "thunderloom.h"
+
+//The plugin version (Semantic Versioning)
+const int PLUGIN_VERSION_MAJOR=TL_VERSION_MAJOR;
+const int PLUGIN_VERSION_MINOR=TL_VERSION_MINOR;
+const int PLUGIN_VERSION_PATCH=TL_VERSION_PATCH;
 
 #include "Eval.h"
 

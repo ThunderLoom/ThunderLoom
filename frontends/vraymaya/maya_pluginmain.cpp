@@ -12,7 +12,8 @@
 // V-Ray headers
 #include "vraybase.h"
 
-#define VERSION 0.93.0
+#include "../../src/thunderloom.h"
+#define VERSION TL_VERSION_MAJOR.TL_VERSION_MINOR.TL_VERSION_PATCH
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 

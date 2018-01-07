@@ -1,9 +1,5 @@
 ThunderLoom plugin for VRay standalone 3.x
 ===
-(Under development!)
-
-....
-
 A BRDF plugin for the VRay standalone renderer. The plugin reads the parameters
 from a .vrscene file. A section from an example file is shown below.
 
@@ -38,13 +34,10 @@ example.
 
 When loading patterns that have multiple yarn types, again, all parameters 
 except `filepath`, `uscale` and `vscale` can be set either with float values
-or texturemaps on a per yarntype basis. This is done by specifiying a list, 
+or texturemaps on a per yarntype basis. This is done by specifiying a list;
 where item with index 0 is the value for the default/global yarn settings while 
 item with index 1 applies to the first yarn type and so on. When making 
 yarn type specific configurations, the user must indicate that the values should
 be used, this is done via the `parametername_on` parameter. See 
 `specular_strength` and `specular_strength_on` in the example where a pattern 
 with 2 yarntypes is loaded.
-
-
-

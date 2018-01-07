@@ -5,6 +5,10 @@
  * !Read this if you want to integrate the shader with your own renderer!
  */
 
+#define TL_VERSION_MAJOR 93
+#define TL_VERSION_MINOR 0
+#define TL_VERSION_PATCH 0
+
 /* --- Basic usage ---
  * 
  * In one of your source files, define TL_THUNDERLOOM_IMPLEMENTATION
