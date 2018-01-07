@@ -445,6 +445,19 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
             tlWeaveParameters *params = data->sm->m_weave_parameters;
             tlYarnType yarn_type=params->yarn_types[data->yarn_type];
+
+			//NOTE(Peter): List params we want in the interface
+			#define TL_YARN_PARAMETERS\
+				TL_FLOAT_PARAM(umax)\
+				TL_FLOAT_PARAM(yarnsize)\
+				TL_FLOAT_PARAM(psi)\
+				TL_FLOAT_PARAM(alpha)\
+				TL_FLOAT_PARAM(beta)\
+				TL_FLOAT_PARAM(delta_x)\
+				TL_COLOR_PARAM(specular_color)\
+				TL_FLOAT_PARAM(specular_noise)\
+			    TL_COLOR_PARAM(color)
+
             //NOTE(Vidar): Setup spinners
             #define TL_FLOAT_PARAM(name){\
                 HWND spinner_hwnd = GetDlgItem(hWnd, IDC_##name##_SPIN);\
