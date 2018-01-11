@@ -7,6 +7,9 @@ tests/*/*.exe
 tests/*/*.bin
 tests/*/*.dSYM
 
+frontends/_build/*
+frontends/*/_build
+
 frontends/dependencies/gl3w/*
 frontends/dependencies/glfw/*
 

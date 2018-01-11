@@ -1,21 +1,22 @@
 // test plugin
 
+// Disable MSVC warnings for external headers.
+#pragma warning( push )
+#pragma warning( disable : 4251)
+#pragma warning( disable : 4996 )
 #include "vrayplugins.h"
 #include "vrayinterface.h"
 #include "vrayrenderer.h"
 #include "brdfs.h"
 #include "vraytexutils.h"
-// include "basetexture.h"
 #include "defparams.h"
+#pragma warning( pop ) 
 
-//#define TL_NO_TEXTURE_CALLBACKS
 #define TL_THUNDERLOOM_IMPLEMENTATION
 #include "thunderloom.h"
 
 namespace VUtils{
 class BRDFThunderLoomSampler: public BRDFSampler, public BSDFSampler {
-//protected:
-
     int orig_backside;
     Vector normal, gnormal;
     Matrix nm, inm;
@@ -69,15 +70,15 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         // Yarn settings.
         // These are to be stored as lists in the .vrscene file. The index in
         // the list corresponds to the yarn_type.
-        addParamTextureFloat("bend", 0.5, -1, "How much each visible yarn segment gets bent.");
-        addParamTextureFloat("yarnsize", 1.0, -1, "Width of yarn.");
-        addParamTextureFloat("twist", 0.5, -1, "How strongly to simulate the twisting nature of the yarn. Usually synthetic yarns, such as polyester, have less twist than organic yarns, such as cotton.");
+        addParamTextureFloat("bend", 0.5f, -1, "How much each visible yarn segment gets bent.");
+        addParamTextureFloat("yarnsize", 1.0f, -1, "Width of yarn.");
+        addParamTextureFloat("twist", 0.5f, -1, "How strongly to simulate the twisting nature of the yarn. Usually synthetic yarns, such as polyester, have less twist than organic yarns, such as cotton.");
         addParamTexture("specular_color", Color(0.4f, 0.4f, 0.4f), -1, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
-        addParamTextureFloat("specular_color_amount", 1.0, -1, "Factor to multiply specular color with.");
-        addParamTextureFloat("specular_noise", 0.4, -1, "Noise on specular reflections.");
-        addParamTextureFloat("highlight_width", 0.4, -1, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
+        addParamTextureFloat("specular_color_amount", 1.0f, -1, "Factor to multiply specular color with.");
+        addParamTextureFloat("specular_noise", 0.4f, -1, "Noise on specular reflections.");
+        addParamTextureFloat("highlight_width", 0.4f, -1, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
         addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
-        addParamTextureFloat("diffuse_color_amount", 1.0, -1, "Factor to multiply diffuse color with.");
+        addParamTextureFloat("diffuse_color_amount", 1.0f, -1, "Factor to multiply diffuse color with.");
         
         // Stored as lists, just like above. These parameters allow us to 
         // specify what parameters we want to override, for a specific yarn.
@@ -168,7 +169,6 @@ struct BRDFThunderLoom: VRayBSDF {
 
 private:
     BRDFPool<BRDFThunderLoomSampler> pool;
-    float testfloat;
     CharString m_filepath;
     float m_uscale, m_vscale, m_uvrotation;
     //DefFloatListParam bends;
@@ -176,7 +176,6 @@ private:
 
     // Parameters
     PluginBase *baseBRDFParam;
-    PluginBase *bumpTexPlugin;
 };
 
 //Param helpers
@@ -198,30 +197,14 @@ inline int is_param_valid(VRayPluginParameter* param, int i) {
 inline int set_texparam(VRayPluginParameter* param, void **target, int i) {
     // returns true if it is a texture and sets target to the texture pointer.
     VRayParameterType type = param->getType(i, 0);
-    const char* name = param->getName();
-
     if (type == paramtype_object) {
         //TODO check if it has interface.
-        
-        PluginBase* newPlug=param->getObject(i);
-        //const char* plugName = newPlug->getName();
-        TextureInterface *newSub=static_cast<TextureInterface *>(GET_INTERFACE(newPlug, EXT_TEXTURE));
-        TextureFloatInterface *newSubfloat=static_cast<TextureFloatInterface *>(GET_INTERFACE(newPlug, EXT_TEXTURE_FLOAT));
-        
-        *target = newPlug;
-        /*if (newSub)
-            *target = newSub;
-        if (newSubfloat)
-            *target = newSubfloat;*/
         return 1;
     }
     return 0;
 }
 
 int get_bool(VRayPluginParameter * param, int i, VRayContext& rc) {
-    VRayParameterType type = param->getType(i, 0);
-    const char* name = param->getName();
-    
     if (param->getType(i,0) == VRayParameterType::paramtype_bool && param->getBool(i))
       return 1;
     
@@ -319,8 +302,7 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
 
 
     // Loop through yarn types and set parameters from list
-    int n = m_tl_wparams->num_yarn_types;
-    for (int i=0; i < m_tl_wparams->num_yarn_types; i++) {
+    for (unsigned int i=0; i < m_tl_wparams->num_yarn_types; i++) {
         //get parameter from config string
         tlYarnType* yarn_type = &m_tl_wparams->yarn_types[i];
 
@@ -676,8 +658,6 @@ struct MyShadeData: public VRayShadeData, public MappedSurface {
 
     // From MappedSurface
     Transform getLocalUVWTransform(const VR::VRayContext &rc, int channel) VRAY_OVERRIDE {
-        bool valid=true;
-
         // Note that here we initialize the matrix to zero. This will effectively kill any
         // texture filtering. If you want texture filtering, you will need to come up with
         // a suitable way to initialize the Matrix portion of the transform to a matrix that

@@ -13,6 +13,10 @@
 #include <IMaterialBrowserEntryInfo.h>
 #endif
 
+// Disable MSVC warnings for external headers.
+#pragma warning( push )
+#pragma warning( disable : 4251)
+#pragma warning( disable : 4996 )
 #include "vraybase.h"
 #include "vrayplugins.h"
 #include "brdfs.h"
@@ -20,6 +24,7 @@
 #include "brdfpool.h"
 #include "VrayThunderLoomBRDF.h"
 #include "pb2template_generator.h"
+#pragma warning( pop ) 
 
 #include "thunderloom.h"
 

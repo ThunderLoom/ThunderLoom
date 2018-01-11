@@ -2,6 +2,11 @@
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 // Windows Header Files:
 #include <windows.h>
+
+// Disable some MSVC warnings for external headers.
+#pragma warning( push )
+#pragma warning( disable : 4251)
+#pragma warning( disable : 4996 )
 #include "vraybase.h"
 #include "vrayinterface.h"
 #include "vraycore.h"
@@ -12,6 +17,7 @@
 #include "object.h"
 #include "render.h"
 #include "shadedata_new.h"
+#pragma warning( pop ) 
 
 void EvalDiffuseFunc (const VUtils::VRayContext &rc,
     tlWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,

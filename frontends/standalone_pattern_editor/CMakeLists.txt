@@ -61,3 +61,12 @@ ENDIF(APPLE)
 
 # Link Libs
 target_link_libraries(patternEditor ${LIBS})
+
+# Set warnings
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    target_compile_options(patternEditor PRIVATE 
+        "-std=c++11"
+        "-Wall"
+        "-Wno-unused-function"
+        )
+endif()
