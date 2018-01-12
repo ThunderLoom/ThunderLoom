@@ -9,6 +9,6 @@ cmake -DMAYA_VERSION=2017 -D3DSMAX_VERSION=2017 -G "Visual Studio 11 Win64" ..
 
 2. Compile projects
 
-cmake --build . --config relwithdebinfo
+cmake --build . --config relwithdebinfo --clean-first
 
 Output will be in a newly created release folder.

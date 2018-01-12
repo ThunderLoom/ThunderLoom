@@ -203,14 +203,23 @@ inline int is_param_valid(VRayPluginParameter* param, int i) {
 inline int set_texparam(VRayPluginParameter* param, void **target, int i) {
     // returns true if it is a texture and sets target to the texture pointer.
     VRayParameterType type = param->getType(i, 0);
+	const char* name = param->getName();
+
     if (type == paramtype_object) {
         //TODO check if it has interface.
+		PluginBase* newPlug = param->getObject(i);
+		*target = newPlug;
         return 1;
     }
     return 0;
 }
 
 int get_bool(VRayPluginParameter * param, int i, VRayContext& rc) {
+	// debug stuff
+	VRayParameterType type = param->getType(i, 0);
+	const char* name = param->getName();
+
+
     if (param->getType(i,0) == VRayParameterType::paramtype_bool && param->getBool(i))
       return 1;
     

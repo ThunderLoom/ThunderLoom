@@ -73,7 +73,7 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         float $colg = $tlparams[12 + $i*$params_per_yarn + $offset];
         float $colb = $tlparams[13 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".diffuseColor" + $index) $colr $colg $colb;
-        //setAttr ($nodeName + ".diffuseColorOn" + $index) 1;
+        setAttr ($nodeName + ".diffuseColorOn" + $index) 1;
         setAttr ($nodeName + ".diffuseColorAmount" + $index) $tlparams[14 + $i*$params_per_yarn + $offset];
     }
 }

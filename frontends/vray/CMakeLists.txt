@@ -6,7 +6,7 @@ IF(WIN32 AND (NOT (MSVC_VERSION STREQUAL "1700"))) #VS11
     message(SEND_WARNING "V-Ray requires compiler vc11 (Visual Studio 2012)!")
 ENDIF()
 
-project(thunderLoomVRay)
+project(vray_thunderLoom)
 
 # Varibles
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
@@ -79,19 +79,19 @@ link_directories(${LIB_DIRS})
 
 # Build
 IF (WIN32)
-    add_library(thunderLoomVRay SHARED ${SOURCES})
+    add_library(vray_thunderLoom SHARED ${SOURCES})
     IF(MSVC)
         # Do not put resulting dll in VisualStudios Debug/Release folders
-        set_target_properties( thunderLoomVRay PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH} )
-        set_target_properties( thunderLoomVRay PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${LIBRARY_OUTPUT_PATH} )
-        set_target_properties( thunderLoomVRay PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LIBRARY_OUTPUT_PATH} )
-        set_target_properties( thunderLoomVRay PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${LIBRARY_OUTPUT_PATH} )
+        set_target_properties( vray_thunderLoom PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH} )
+        set_target_properties( vray_thunderLoom PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${LIBRARY_OUTPUT_PATH} )
+        set_target_properties( vray_thunderLoom PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LIBRARY_OUTPUT_PATH} )
+        set_target_properties( vray_thunderLoom PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${LIBRARY_OUTPUT_PATH} )
     ENDIF(MSVC)
 ENDIF (WIN32)
 IF(APPLE)
-    add_library(thunderLoomVRay SHARED ${SOURCES})
-    set_target_properties(thunderLoomVRay PROPERTIES SUFFIX ".so")
-    target_compile_definitions(thunderLoomVRay PRIVATE
+    add_library(vray_thunderLoom SHARED ${SOURCES})
+    set_target_properties(vray_thunderLoom PROPERTIES SUFFIX ".so")
+    target_compile_definitions(vray_thunderLoom PRIVATE
         REQUIRE_IOSTREAM=1
         HAVE_EXR=1
         _LIBRARY_ALEMBIC=1
@@ -109,7 +109,7 @@ ENDIF(APPLE)
 
 # Remove some warnings
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    target_compile_options(thunderLoomVRay PRIVATE 
+    target_compile_options(vray_thunderLoom PRIVATE 
         "-std=c++11"
         "-Wall"
         "-Wno-unknown-pragmas"
@@ -120,9 +120,9 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 
 # Link Libs
-target_link_libraries(thunderLoomVRay ${LIBS})
+target_link_libraries(vray_thunderLoom ${LIBS})
 
-add_custom_command(TARGET thunderLoomVRay POST_BUILD
+add_custom_command(TARGET vray_thunderLoom POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${PROJECT_SOURCE_DIR}/README.md
                 ${RELEASE_DIR}/README_V-Ray_Standalone.md

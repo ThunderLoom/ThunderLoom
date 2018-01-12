@@ -20,11 +20,11 @@ add_subdirectory(standalone_pattern_editor)
 
 # Copy V-Ray standalone to Maya plugin, when building for Maya
 add_custom_target(vraymaya_copy_vrayplugin ALL
-    DEPENDS ${RELEASE_DIR}/V-Ray\ for\ Maya${MAYA_VERSION}/vray_plugin/${CMAKE_SHARED_LIBRARY_PREFIX}thunderLoomVRay${CMAKE_SHARED_LIBRARY_SUFFIX}
+    DEPENDS ${RELEASE_DIR}/V-Ray\ for\ Maya${MAYA_VERSION}/vray_plugin/${CMAKE_SHARED_LIBRARY_PREFIX}vray_thunderLoom${CMAKE_SHARED_LIBRARY_SUFFIX}
     )
 add_custom_command(
-    OUTPUT ${RELEASE_DIR}/V-Ray\ for\ Maya${MAYA_VERSION}/vray_plugin/${CMAKE_SHARED_LIBRARY_PREFIX}thunderLoomVRay${CMAKE_SHARED_LIBRARY_SUFFIX}
+    OUTPUT ${RELEASE_DIR}/V-Ray\ for\ Maya${MAYA_VERSION}/vray_plugin/${CMAKE_SHARED_LIBRARY_PREFIX}vray_thunderLoom${CMAKE_SHARED_LIBRARY_SUFFIX}
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${RELEASE_DIR}/V-Ray/ ${RELEASE_DIR}/V-Ray\ for\ Maya${MAYA_VERSION}/vray_plugin/
     )
-add_dependencies(vraymaya_copy_vrayplugin thunderLoomVRay)
+add_dependencies(vraymaya_copy_vrayplugin vray_thunderLoom)
 add_dependencies(thunderLoomVRayMaya vraymaya_copy_vrayplugin)
