@@ -383,7 +383,7 @@ TL_VRAY_FLOAT_PARAMS
 
     }
 
-    tl_prepare(m_tl_wparams);
+    tl_prepare_with_context(m_tl_wparams, (void *)&rc);
 
     pool.init(vray->getSequenceData().maxRenderThreads);
     return;

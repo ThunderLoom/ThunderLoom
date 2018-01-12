@@ -556,6 +556,8 @@ void calculate_segment_uv_and_normal(tlPatternData *pattern_data,
                 pattern_data->yarn_type,
                 intersection_data->context);
     }
+    // We are assuming that the given pattern_data is already in yarn local
+    // coordinates (Y running along the yarn segment).
     float segment_u = pattern_data->y*umax;
     float segment_v = pattern_data->x*(float)M_PI_2;
 
@@ -601,8 +603,7 @@ static void halton_4(int n, float val[]){
     }
 }
 
-
-void tl_prepare(tlWeaveParameters *params)
+void tl_prepare_with_context(tlWeaveParameters *params, void * context)
 {
     //Calculate normalization factor for the specular reflection
 	if (params->pattern) {
@@ -639,7 +640,7 @@ void tl_prepare(tlWeaveParameters *params)
 				pattern_data.yarn_type = yarn_type;
 				pattern_data.yarn_hit = 1;
 				tlIntersectionData intersection_data;
-				intersection_data.context=0;
+				intersection_data.context=context;
 				calculate_segment_uv_and_normal(&pattern_data, params,
 					&intersection_data);
 				pattern_data.total_index_x = 0;
@@ -677,6 +678,10 @@ void tl_prepare(tlWeaveParameters *params)
 			params->yarn_types[i].specular_noise = tmp_specular_noise[i];
 		}
 	}
+}
+static void inline tl_prepare(tlWeaveParameters *params)
+{
+	tl_prepare_with_context(params, NULL);
 }
 
 tlWeaveParameters *tl_weave_pattern_from_data(uint8_t *warp_above, uint8_t *yarn_type,
@@ -1473,7 +1478,6 @@ tlYarnSegment tl_get_yarn_segment(float total_u, float total_v,
  * Determination of yarn segment is made more complicated by the fact that 
  * yarnsizes can vary. This results in a certain number of special cases.
  */
-
 tlPatternData tl_get_pattern_data(tlIntersectionData intersection_data,
         const tlWeaveParameters *params) {
     if(params->pattern == 0){
@@ -1579,179 +1583,107 @@ tlPatternData tl_get_pattern_data(tlIntersectionData intersection_data,
     return ret_data;
 }
 
-float tl_eval_filament_specular(tlIntersectionData intersection_data,
-    tlPatternData data, const tlWeaveParameters *params)
-{
-    tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
-        intersection_data.wi_z);
-    tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
-        intersection_data.wo_z);
-
-    if(!data.warp_above){
-        float tmp2 = wi.x;
-        float tmp3 = wo.x;
-        wi.x = -wi.y; wi.y = tmp2;
-        wo.x = -wo.y; wo.y = tmp3;
-    }
-    tlVector H = tlVector_normalize(tlVector_add(wi,wo));
-
-    float v = data.v;
-    float y = data.y;
-
-    //TODO(Peter): explain from where these expressions come.
-    //compute v from x using (11). Already done. We have it from data.
-    //compute u(wi,v,wr) -- u as function of v. using (4)...
-    float specular_u = atan2f(-H.z, H.y) + (float)M_PI_2; //plus or minus in last t.
-    //TODO(Peter): check that it indeed is just v that should be used 
-    //to calculate Gu (6) in Irawans paper.
-    //calculate yarn tangent.
-
-    float reflection = 0.f;
-    float umax;
-    if (data.ext_between_parallel == 1){
-        //if segment is extension between to parallel yarns -> bend = 0
-        umax = 0.0001f;
-    } else {
-        umax = tl_yarn_type_get_umax(params,data.yarn_type,
-                intersection_data.context);
-    }
-    
-    if (fabsf(specular_u) < umax){
-        // Make normal for highlights, uses v and specular_u
-        tlVector highlight_normal = tlVector_normalize(tlvector(sinf(v),
-                    sinf(specular_u)*cosf(v),
-                    cosf(specular_u)*cosf(v)));
-
-        // Make tangent for highlights, uses v and specular_u
-        tlVector highlight_tangent = tlVector_normalize(tlvector(0.f, 
-                    cosf(specular_u), -sinf(specular_u)));
-
-        //get specular_y, using irawans transformation.
-        float specular_y = specular_u/umax;
-        // our transformation TODO(Peter): Verify!
-        //float specular_y = sinf(specular_u)/sinf(m_umax);
-
-        float delta_x = tl_yarn_type_get_delta_x(params, data.yarn_type,
-			intersection_data.context);
-        //Clamp specular_y TODO(Peter): change name of m_delta_x to m_delta_h
-        specular_y = specular_y < 1.f - delta_x ? specular_y :
-            1.f - delta_x;
-        specular_y = specular_y > -1.f + delta_x ? specular_y :
-            -1.f + delta_x;
-
-        //this takes the role of xi in the irawan paper.
-        if (fabsf(specular_y - y) < delta_x) {
-            // --- Set Gu, using (6)
-            float a = 1.f; //radius of yarn
-            float R = 1.f/(sin(umax)); //radius of curvature
-            float Gu = a*(R + a*cosf(v)) /(
-                tlVector_magnitude(tlVector_add(wi,wo)) *
-                fabsf((tlVector_cross(highlight_tangent,H)).x));
-
-            float alpha = tl_yarn_type_get_alpha(params, data.yarn_type,
-				intersection_data.context);
-            float beta = tl_yarn_type_get_beta(params, data.yarn_type,
-				intersection_data.context);
-            // --- Set fc
-            float cos_x = -tlVector_dot(wi, wo);
-            float fc = alpha +von_mises(cos_x, beta);
-
-            // --- Set A
-            float widotn = tlVector_dot(wi, highlight_normal);
-            float wodotn = tlVector_dot(wo, highlight_normal);
-            widotn = (widotn < 0.f) ? 0.f : widotn;   
-            wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
-            float A = 0.f;
-            if(widotn > 0.f && wodotn > 0.f){
-                A = 1.f / (4.0f * (float)M_PI) * (widotn*wodotn)/(widotn + wodotn);
-                //TODO(Peter): Explain from where the 1/4*PI factor comes from
-            }
-            float l = 2.f;
-            //TODO(Peter): Implement As, -- smoothes the dissapeares of the
-            // higlight near the ends. Described in (9)
-            reflection = 2.f*l*umax*fc*Gu*A/delta_x;
-        }
-    }
-    return reflection;
-}
-
+// Evaluates the specular component given the yarn properties and the 
+// intersection data under the assumption that we have staple yarn (psi != 0).
+// Algorithm 3 from 'Specular Reflection from Woven Cloth', P. Irawan,
+// S. Marschner, 2012.
 float tl_eval_staple_specular(tlIntersectionData intersection_data,
     tlPatternData data, const tlWeaveParameters *params)
 {
+    // The algorithm in this function assumes yarn local coordiantes.
+    // That is, y-axis always runs along yarn segment and x-axis runs across, 
+    // regardless if yarn is warp or weft.
+    
+    // To ensure yarn local coordinates, y-components of in and out directions,
+    // wi and wo (in global coordinate space) are swapped with their respective
+    // y-componenets if yarn_segment is weft.
     tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
         intersection_data.wi_z);
     tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
         intersection_data.wo_z);
-
     if(!data.warp_above){
         float tmp2 = wi.x;
         float tmp3 = wo.x;
         wi.x = -wi.y; wi.y = tmp2;
         wo.x = -wo.y; wo.y = tmp3;
     }
-    tlVector H = tlVector_normalize(tlVector_add(wi, wo));
 
-    float psi = tl_yarn_type_get_psi(params,data.yarn_type,
-		intersection_data.context);
-
+    // ALG: 'COMPUTE u FROM y'
+    // Yarn coordinates have been transformed previously to the local
+    // coordinate system before hand by tl_get_pattern_data and available here 
+    // in the data parameter.
     float u = data.u;
     float x = data.x;
+    
+    // ALG: 'COMPUTE v USING (3)'
+    tlVector H = tlVector_normalize(tlVector_add(wi, wo)); //Bisector of wi, wo
+    float psi = tl_yarn_type_get_psi(params,data.yarn_type,
+		intersection_data.context);
     float D;
     {
         float a = H.y*sinf(u) + H.z*cosf(u);
         D = (H.y*cosf(u)-H.z*sinf(u))/(sqrtf(H.x*H.x + a*a))/
 			tanf(psi);
     }
-    float reflection = 0.f;
-            
-    //Plus eller minus i sista termen?
+    // NOTE(Peter): plus or minus on acos?
     float specular_v = atan2f(-H.y*sinf(u) - H.z*cosf(u), H.x) + acosf(D);
-    //TODO(Vidar): Clamp specular_v, do we need it?
-    // Make normal for highlights, uses u and specular_v
-    tlVector highlight_normal = tlVector_normalize(tlvector(sinf(specular_v),
-        sinf(u)*cosf(specular_v), cosf(u)*cosf(specular_v)));
+    
+    
+    float reflection = 0.f;
 
+    // ALG: 'IF ABS(v) < pi/2'
     if (fabsf(specular_v) < M_PI_2 && fabsf(D) < 1.f) {
-        //we have specular reflection
-        //get specular_x, using irawans transformation.
+        
+        // TODO(Vidar): Clamp specular_v, do we need it?
+        // Make normal for highlights, uses u and specular_v
+        tlVector highlight_normal = tlVector_normalize(tlvector(sinf(specular_v),
+            sinf(u)*cosf(specular_v), cosf(u)*cosf(specular_v)));
+
+        // Transform from angle to coordante on yarn surface.
+        // get specular_x, using irawans transformation.
         float specular_x = specular_v/((float)M_PI_2);
         // our transformation
         //float specular_x = sinf(specular_v);
 
+        // Get neccessary yarn params for current type.
         float delta_x = tl_yarn_type_get_delta_x(params,data.yarn_type,
 			intersection_data.context);
         float umax;
         if (data.ext_between_parallel){
-            //if segment is extension between to parallel yarns -> bend = 0
+            // if current segment is an extension between two parallel yarns
+            // -> bend = 0
             umax = 0.001f;
         } else {
             umax = tl_yarn_type_get_umax(params,data.yarn_type,
                     intersection_data.context);
         }
 
-        //Clamp specular_x
+        // Clamp specular_x
         specular_x = specular_x < 1.f - delta_x ? specular_x :
             1.f - delta_x;
         specular_x = specular_x > -1.f + delta_x ? specular_x :
             -1.f + delta_x;
 
+        // Check that we are in the highlight width area.
+        // This takes the role of Chi in the irawan paper.
         if (fabsf(specular_x - x) < delta_x) {
-
             float alpha = tl_yarn_type_get_alpha(params,data.yarn_type,
 				intersection_data.context);
             float beta  = tl_yarn_type_get_beta( params,data.yarn_type,
 				intersection_data.context);
 
-            // --- Set Gv
-            float a = 1.f; //radius of yarn
-            float R = 1.f/(sin(umax)); //radius of curvature
+            // ALG: 'COMPUTE G_v USING (5)'
+            float a = 1.f; // radius of yarn
+            float R = 1.f/(sin(umax)); // radius of curvature
             float Gv = a*(R + a*cosf(specular_v))/(
                 tlVector_magnitude(tlVector_add(wi,wo)) *
                 tlVector_dot(highlight_normal,H) * fabsf(sinf(psi)));
-            // --- Set fc
+
+            // ALG: 'COMPUTE f_c USING (7)'
             float cos_x = -tlVector_dot(wi, wo);
-            float fc = alpha +von_mises(cos_x, beta);
-            // --- Set A
+            float fc = alpha + von_mises(cos_x, beta);
+
+            // ALG: 'COMPUTE A USING (8)'
             float widotn = tlVector_dot(wi, highlight_normal);
             float wodotn = tlVector_dot(wo, highlight_normal);
             widotn = (widotn < 0.f) ? 0.f : widotn;   
@@ -1760,10 +1692,142 @@ float tl_eval_staple_specular(tlIntersectionData intersection_data,
             float A = 0.f;
             if(widotn > 0.f && wodotn > 0.f){
                 A = 1.f / (4.0f * (float)M_PI) * (widotn*wodotn)/(widotn + wodotn);
+            }
+
+            // ALG: 'CLAMP x to range +/- (w-delta_x)/2'
+            // ALG: 'COMPUTE X USING (12)'
+            // We skip calculation of clamping function CHI. This is done 
+            // by the if clause above.
+
+            // ALG: 'COMPUTE BTF T USING (13)'
+            float w = 2.f; //omega
+            reflection = 2.f*w*umax*fc*Gv*A/delta_x; // The specular component!
+        }
+    }
+    return reflection;
+}
+
+// Evaluates the specular component given the yarn properties and the 
+// intersection data under the assumption that we have filament yarn (psi = 0).
+// Algorithm 4 from "Specular Reflection from Woven Cloth", P. Irawan,
+// S. Marschner, 2012.
+float tl_eval_filament_specular(tlIntersectionData intersection_data,
+    tlPatternData data, const tlWeaveParameters *params)
+{
+    // The algorithm in this function assumes yarn local coordiantes.
+    // That is, y-axis always runs along yarn segment and x-axis runs across, 
+    // regardless if yarn is warp or weft.
+    
+    // To ensure yarn local coordinates, y-components of in and out directions,
+    // wi and wo (in global coordinate space) are swapped with their respective
+    // y-componenets if yarn_segment is weft.
+    tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
+        intersection_data.wi_z);
+    tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
+        intersection_data.wo_z);
+    if(!data.warp_above){
+        float tmp2 = wi.x;
+        float tmp3 = wo.x;
+        wi.x = -wi.y; wi.y = tmp2;
+        wo.x = -wo.y; wo.y = tmp3;
+    }
+
+    // ALG: 'COMPUTE v FROM x'
+    // Yarn coordinates have been transformed previously to the local
+    // coordinate system by tl_get_pattern_data and available here 
+    // in the data parameter.
+    float v = data.v;
+    float y = data.y;
+    
+    // ALG: 'COMPUTE u USING (4)'
+    tlVector H = tlVector_normalize(tlVector_add(wi, wo)); //Bisector of wi, wo
+    float specular_u = atan2f(-H.z, H.y) + (float)M_PI_2; // plus or minus?
+    //float specular_u = atan2f(H.y, H.z);// + (float)M_PI_2; // plus or minus?
+
+    float umax;
+    if (data.ext_between_parallel == 1){
+        // if current segment is an extension between two parallel yarns
+        // -> bend = 0
+        umax = 0.0001f;
+    } else {
+        umax = tl_yarn_type_get_umax(params,data.yarn_type,
+                intersection_data.context);
+    }
+    
+    float reflection = 0.f;
+    
+    // ALG: 'IF ABS(u) < umax'
+    if (fabsf(specular_u) < umax){
+       
+        // Make normal for highlights, uses v and specular_u
+        tlVector highlight_normal = tlVector_normalize(tlvector(sinf(v),
+            sinf(specular_u)*cosf(v), cosf(specular_u)*cosf(v)));
+
+        // Make tangent for highlights, uses v and specular_u
+        tlVector highlight_tangent = tlVector_normalize(tlvector(0.f, 
+            cosf(specular_u), -sinf(specular_u)));
+
+        // Transform from angle to coordante on yarn surface.
+        // get specular_y, using irawans transformation.
+        float specular_y = specular_u/umax;
+        // our transformation
+        //float specular_y = sinf(specular_u)/sinf(m_umax);
+
+        float delta_x = tl_yarn_type_get_delta_x(params, data.yarn_type,
+			intersection_data.context);
+        
+        // Clamp specular_y
+        specular_y = specular_y < 1.f - delta_x ? specular_y :
+            1.f - delta_x;
+        specular_y = specular_y > -1.f + delta_x ? specular_y :
+            -1.f + delta_x;
+
+        // Check that we are in the highlight width area.
+        // This takes the role of Chi in the irawan paper.
+        if (fabsf(specular_y - y) < delta_x) {
+            // ALG: 'COMPUTE G_u USING (6)'
+            // 'We can not use u as the parameter for filament yarns. 
+            // We integrate over u for staple and v for filament.' 
+            // That is, we need Gv for staple and Gu for filament.
+            float a = 1.f; //radius of yarn
+            float R = 1.f/(sin(umax)); //radius of curvature
+            float Gu = a*(R + a*cosf(v)) / (
+                tlVector_magnitude(tlVector_add(wi,wo)) *
+                fabsf((tlVector_cross(highlight_tangent,H).x)) );
+
+            float alpha = tl_yarn_type_get_alpha(params, data.yarn_type,
+				intersection_data.context);
+            float beta = tl_yarn_type_get_beta(params, data.yarn_type,
+				intersection_data.context);
+
+            // ALG: 'COMPUTE f_c USING (7)'
+            float cos_x = -tlVector_dot(wi, wo);
+            float fc = alpha + von_mises(cos_x, beta);
+
+            // ALG: 'COMPUTE A USING (8)'
+            float widotn = tlVector_dot(wi, highlight_normal);
+            float wodotn = tlVector_dot(wo, highlight_normal);
+            widotn = (widotn < 0.f) ? 0.f : widotn;   
+            wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
+            float A = 0.f;
+            if(widotn > 0.f && wodotn > 0.f){
+                A = 1.f / (4.0f*(float)M_PI) * (widotn*wodotn)/(widotn+wodotn);
                 //TODO(Peter): Explain from where the 1/4*PI factor comes from
             }
+            float l = 2.f;
+
+            // ALG: 'COMPUTE As USING (9)'
+            //TODO(Peter): Implement As, -- smoothes the dissapeares of the
+            // higlight near the ends. Described in (9).
+            
+            // ALG: 'CLAMP y to range +/- (l-delta_y)/2'
+            // ALG: 'COMPUTE X USING (12)'
+            // We skip calculation of clamping function Chi. This is done 
+            // by the if clause above.
+            
+            // ALG: 'COMPUTE BTF T USING (13)'
             float w = 2.f;
-            reflection = 2.f*w*umax*fc*Gv*A/delta_x;
+            reflection = 2.f*w*umax*Gu*fc*A/delta_x; // The specular component!
         }
     }
     return reflection;
