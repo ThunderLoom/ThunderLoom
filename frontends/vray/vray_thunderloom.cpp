@@ -60,8 +60,6 @@ using namespace VR;
 
 struct BRDFThunderLoomParams: VRayParameterListDesc {
     BRDFThunderLoomParams(void) {
-        //addParamPlugin("test_bsdf", EXT_BSDF, -1, "A Test BSDF.");
-        //addParamFloat("testfloat", 1.0f, -1, "A Test parameter.");
         addParamString("filepath", "", -1, "File path to pattern file");
         addParamFloat("uscale", 1.f, -1, "Scale factor for u coordinate");
         addParamFloat("vscale", 1.f, -1, "Scale factor for v coordinate");
@@ -73,6 +71,8 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("bend", 0.5f, -1, "How much each visible yarn segment gets bent.");
         addParamTextureFloat("yarnsize", 1.0f, -1, "Width of yarn.");
         addParamTextureFloat("twist", 0.5f, -1, "How strongly to simulate the twisting nature of the yarn. Usually synthetic yarns, such as polyester, have less twist than organic yarns, such as cotton.");
+        addParamTextureFloat("phase_alpha", 0.05f, -1, "Alpha value. Constant term to the fiber scattering function.");
+        addParamTextureFloat("phase_beta", 4.f, -1, "Beta value. Directionality intensity of the fiber scattering function.");
         addParamTexture("specular_color", Color(0.4f, 0.4f, 0.4f), -1, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
         addParamTextureFloat("specular_color_amount", 1.0f, -1, "Factor to multiply specular color with.");
         addParamTextureFloat("specular_noise", 0.4f, -1, "Noise on specular reflections.");
@@ -85,6 +85,8 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamBool("bend_on",                     false, -1, "");
         addParamBool("yarnsize_on",                 false, -1, "");
         addParamBool("twist_on",                    false, -1, "");
+        addParamBool("phase_alpha_on",              false, -1, "");
+        addParamBool("phase_beta_on",               false, -1, "");
         addParamBool("specular_color_on",           false, -1, "");
         addParamBool("specular_color_amount_on",    false, -1, "");
         addParamBool("specular_noise_on",           false, -1, "");
@@ -99,6 +101,8 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("bend_on_float",                 false, -1, "");
         addParamTextureFloat("yarnsize_on_float",             false, -1, "");
         addParamTextureFloat("twist_on_float",                false, -1, "");
+        addParamTextureFloat("phase_alpha_on_float",          false, -1, "");
+        addParamTextureFloat("phase_beta_on_float",           false, -1, "");
         addParamTextureFloat("specular_color_on_float",       false, -1, "");
         addParamTextureFloat("speclar_color_amount_on_float", false, -1, "");
         addParamTextureFloat("specular_noise_on_float",       false, -1, "");
@@ -106,7 +110,7 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("diffuse_color_on_float",        false, -1, "");
         addParamTextureFloat("diffuse_color_amount_on_float", false, -1, "");
         
-        addParamFloat("bends2", 0.5, -1, "");
+        addParamFloat("bends2", 0.5f, -1, "");
     }
 };
 
@@ -136,6 +140,8 @@ struct BRDFThunderLoom: VRayBSDF {
         paramList->setParamCache("bend", &yrn0.umax);
         paramList->setParamCache("yarnsize", &yrn0.yarnsize);
         paramList->setParamCache("twist", &yrn0.psi);
+        paramList->setParamCache("phase_alpha", &yrn0.alpha);
+        paramList->setParamCache("phase_beta", &yrn0.beta);
         paramList->setParamCache("highlight_width", &yrn0.delta_x);
         paramList->setParamCache("specular_color", &yrn0.specular_color);
         paramList->setParamCache("specular_color_amount", &yrn0.specular_amount);
@@ -275,6 +281,14 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     VRayPluginParameter* twist = this->getParameter("twist");
     VRayPluginParameter* twist_on = this->getParameter("twist_on");
     VRayPluginParameter* twist_on_float = this->getParameter("twist_on_float");
+    
+    VRayPluginParameter* phase_alpha = this->getParameter("phase_alpha");
+    VRayPluginParameter* phase_alpha_on = this->getParameter("phase_alpha_on");
+    VRayPluginParameter* phase_alpha_on_float = this->getParameter("phase_alpha_on_float");
+
+    VRayPluginParameter* phase_beta = this->getParameter("phase_beta");
+    VRayPluginParameter* phase_beta_on = this->getParameter("phase_beta_on");
+    VRayPluginParameter* phase_beta_on_float = this->getParameter("phase_beta_on_float");
 
     VRayPluginParameter* specular_color = this->getParameter("specular_color");
     VRayPluginParameter* specular_color_on = this->getParameter("specular_color_on");
@@ -320,6 +334,8 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
         TL_VRAY_SET_PARAM(bend, umax)\
         TL_VRAY_SET_PARAM(yarnsize, yarnsize)\
         TL_VRAY_SET_PARAM(twist, psi)\
+        TL_VRAY_SET_PARAM(phase_alpha, alpha)\
+        TL_VRAY_SET_PARAM(phase_beta, beta)\
         TL_VRAY_SET_PARAM(highlight_width, delta_x)\
         TL_VRAY_SET_PARAM(specular_color_amount, specular_amount)\
         TL_VRAY_SET_PARAM(specular_noise, specular_noise)\

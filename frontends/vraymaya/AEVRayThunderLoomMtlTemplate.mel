@@ -22,6 +22,8 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         "yarnsizeOn",
         "twist",
         "twistOn",
+        "alpha",
+        "alphaOn",
         "specularColor",
         "specularColorOn",
         "specularColorAmount",
@@ -44,10 +46,11 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
     updateTLAttributes($nodeDotAttr);
 
     // Set Parameters
-        
+    // The order of tlparams is determined by ThunderLoomCommand in 
+    // maya_thunderloom.cpp
     print("tl params:");
     print($tlparams);
-    int $params_per_yarn = 13; //Should match number of params being added in for loop.
+    int $params_per_yarn = 15; //Should match number of params being added in for loop.
     int $offset = 1; //For $num_yarn_types
     int $i;
     for ($i=0; $i<$num_yarn_types; $i++) { //For each yarn type
@@ -56,22 +59,22 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         setAttr ($nodeName + ".bend" + $index) $tlparams[0 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".yarnsize" + $index) $tlparams[1 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".twist" + $index) $tlparams[2 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".highlightWidth" + $index) $tlparams[3 + $i*$params_per_yarn + $offset];
-        float $specr = $tlparams[4 + $i*$params_per_yarn + $offset];
-        float $specg = $tlparams[5 + $i*$params_per_yarn + $offset];
-        float $specb = $tlparams[6 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".alpha" + $index) $tlparams[3 + $i*$params_per_yarn + $offset];
+        // We leave Beta out, since it's the ratio between alpha and beta that matters (since we are normalizing).
+        //setAttr ($nodeName + ".beta" + $index) $tlparams[4 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".highlightWidth" + $index) $tlparams[5 + $i*$params_per_yarn + $offset];
+        float $specr = $tlparams[6 + $i*$params_per_yarn + $offset];
+        float $specg = $tlparams[7 + $i*$params_per_yarn + $offset];
+        float $specb = $tlparams[8 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".specularColor" + $index) $specr $specg $specb;
-        setAttr ($nodeName + ".specularColorAmount" + $index) $tlparams[7 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".specularNoise" + $index) $tlparams[8 + $i*$params_per_yarn + $offset];
-
-        
-        float $colr = $tlparams[9  + $i*$params_per_yarn + $offset];
-        float $colg = $tlparams[10  + $i*$params_per_yarn + $offset];
-        float $colb = $tlparams[11 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".specularColorAmount" + $index) $tlparams[9 + $i*$params_per_yarn + $offset];
+        setAttr ($nodeName + ".specularNoise" + $index) $tlparams[10 + $i*$params_per_yarn + $offset];
+        float $colr = $tlparams[11 + $i*$params_per_yarn + $offset];
+        float $colg = $tlparams[12 + $i*$params_per_yarn + $offset];
+        float $colb = $tlparams[13 + $i*$params_per_yarn + $offset];
         setAttr ($nodeName + ".diffuseColor" + $index) $colr $colg $colb;
-        setAttr ($nodeName + ".diffuseColorOn" + $index) 1;
-        
-        setAttr ($nodeName + ".diffuseColorAmount" + $index) $tlparams[12 + $i*$params_per_yarn + $offset];
+        //setAttr ($nodeName + ".diffuseColorOn" + $index) 1;
+        setAttr ($nodeName + ".diffuseColorAmount" + $index) $tlparams[14 + $i*$params_per_yarn + $offset];
     }
 }
 
@@ -227,7 +230,7 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                     
                     addParam("diffuseColorAmount", $buffer, $index, $nodeName);
 
-                    string $params[] = {"bend", "yarnsize", "twist", "specularNoise", "highlightWidth"};
+                    string $params[] = {"bend", "yarnsize", "twist", "alpha", "specularNoise", "highlightWidth"};
                     for ($param in $params) {
                         addParam($param, $buffer, $index, $nodeName);
                     }
