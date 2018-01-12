@@ -76,6 +76,7 @@
 #define IDC_delta_x_EDIT                1034
 #define IDC_delta_x_SPIN                1035
 #define IDC_SIMPLE_EDIT                 1036
+#define IDC_psi_SPIN2                   1036
 #define cs_blend1                       1037
 #define IDC_delta_x_LABEL               1038
 #define ed_texmap_blend_mult1           1039
