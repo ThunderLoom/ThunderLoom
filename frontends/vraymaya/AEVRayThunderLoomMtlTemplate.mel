@@ -1,7 +1,10 @@
+// File handles UI and control creation for ThunderLoomMtlNode.
+
+
+// Calls the exported c++ command to load given file and return the ThunderLoom
+// patterns. Sets the maya attributes according to these values.
+// Also disconnects any maps.
 global proc setTLAttributesFromFile(string $nodeDotAttr) {
-    // Gets TL values from file and sets attributes to these or default
-    // Also disconnects any maps.
-    
     string $buffer[];
 	tokenize($nodeDotAttr, ".", $buffer);
 	string $nodeName = $buffer[0];
@@ -10,50 +13,63 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
 	string $filepath = `getAttr $fullAttrName`;
     float $tlparams[] = `thunderLoomParseFile -fileName $filepath`;
     int $num_yarn_types = $tlparams[0];
+    
 
     // Remove existing multies!
+    // Use bend attribute to see how many multi-attributes we have of it,
+    // (this will tell us the number of yarn_types currently on UI).
     string $multi[] = `listAttr -multi -leaf ($nodeName + ".bend")`;
+    
+    // Skip resetting default yarn if checkbox is on.
+    // And only if there already are controls for default yarn [0].
+    int $skipyrn0 = 0;
+    if (`checkBox -q -v tlSkipDefaultYrnChk` && `stringArrayContains "bend[0]" $multi`) {
+        $skipyrn0 = 1;
+    }
+    
     for($m in $multi) {
 		string $index = match("\[[0-9]+\]", $m); // Index with []
-        string $params[] = {
-        "bend",
-        "bendOn",
-        "yarnsize",
-        "yarnsizeOn",
-        "twist",
-        "twistOn",
-        "alpha",
-        "alphaOn",
-        "specularColor",
-        "specularColorOn",
-        "specularColorAmount",
-        "specularColorAmountOn",
-        "specularNoise",
-        "specularNoiseOn",
-        "highlightWidth",
-        "highlightWidthOn",
-        "diffuseColor",
-        "diffuseColorOn",
-        "diffuseColorAmount",
-        "diffuseColorAmountOn"
-        };
-        for ($param in $params) {
-            removeMultiInstance -break true ($nodeName + "." + $param + $index);
+        if ($skipyrn0 != 0 && $index != "[0]") {
+            string $params[] = {
+            "bend",
+            "bendOn",
+            "yarnsize",
+            "yarnsizeOn",
+            "twist",
+            "twistOn",
+            "alpha",
+            "alphaOn",
+            "specularColor",
+            "specularColorOn",
+            "specularColorAmount",
+            "specularColorAmountOn",
+            "specularNoise",
+            "specularNoiseOn",
+            "highlightWidth",
+            "highlightWidthOn",
+            "diffuseColor",
+            "diffuseColorOn",
+            "diffuseColorAmount",
+            "diffuseColorAmountOn"
+            };
+            for ($param in $params) {
+                removeMultiInstance -break true ($nodeName + "." + $param + $index);
+            }
         }
     }
 
-    // Setup multis from file
-    updateTLAttributes($nodeDotAttr);
-
+    
     // Set Parameters
     // The order of tlparams is determined by ThunderLoomCommand in 
     // maya_thunderloom.cpp
-    print("tl params:");
-    print($tlparams);
     int $params_per_yarn = 15; //Should match number of params being added in for loop.
     int $offset = 1; //For $num_yarn_types
-    int $i;
-    for ($i=0; $i<$num_yarn_types; $i++) { //For each yarn type
+    
+    int $i = 0;
+    if ($skipyrn0 != 0) {
+        $i = 1;
+    }
+    while ($i<$num_yarn_types) { //For each yarn type
         print("i: " + $i);
         string $index = ("[" + $i + "]");
         setAttr ($nodeName + ".bend" + $index) $tlparams[0 + $i*$params_per_yarn + $offset];
@@ -75,68 +91,53 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         setAttr ($nodeName + ".diffuseColor" + $index) $colr $colg $colb;
         setAttr ($nodeName + ".diffuseColorOn" + $index) 1;
         setAttr ($nodeName + ".diffuseColorAmount" + $index) $tlparams[14 + $i*$params_per_yarn + $offset];
+        $i = $i + 1;
     }
 }
 
-global proc updateTLAttributes(string $nodeDotAttr)
-{
-    // Called when the filepath has changed, TODO: Change to call this when refreshing window.
-    // Get new path and ask how many yarn types there are.
-    // Create controls for each yarn type.
-	
-    string $buffer[];
-	tokenize($nodeDotAttr, ".", $buffer);
-	string $nodeName = $buffer[0];
-
-    string $fullAttrName = $nodeName + ".filepath";
-	string $filepath = `getAttr $fullAttrName`;
-    float $params[] = `thunderLoomParseFile -fileName $filepath`;
-    int $num_yarn_types = $params[0];
-
-    int $i;
-    for ($i=0; $i<$num_yarn_types; $i++) {
-        int $nextAvailable = $i;
-        // Create a plug by accessing it
-        //string $plugName = $nodeDotAttr + "[" + $nextAvailable + "]";
-        string $index = "[" + $nextAvailable + "]";
-        catchQuiet( `getAttr -type ($nodeName + ".bend" + $index)`);
-        catchQuiet( `getAttr -type ($nodeName + ".bendOn" + $index)`);
-        
-        catchQuiet( `getAttr -type ($nodeName + ".specularColor" + $index)`);
-        catchQuiet( `getAttr -type ($nodeName + ".specularColorOn" + $index)`);
-    }
-}
-
+// UI setup for file loading and global ThunderLoom settings.
+// This function gets called by Maya when VRayThunderLoomMtl Node is opened in
+// editor.
 global proc AEVRayThunderLoomMtlTemplate(string $nodeName )
 {
     editorTemplate -beginScrollLayout;
     
     editorTemplate -beginLayout "Pattern" -collapse false;
+    // We want to call AEBrowseFileButton, AEBrowseFileButtonRepl when opening
+    // file. Second string argument is used to specify a command to be executed
+    // when the attribute is changed.
     editorTemplate -callCustom "AEBrowseFileButton" "AEBrowseFileButtonRepl" "browseFile";
-    editorTemplate -label "Filepath" -addControl "filepath"; //The second string argument is optional, and can be used to specify a command (or script) to be executed when the attribute is changed.
+    editorTemplate -label "Filepath" -addControl "filepath"; 
+    editorTemplate -callCustom "AESkipDefaultYrn" "AESkipDefaultYrnRepl" "skipyrn0";
     editorTemplate -label "uscale" -addControl "uscale";
     editorTemplate -label "vscale" -addControl "vscale";
     editorTemplate -label "uvrotation" -addControl "uvrotation";
     editorTemplate -endLayout;
 
-
+    // '-callCustom specifies function to use to build UI, second argument is 
+    // a replacing function to use if attribute editor already exists and node
+    // of same type should be edited.'
     editorTemplate -callCustom "AELoadYarnTypesCompound" "AELoadYarnTypesCompoundRepl" "bend";
+    //editorTemplate -callCustom "AELoadYarnTypesCompound" "AELoadYarnTypesCompoundRepl" "reload";
 
+    // Specify place for new controls to be added.
     editorTemplate -addExtraControls;
 
     editorTemplate -endScrollLayout;
 }
 
+// Inspired by vrayAECompoundMultiNew in vrayAEFunctions.mel
+// Makes control for Reset button and then calls updateTLAttributes
+// and AELoadYarnTypesCompoundRepl (function that creates yrn_type controls).
 global proc AELoadYarnTypesCompound(string $nodeDotAttr) {
-    // Inspired by vrayAECompoundMultiNew in vrayAEFunctions.mel
 	string $buffer[];
 	tokenize($nodeDotAttr, ".", $buffer);
 	string $nodeName = $buffer[0];
 
     columnLayout -adjustableColumn 1 tlMultiCompAttrFrame;
-    //create frame for whole multi attr
+    //create frame for whole multi attribute
     frameLayout -l "Yarn Types" -collapse false vrayListFrame;
-        //maya like -> row layouf for "New Item" button
+        //maya like -> row layout for "New Item" button
         rowLayout -nc 1 tlButtonLayout;
             button -label "Reset Yarn Types From File" -command ("setTLAttributesFromFile(\"" + $nodeDotAttr + "\")") tlResetYarnParamsBtn;
         setParent ..;
@@ -144,10 +145,11 @@ global proc AELoadYarnTypesCompound(string $nodeDotAttr) {
     setParent ..;
 
     //force replace
-    updateTLAttributes($nodeDotAttr);
+    //updateTLAttributes($nodeDotAttr);
     AELoadYarnTypesCompoundRepl($nodeDotAttr);
 }
 
+// Helper function to add control for yarn_type parameter.
 proc addParam(string $param, string $buffer, string $index, string $nodeName) {
     rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
         int $visible = 1;
@@ -160,7 +162,14 @@ proc addParam(string $param, string $buffer, string $index, string $nodeName) {
     setParent..;
 }
 
+// This is the Control Replace function. This is meant to be called when Maya
+// wants to update the view, such as changing focus to a different instance of 
+// the same node. 
+// Here, we update reload button, delete any existing yarn_type controls and 
+// create new ones. 
 global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
+
+    // Update reset button with command to correct node.
 	string $buffer[];
 	tokenize($nodeDotAttr, ".", $buffer);
 	string $nodeName = $buffer[0];
@@ -172,7 +181,7 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
 			return;
 	}
 
-    // Delete existing...
+    // Delete existing yarn_type controls...
     string $currentChildren[] = `layout -q -childArray $controlLayout`;
     for($ch in $currentChildren) {
         if($ch != "tlButtonLayout") {
@@ -188,9 +197,10 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
 		// when we use it with -leaf results is something like { rgb[0], r, g, b, rgb[6] ...}
 		string $multi[] = `listAttr -multi -leaf $nodeDotAttr`;
 		for($m in $multi) {
-            //call function to create controls here.
-			string $buffer = match("\[[0-9]+\]", $m); // Yarn type index as string with brackets [].
-			int $index = match("[0-9]+", $m); // Yarn type index
+            // Yarn type index as string with brackets [].
+			string $buffer = match("\[[0-9]+\]", $m); 
+            // Yarn type index
+			int $index = match("[0-9]+", $m); 
 			
             if(size($buffer) > 0) {
                 string $frame_title = "Yarn Type " + $index;
@@ -199,6 +209,7 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                 }
                 string $yarn_frame = `frameLayout -collapse false -label $frame_title`;
 	    		columnLayout;
+
                     // Specular color
                     rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
                         {
@@ -211,9 +222,7 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                         }
                         attrColorSliderGrp -label "specularColor" -attribute ($nodeName + ".specularColor" + $buffer);
                     setParent..;
-                        
                     addParam("specularColorAmount", $buffer, $index, $nodeName);
-
 
                     // Diffuse color
                     rowLayout -nc 2 -columnWidth2 50 350 -adjustableColumn 2;
@@ -227,9 +236,9 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                         }
                         attrColorSliderGrp -label "diffuseColor" -attribute ($nodeName + ".diffuseColor" + $buffer);
                     setParent..;
-                    
                     addParam("diffuseColorAmount", $buffer, $index, $nodeName);
 
+                    // Add remaining float params.
                     string $params[] = {"bend", "yarnsize", "twist", "alpha", "specularNoise", "highlightWidth"};
                     for ($param in $params) {
                         addParam($param, $buffer, $index, $nodeName);
@@ -243,6 +252,20 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
 	setParent ..;
 }
 
+global proc AESkipDefaultYrn(string $nodeDotAttr) {
+	string $buffer[];
+	tokenize($nodeDotAttr, ".", $buffer);
+	string $nodeName = $buffer[0];
+
+    rowLayout -nc 1 -columnWidth2 50 350 -adjustableColumn 1;
+        checkBox -label "Keep default yarn parameters" tlSkipDefaultYrnChk;
+    setParent..;
+}
+global proc AESkipDefaultYrnRepl(string $nodeDotAttr) {
+	checkBox -e tlSkipDefaultYrnChk;
+}
+
+// File helper functions
 global proc AEBrowseFileButton(string $nodeDotAttr) {
 	string $buffer[];
 	tokenize($nodeDotAttr, ".", $buffer);

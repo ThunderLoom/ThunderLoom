@@ -25,7 +25,8 @@
 #include "../../src/thunderloom.h"
 
 // VRayThunderLoom
-MTypeId VRayThunderLoom::id(0x000104F0); // Note: change this ID whenever a new plugin is created
+// We have a registered Node ID Block of 0x0012bf80 - 0x0012bfbf for ThunderLoom.
+MTypeId VRayThunderLoom::id(0x0012bf80);
 MString VRayThunderLoom::apiType("VRayThunderLoomMtl");
 MString VRayThunderLoom::classification("shader/surface/utility/:swatch/VRayMtlSwatchGen");
 
@@ -284,9 +285,9 @@ MStatus ThunderLoomCommand::doIt( const MArgList& args ) {
                 tlWeaveParameters *tl_wparams = tl_weave_pattern_from_file(filepath, &error);
                 if (!tl_wparams) {
                     MPxCommand::clearResult();
-                    //MPxCommand::setResult(MString(error));
                     MPxCommand::appendToResult(0.f);
                     MPxCommand::appendToResult(0.f);
+					//stat = MStatus::kFailure;
                     return stat;
                 }
                 tl_prepare(tl_wparams);
@@ -295,6 +296,9 @@ MStatus ThunderLoomCommand::doIt( const MArgList& args ) {
 
                 MPxCommand::appendToResult((float)num_yarn_types);
 
+
+				// The order of the appended results has to match 
+				// how they are parsed in the MEL script.
                 for (int i=0; i<num_yarn_types; i++) {
                     tlYarnType* yarn_type = &tl_wparams->yarn_types[i];
 
@@ -339,4 +343,3 @@ MStatus ThunderLoomCommand::doIt( const MArgList& args ) {
 void* ThunderLoomCommand::creator() {
     return new ThunderLoomCommand();
 }
-

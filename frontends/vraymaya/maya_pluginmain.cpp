@@ -40,6 +40,8 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 	stat=plugin.registerNode("VRayThunderLoomMtl", VRayThunderLoom::id, VRayThunderLoom::creator, VRayThunderLoom::initialize, MPxNode::kDependNode, &classification);
 	if (!stat) { errStr = "registerNode failed";  stat.perror(errStr); return stat; }
 	
+	// Export thunderLoom commands for MEL.
+	// This command will load a wif or ptn file and load the relevant parameters.
 	stat=plugin.registerCommand("thunderLoomParseFile", ThunderLoomCommand::creator);
 	if (!stat) { errStr = "registerCommand failed";  stat.perror(errStr); return stat; }
 
