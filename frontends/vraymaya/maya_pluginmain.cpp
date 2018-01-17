@@ -44,6 +44,9 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 	// This command will load a wif or ptn file and load the relevant parameters.
 	stat=plugin.registerCommand("thunderLoomParseFile", ThunderLoomCommand::creator);
 	if (!stat) { errStr = "registerCommand failed";  stat.perror(errStr); return stat; }
+	
+    stat=plugin.registerCommand("thunderLoomSaveFile", ThunderLoomWriteCommand::creator);
+	if (!stat) { errStr = "registerCommand failed";  stat.perror(errStr); return stat; }
 
 	return stat;
 }
