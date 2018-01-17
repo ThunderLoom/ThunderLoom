@@ -347,7 +347,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
     bool dragging = false;
     bool zooming = false;
     float projection[16];
-    int panel_width=240;
+    int panel_width=280;
     int display_w, display_h;
     int window_w, window_h;
     glfwGetFramebufferSize(window, &display_w, &display_h);
@@ -434,6 +434,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
             ImGui::NextColumn();
             if (ImGui::Selectable("Weft",data.warp==0)) {data.warp = data.warp==0 ? -1 : 0;}
             ImGui::Columns(1);
+            ImGui::Separator();
             {
                 char buffer[256];
                 for(int i=1;i<param->num_yarn_types;i++){
@@ -442,12 +443,14 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                     if(ImGui::Selectable(buffer,data.current_yarn_type==i)) {
                         data.current_yarn_type = data.current_yarn_type == i? 0 : i;
                     }
+                    ImGui::Indent();
+                    
                     tlYarnType *yt = param->yarn_types;
-                    if(ImGui::Checkbox("",(bool*)&param->yarn_types[i].color_enabled)){
+                    if(ImGui::Checkbox("##diffuse_color_enabled",(bool*)&param->yarn_types[i].color_enabled)){
                         redraw_pattern(&data,param,pattern_tex);
                     }
                     ImGui::SameLine();
-                    if(ImGui::ColorEdit3("",(float*)&(yt+i)->color)){
+                    if(ImGui::ColorEdit3("##diffuse_color",(float*)&(yt+i)->color)){
                         redraw_pattern(&data,param,pattern_tex);
                     }
                     if(param->num_yarn_types>2){
@@ -473,8 +476,15 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                             redraw_pattern(&data,param,pattern_tex);
                         }
                     }
+                    
+                    ImGui::Unindent();
                     ImGui::PopID();
                 }
+               
+                ImGui::Spacing();
+                ImGui::Spacing();
+                ImGui::Spacing();
+                ImGui::Spacing();
                 if(ImGui::Button("Add yarn type")){
                     int n =param->num_yarn_types;
                     tlYarnType *yt = (tlYarnType*)calloc(n+1,sizeof(tlYarnType));
@@ -486,6 +496,61 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                     param->yarn_types[n] = tl_default_yarn_type;
                     param->yarn_types[n].color_enabled = 1;
                 }
+                
+                ImGui::Spacing();
+                ImGui::Spacing();
+                ImGui::Spacing();
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+                ImGui::Spacing();
+                ImGui::Spacing();
+                ImGui::Spacing();
+                    
+                if(ImGui::CollapsingHeader("Yarn parameters")) {
+                    ImGui::Indent();
+
+                    char buffer[256];
+                    for(int i=0;i<param->num_yarn_types;i++){
+                        (i == 0) ? sprintf(buffer,"Default yarn parameters") : 
+                            sprintf(buffer,"Yarn %d parameters",i);
+                        ImGui::PushID(buffer);
+
+                        if(ImGui::CollapsingHeader(buffer)) {
+                            tlYarnType *yt = param->yarn_types;
+
+                            ImGui::Indent();
+                            
+#define TL_FLOAT_PARAM(name)\
+						ImGui::PushID(#name); \
+						ImGui::Text(#name); \
+                        ImGui::Checkbox("",(bool*)&(yt+i)->name##_enabled); \
+                        ImGui::SameLine(); \
+                        ImGui::InputFloat(" ", (float*)&(yt+i)->name); \
+                        ImGui::PopID();
+
+#define TL_COLOR_PARAM(name)\
+						ImGui::PushID(#name); \
+                        ImGui::Text(#name); \
+                        ImGui::Checkbox("",(bool*)&(yt+i)->name##_enabled); \
+                        ImGui::SameLine(); \
+                        ImGui::ColorEdit3(" ",(float*)&(yt+i)->name); \
+                        ImGui::PopID(); 
+
+                        TL_YARN_PARAMETERS
+
+#undef TL_FLOAT_PARAM
+#undef TL_COLOR_PARAM
+
+                            ImGui::Unindent();
+                        }
+                        
+                        ImGui::PopID();
+                    }
+                    
+                    ImGui::Unindent();
+                } // end Parameters
+
             }
             ImGui::End();
         }

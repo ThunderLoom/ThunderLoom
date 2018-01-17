@@ -689,7 +689,7 @@ void tl_prepare_with_context(tlWeaveParameters *params, void * context)
 		}
 	}
 }
-static void inline tl_prepare(tlWeaveParameters *params)
+void inline tl_prepare(tlWeaveParameters *params)
 {
 	tl_prepare_with_context(params, NULL);
 }
