@@ -1,6 +1,23 @@
 // File handles UI and control creation for ThunderLoomMtlNode.
 
 
+// Make sure this order in TL_params matches with ThunderLoomWriteCommand
+// in maya_thunderloom.cpp.
+global string $TL_params[] = {
+    "bend",
+    "yarnsize",
+    "twist",
+    "alpha",
+    "beta",
+    "specularColor",
+    "specularColorAmount",
+    "specularNoise",
+    "highlightWidth",
+    "diffuseColor",
+    "diffuseColorAmount"
+};
+
+
 // Calls the exported c++ command to load given file and return the ThunderLoom
 // patterns. Sets the maya attributes according to these values.
 // Also disconnects any maps.
@@ -9,8 +26,7 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
 	tokenize($nodeDotAttr, ".", $buffer);
 	string $nodeName = $buffer[0];
     
-    string $fullAttrName = $nodeName + ".filepath";
-	string $filepath = `getAttr $fullAttrName`;
+	string $filepath = `getAttr ($nodeName + ".filepath")`;
     float $tlparams[] = `thunderLoomParseFile -fileName $filepath`;
     int $num_yarn_types = $tlparams[0];
     
@@ -27,72 +43,110 @@ global proc setTLAttributesFromFile(string $nodeDotAttr) {
         $skipyrn0 = 1;
     }
     
+    global string $TL_params[];
+
     for($m in $multi) {
 		string $index = match("\[[0-9]+\]", $m); // Index with []
         if ($skipyrn0 != 0 && $index != "[0]") {
-            string $params[] = {
-            "bend",
-            "bendOn",
-            "yarnsize",
-            "yarnsizeOn",
-            "twist",
-            "twistOn",
-            "alpha",
-            "alphaOn",
-            "specularColor",
-            "specularColorOn",
-            "specularColorAmount",
-            "specularColorAmountOn",
-            "specularNoise",
-            "specularNoiseOn",
-            "highlightWidth",
-            "highlightWidthOn",
-            "diffuseColor",
-            "diffuseColorOn",
-            "diffuseColorAmount",
-            "diffuseColorAmountOn"
-            };
-            for ($param in $params) {
+            for ($param in $TL_params) {
                 removeMultiInstance -break true ($nodeName + "." + $param + $index);
+                removeMultiInstance -break true ($nodeName + "." + $param + "On" + $index);
             }
         }
     }
-
     
     // Set Parameters
     // The order of tlparams is determined by ThunderLoomCommand in 
     // maya_thunderloom.cpp
     int $params_per_yarn = 15; //Should match number of params being added in for loop.
-    int $offset = 1; //For $num_yarn_types
-    
-    int $i = 0;
+    int $param_index = 1; // Start from 1 to skip num_yarn_types.
+    int $yrn_index = 0;
     if ($skipyrn0 != 0) {
-        $i = 1;
+        $yrn_index = 1;
     }
-    while ($i<$num_yarn_types) { //For each yarn type
-        print("i: " + $i);
-        string $index = ("[" + $i + "]");
-        setAttr ($nodeName + ".bend" + $index) $tlparams[0 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".yarnsize" + $index) $tlparams[1 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".twist" + $index) $tlparams[2 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".alpha" + $index) $tlparams[3 + $i*$params_per_yarn + $offset];
-        // We leave Beta out, since it's the ratio between alpha and beta that matters (since we are normalizing).
-        //setAttr ($nodeName + ".beta" + $index) $tlparams[4 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".highlightWidth" + $index) $tlparams[5 + $i*$params_per_yarn + $offset];
-        float $specr = $tlparams[6 + $i*$params_per_yarn + $offset];
-        float $specg = $tlparams[7 + $i*$params_per_yarn + $offset];
-        float $specb = $tlparams[8 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".specularColor" + $index) $specr $specg $specb;
-        setAttr ($nodeName + ".specularColorAmount" + $index) $tlparams[9 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".specularNoise" + $index) $tlparams[10 + $i*$params_per_yarn + $offset];
-        float $colr = $tlparams[11 + $i*$params_per_yarn + $offset];
-        float $colg = $tlparams[12 + $i*$params_per_yarn + $offset];
-        float $colb = $tlparams[13 + $i*$params_per_yarn + $offset];
-        setAttr ($nodeName + ".diffuseColor" + $index) $colr $colg $colb;
-        setAttr ($nodeName + ".diffuseColorOn" + $index) 1;
-        setAttr ($nodeName + ".diffuseColorAmount" + $index) $tlparams[14 + $i*$params_per_yarn + $offset];
-        $i = $i + 1;
+    while ($yrn_index<$num_yarn_types) { //For each yarn type
+        string $yrn_index_str = ("[" + $yrn_index + "]");
+        for ($param in $TL_params) { // For each parameter
+            // Skip beta parameter
+            if ($param == "beta") {
+                $param_index = $param_index + 2; //Skip param and it's On value.
+                continue;
+            }
+
+            // Special code for color parameters
+            if ($param == "diffuseColor" || $param == "specularColor") {
+                float $r = $tlparams[$param_index];
+                float $g = $tlparams[$param_index + 1];
+                float $b = $tlparams[$param_index + 2];
+                setAttr ($nodeName + "." + $param + $yrn_index_str) $r $g $b;
+                $param_index = $param_index + 3;
+            } else {
+                // Float parameters
+                setAttr ($nodeName + "." + $param + $yrn_index_str) $tlparams[$param_index];
+                $param_index = $param_index + 1;
+            }
+            
+            // enabled parameters
+            setAttr ($nodeName + "." + $param + "On" + $yrn_index_str) $tlparams[$param_index];
+            $param_index = $param_index + 1;
+        }
+        $yrn_index = $yrn_index + 1;
     }
+}
+
+// Calls the exported c++ command to save parameters to file.
+global proc saveTLAttributesToFile(string $nodeDotAttr) {
+    string $buffer[];
+	tokenize($nodeDotAttr, ".", $buffer);
+	string $nodeName = $buffer[0];
+	
+    string $filepath = `getAttr ($nodeName + ".filepath")`;
+
+
+    string $res = `confirmDialog -button "Cancel" -cancelButton "Cancel" -button "Save" -defaultButton "Save" -message ("ThunderLoom: Are you sure you wan't to write current yarn parameters to file: " + $filepath + "?")`;
+
+    if ($res != "Save") {
+        return;
+    }
+
+    // Make sure this order in TL_params matches with ThunderLoomWriteCommand
+    // in maya_thunderloom.cpp.
+	float $param_values[];
+    global string $TL_params[];
+
+    int $i = 0;
+    // For each yarn type.
+    string $multi[] = `listAttr -multi -leaf $nodeDotAttr`;
+    for($m in $multi) {
+        // Yarn type index as string with brackets [].
+        string $yrn_index;
+        $yrn_index = match("\[[0-9]+\]", $m); 
+
+        for ($param in $TL_params) {
+            if ($param == "specularColor" || $param == "diffuseColor") {
+                float $values[] = `getAttr($nodeName + "." + $param + $yrn_index)`;
+                $param_values[$i] = $values[0]; $i = $i + 1;
+                $param_values[$i] = $values[1]; $i = $i + 1;
+                $param_values[$i] = $values[2]; $i = $i + 1;
+            } else {
+                $param_values[$i] = `getAttr($nodeName + "." + $param + $yrn_index)`;
+                $i = $i + 1;
+            }
+            $param_values[$i] = `getAttr($nodeName + "." + $param + "On" + $yrn_index)`;
+            $i = $i + 1;
+        }
+    }
+
+    //print("ThunderLoom params_values:");
+    //print($param_values);
+
+    if ( catch( `thunderLoomSaveFile $filepath $param_values` ) ) {
+        print("ThunderLoomSaveFile error! Unable to save file.");
+        confirmDialog -message "ThunderLoom: Error, unable to save parameters to file.";
+    } else {
+        confirmDialog -message "ThunderLoom: Saved parameters to pattern file.";
+    }
+    
 }
 
 // UI setup for file loading and global ThunderLoom settings.
@@ -138,14 +192,14 @@ global proc AELoadYarnTypesCompound(string $nodeDotAttr) {
     //create frame for whole multi attribute
     frameLayout -l "Yarn Types" -collapse false vrayListFrame;
         //maya like -> row layout for "New Item" button
-        rowLayout -nc 1 tlButtonLayout;
+        rowLayout -nc 3 tlButtonLayout;
+            separator -visible 0 "";
             button -label "Reset Yarn Types From File" -command ("setTLAttributesFromFile(\"" + $nodeDotAttr + "\")") tlResetYarnParamsBtn;
+            button -label "Update File with Yarn Types" -command ("saveTLAttributesToFile(\"" + $nodeDotAttr + "\")") tlSaveYarnParamsBtn;
         setParent ..;
     setParent ..;
     setParent ..;
 
-    //force replace
-    //updateTLAttributes($nodeDotAttr);
     AELoadYarnTypesCompoundRepl($nodeDotAttr);
 }
 

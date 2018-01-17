@@ -6,8 +6,6 @@
 #include <maya/MPxCommand.h>
 #include <maya/MArgList.h>
 
-
-
 class VRayThunderLoom: public MPxNode {
 public:
 	VRayThunderLoom();
@@ -58,7 +56,15 @@ private:
 class ThunderLoomCommand: public MPxCommand {
     public:
         MStatus doIt( const MArgList& args);
-        static void* creator();
+        bool isUndoable() {return false;};
+        static void* creator() {return new ThunderLoomCommand();};
+};
+
+class ThunderLoomWriteCommand: public MPxCommand {
+    public:
+        MStatus doIt( const MArgList& args);
+        bool isUndoable() {return false;};
+        static void* creator() {return new ThunderLoomWriteCommand();};
 };
 
 

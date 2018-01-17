@@ -14,6 +14,7 @@
 #include <maya/MPointArray.h>
 #include <maya/MPoint.h>
 #include <maya/MFloatVector.h>
+#include <maya/MDoubleArray.h>
 
 // V-Ray headers
 #include "vraybase.h"
@@ -267,6 +268,39 @@ MStatus VRayThunderLoom::compute(const MPlug &plug, MDataBlock &block) {
 }
 
 
+
+
+
+
+
+#define TL_PARAMS\
+        TL_PARAM_FLOAT(umax)\
+		TL_PARAM_BOOL(umax_enabled)\
+        TL_PARAM_FLOAT(yarnsize)\
+		TL_PARAM_BOOL(yarnsize_enabled)\
+        TL_PARAM_FLOAT(psi)\
+        TL_PARAM_BOOL(psi_enabled)\
+        TL_PARAM_FLOAT(alpha)\
+        TL_PARAM_BOOL(alpha_enabled)\
+        TL_PARAM_FLOAT(beta)\
+        TL_PARAM_BOOL(beta_enabled)\
+        TL_PARAM_FLOAT(specular_color.r)\
+        TL_PARAM_FLOAT(specular_color.g)\
+        TL_PARAM_FLOAT(specular_color.b)\
+        TL_PARAM_BOOL(specular_color_enabled)\
+        TL_PARAM_FLOAT(specular_amount)\
+        TL_PARAM_BOOL(specular_amount_enabled)\
+        TL_PARAM_FLOAT(specular_noise)\
+        TL_PARAM_BOOL(specular_noise_enabled)\
+        TL_PARAM_FLOAT(delta_x)\
+        TL_PARAM_BOOL(delta_x_enabled)\
+        TL_PARAM_FLOAT(color.r)\
+        TL_PARAM_FLOAT(color.g)\
+        TL_PARAM_FLOAT(color.b)\
+        TL_PARAM_BOOL(color_enabled)\
+        TL_PARAM_FLOAT(color_amount)\
+        TL_PARAM_BOOL(color_amount_enabled)\
+
 // ThunderLoomCommand
 MStatus ThunderLoomCommand::doIt( const MArgList& args ) {
     MStatus stat;
@@ -290,43 +324,28 @@ MStatus ThunderLoomCommand::doIt( const MArgList& args ) {
 					//stat = MStatus::kFailure;
                     return stat;
                 }
-                tl_prepare(tl_wparams);
                 MPxCommand::clearResult();
                 int num_yarn_types = tl_wparams->num_yarn_types;
 
                 MPxCommand::appendToResult((float)num_yarn_types);
 
 
-				// The order of the appended results has to match 
+                // The order of the appended results has to match 
 				// how they are parsed in the MEL script.
                 for (int i=0; i<num_yarn_types; i++) {
                     tlYarnType* yarn_type = &tl_wparams->yarn_types[i];
 
-                    MPxCommand::appendToResult(yarn_type->umax);
+#define TL_PARAM_FLOAT(name)\
+	MPxCommand::appendToResult(yarn_type->name);
 
-                    MPxCommand::appendToResult(yarn_type->yarnsize);
+#define TL_PARAM_BOOL(name)\
+	MPxCommand::appendToResult((float)(yarn_type->name));
 
-                    MPxCommand::appendToResult(yarn_type->psi);
+TL_PARAMS
 
-                    MPxCommand::appendToResult(yarn_type->alpha);
-
-                    MPxCommand::appendToResult(yarn_type->beta);
-
-                    MPxCommand::appendToResult(yarn_type->delta_x);
-
-                    MPxCommand::appendToResult(yarn_type->specular_color.r);
-                    MPxCommand::appendToResult(yarn_type->specular_color.g);
-                    MPxCommand::appendToResult(yarn_type->specular_color.b);
-
-                    MPxCommand::appendToResult(yarn_type->specular_amount);
-
-                    MPxCommand::appendToResult(yarn_type->specular_noise);
-
-                    MPxCommand::appendToResult(yarn_type->color.r);
-                    MPxCommand::appendToResult(yarn_type->color.g);
-                    MPxCommand::appendToResult(yarn_type->color.b);
-
-                    MPxCommand::appendToResult(yarn_type->color_amount);
+#undef TL_PARAM_FLOAT
+#undef TL_PARAM_BOOL
+                
                 }
             }
         }
@@ -340,6 +359,69 @@ MStatus ThunderLoomCommand::doIt( const MArgList& args ) {
     return MS::kSuccess;
 }
 
-void* ThunderLoomCommand::creator() {
-    return new ThunderLoomCommand();
+// ThunderLoomWriteCommand
+MStatus ThunderLoomWriteCommand::doIt(const MArgList& args) {
+	MStatus stat;
+	if (args.length() > 0) {
+		int save_flag = 0;
+		//First argument is file name.
+		const char * filepath;
+		{
+			MString tmpstr = args.asString(0, &stat);
+			if (stat != MS::kSuccess) { return stat; };
+			filepath = tmpstr.asChar();
+		}
+
+		// Start to look for file
+		const char *error;
+		tlWeaveParameters *tl_wparams = tl_weave_pattern_from_file(filepath, &error);
+		if (!tl_wparams) {
+			MPxCommand::clearResult();
+			stat = MStatus::kFailure;
+			return stat;
+		}
+		int num_yarn_types = tl_wparams->num_yarn_types;
+		MPxCommand::clearResult();
+
+		unsigned int arg = 1;
+		MDoubleArray param_values = args.asDoubleArray(arg, &stat);
+
+		// Update tl_wparams with values, same order as in ThunderLoomCommand.
+		int i = 0; // Argument index
+		for (int yrn_i = 0; yrn_i < num_yarn_types; yrn_i++) {
+			tlYarnType* yarn_type = &tl_wparams->yarn_types[yrn_i];
+
+			if (param_values.length() - i < 15) {
+				// Stop the loop  if there aren't enough parameters 
+				// to fill the 15 parameters needed for a yarn type.
+				break;
+			}
+			save_flag = 1;
+
+#define TL_PARAM_FLOAT(name)\
+	yarn_type->name = (float)param_values[i++];
+
+#define TL_PARAM_BOOL(name)\
+	yarn_type->name = (param_values[i++] != 0.0);
+
+TL_PARAMS
+
+#undef TL_PARAM_FLOAT
+#undef TL_PARAM_BOOL
+
+		}
+
+		// Save file with new params.
+		if (save_flag) {
+			long len = 0;
+			unsigned char *data = tl_pattern_to_ptn_file(tl_wparams, &len);
+			FILE *fp = fopen(filepath, "wb");
+			fwrite(data, len, 1, fp);
+			fclose(fp);
+			free(data);
+		}
+		return MS::kSuccess;
+	}
+	return MS::kFailure;
 }
+#undef TL_PARAMS
