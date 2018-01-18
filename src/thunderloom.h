@@ -624,8 +624,15 @@ void tl_prepare_with_context(tlWeaveParameters *params, void * context)
 		// incident directions
 		for(unsigned int yarn_type = 0; yarn_type < params->num_yarn_types;
 			yarn_type++){
-            float tmp_specular_color_red=params->yarn_types[yarn_type].specular_color.r;
-            params->yarn_types[yarn_type].specular_color.r = 1.f;
+			float tmp_specular_color_red = params->yarn_types[yarn_type].specular_color.r;
+			params->yarn_types[yarn_type].specular_color.r = 1.f;
+			void * tmp_specular_color_texmap = params->yarn_types[yarn_type].specular_color_texmap;
+			params->yarn_types[yarn_type].specular_color_texmap = 0;
+			float tmp_specular_amount = params->yarn_types[yarn_type].specular_amount;
+			params->yarn_types[yarn_type].specular_amount = 1.f;
+			void * tmp_specular_amount_texmap = params->yarn_types[yarn_type].specular_amount_texmap;
+			params->yarn_types[yarn_type].specular_amount_texmap = 0;
+
 			for (int i = 0; i < nLocationSamples; i++) {
 				float result = 0.0f;
 				float halton_point[4];
@@ -665,6 +672,9 @@ void tl_prepare_with_context(tlWeaveParameters *params, void * context)
 				}
 			}
             params->yarn_types[yarn_type].specular_color.r = tmp_specular_color_red;
+			params->yarn_types[yarn_type].specular_color_texmap = tmp_specular_color_texmap;
+			params->yarn_types[yarn_type].specular_amount = tmp_specular_amount;
+			params->yarn_types[yarn_type].specular_amount_texmap = tmp_specular_amount_texmap;
 		}
 
 		if (highest_result <= 0.0001f) {

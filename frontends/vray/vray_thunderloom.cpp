@@ -98,17 +98,17 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         // It seems that only float params can be retrieved from Maya into the 
         // vrscene file. And only as a texture if the floats are put into an 
         // array. We allow the _on params to be specified as a float aswell.
-        addParamTextureFloat("bend_on_float",                 false, -1, "");
-        addParamTextureFloat("yarnsize_on_float",             false, -1, "");
-        addParamTextureFloat("twist_on_float",                false, -1, "");
-        addParamTextureFloat("phase_alpha_on_float",          false, -1, "");
-        addParamTextureFloat("phase_beta_on_float",           false, -1, "");
-        addParamTextureFloat("specular_color_on_float",       false, -1, "");
-        addParamTextureFloat("speclar_color_amount_on_float", false, -1, "");
-        addParamTextureFloat("specular_noise_on_float",       false, -1, "");
-        addParamTextureFloat("highlight_width_on_float",      false, -1, "");
-        addParamTextureFloat("diffuse_color_on_float",        false, -1, "");
-        addParamTextureFloat("diffuse_color_amount_on_float", false, -1, "");
+        addParamTextureFloat("bend_on_float",                  false, -1, "");
+        addParamTextureFloat("yarnsize_on_float",              false, -1, "");
+        addParamTextureFloat("twist_on_float",                 false, -1, "");
+        addParamTextureFloat("phase_alpha_on_float",           false, -1, "");
+        addParamTextureFloat("phase_beta_on_float",            false, -1, "");
+        addParamTextureFloat("specular_color_on_float",        false, -1, "");
+        addParamTextureFloat("specular_color_amount_on_float", false, -1, "");
+        addParamTextureFloat("specular_noise_on_float",        false, -1, "");
+        addParamTextureFloat("highlight_width_on_float",       false, -1, "");
+        addParamTextureFloat("diffuse_color_on_float",         false, -1, "");
+        addParamTextureFloat("diffuse_color_amount_on_float",  false, -1, "");
         
         addParamFloat("bends2", 0.5f, -1, "");
     }
