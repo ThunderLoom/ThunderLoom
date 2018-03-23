@@ -429,7 +429,6 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                 redraw_pattern(&data,param,pattern_tex);
             }
             ImGui::Columns(2, NULL, false);
-            static bool selected[16] = { 0 };
             if (ImGui::Selectable("Warp",data.warp==1)) {data.warp = data.warp==1 ? -1 : 1;}
             ImGui::NextColumn();
             if (ImGui::Selectable("Weft",data.warp==0)) {data.warp = data.warp==0 ? -1 : 0;}
@@ -562,7 +561,6 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
             ypos/=(double)window_h;
             double delta_x=(xpos-last_cursor_x);
             double delta_y=(ypos-last_cursor_y);
-            float scale=2.f*powf(2.f,zoom);
             zoom += scroll*0.1;
             scroll = 0.0;
             if(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT)){

@@ -56,14 +56,14 @@ private:
 class ThunderLoomCommand: public MPxCommand {
     public:
         MStatus doIt( const MArgList& args);
-        bool isUndoable() {return false;};
+        bool isUndoable() const {return false;};
         static void* creator() {return new ThunderLoomCommand();};
 };
 
 class ThunderLoomWriteCommand: public MPxCommand {
     public:
         MStatus doIt( const MArgList& args);
-        bool isUndoable() {return false;};
+        bool isUndoable() const {return false;};
         static void* creator() {return new ThunderLoomWriteCommand();};
 };
 

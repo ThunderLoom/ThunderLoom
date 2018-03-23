@@ -1824,7 +1824,6 @@ float tl_eval_filament_specular(tlIntersectionData intersection_data,
                 A = 1.f / (4.0f*(float)M_PI) * (widotn*wodotn)/(widotn+wodotn);
                 //TODO(Peter): Explain from where the 1/4*PI factor comes from
             }
-            float l = 2.f;
 
             // ALG: 'COMPUTE As USING (9)'
             //TODO(Peter): Implement As, -- smoothes the dissapeares of the
