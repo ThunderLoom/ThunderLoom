@@ -34,12 +34,12 @@ set(LIBS
 IF (WIN32)
     # "C:/Program Files/Chaos Group/V-Ray/Standalone for x64/include"
     set(INCLUDE_DIRS ${INCLUDE_DIRS} 
-        "C:/Program Files/Chaos Group/V-Ray/Maya 2017 for x64/include"
+        "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/include"
     )
 
     # "C:/Program Files/Chaos Group/V-Ray/Maya 2017 for x64/lib/x64/vc11"
     set(LIB_DIRS ${LIB_DIRS} 
-        "C:/Program Files/Chaos Group/V-Ray/Maya 2017 for x64/lib/x64/vc11"
+        "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/lib/x64/vc11"
     )
 
     ADD_DEFINITIONS(-DUNICODE)
@@ -49,12 +49,12 @@ ENDIF (WIN32)
 IF(APPLE)
     # -I/Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/include
     set(INCLUDE_DIRS ${INCLUDE_DIRS} 
-        "/Applications/ChaosGroup/V-Ray/Maya2017/include"
+        "/Applications/ChaosGroup/V-Ray/Maya${MAYA_VERSION}/include"
         "/usr/local/include")
 
     # -I"/Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/lib/mavericks_x64/gcc-4.2-cpp"
     set(LIB_DIRS ${LIB_DIRS} 
-        "/Applications/ChaosGroup/V-Ray/Maya2017/lib/mavericks_x64/gcc-4.2-cpp"
+        "/Applications/ChaosGroup/V-Ray/Maya${MAYA_VERSION}/lib/mavericks_x64/gcc-4.2-cpp"
     )
     set(LIBS ${LIBS} 
         "dl"
