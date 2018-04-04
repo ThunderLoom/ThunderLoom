@@ -117,6 +117,7 @@ ENDIF (WIN32)
 
 # Set warnings
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    set_target_properties(thunderLoomVRayMaya PROPERTIES SUFFIX ".bundle")
     target_compile_options(thunderLoomVRayMaya PRIVATE 
         "-std=c++11"
         "-Wall"
