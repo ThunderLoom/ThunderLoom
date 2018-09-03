@@ -13,7 +13,9 @@ Maya version (2011, 2012 etc).
 * Copy the V-Ray shader translation file `vraythunderloommtl.txt` to
 /mayainstall/vray/shaders/.
 * Change the module file `ThunderLoom.mod` to point to the module directory
-`thunderloom_maya_module`. Copy the `.mod` file to /mayainstall/modules/
+`thunderloom_maya_module`. Copy the `.mod` to any accepted Maya module path.
+You can view these paths by calling `getenv MAYA_MODULE_PATH` in the Maya 
+console.
 
 The plugin should now show up in the Maya plug-ins manager.
 

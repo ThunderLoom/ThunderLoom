@@ -171,8 +171,7 @@ global proc AEVRayThunderLoomMtlTemplate(string $nodeName )
     // '-callCustom specifies function to use to build UI, second argument is 
     // a replacing function to use if attribute editor already exists and node
     // of same type should be edited.'
-    editorTemplate -callCustom "AELoadYarnTypesCompound" "AELoadYarnTypesCompoundRepl" "bend";
-    //editorTemplate -callCustom "AELoadYarnTypesCompound" "AELoadYarnTypesCompoundRepl" "reload";
+    editorTemplate -callCustom "AELoadYarnTypesCompound" "AELoadYarnTypesCompoundRepl" "yarnsize";
 
     // Specify place for new controls to be added.
     editorTemplate -addExtraControls;
@@ -297,8 +296,8 @@ global proc AELoadYarnTypesCompoundRepl(string $nodeDotAttr) {
                     for ($param in $params) {
                         addParam($param, $buffer, $index, $nodeName);
                     }
-                setParent..;
-                setParent..;
+                setParent ..;
+                setParent ..;
 			}
 		}
 	}
