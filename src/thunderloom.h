@@ -1153,7 +1153,7 @@ void tl_free_weave_parameters(tlWeaveParameters *params)
 static float intensity_variation(tlPatternData pattern_data)
 {
 	//NOTE(Vidar): a fineness of 3 seems to work fine...
-	float intensity_fineness=3.f;
+	uint32_t intensity_fineness = 3;
 
     // have index to make a grid of finess*fineness squares 
     // of which to have the same brightness variations.
@@ -1168,19 +1168,17 @@ static float intensity_variation(tlPatternData pattern_data)
         tindex_y = tmp;
     }
 
-    //segment start x,y
-    float centerx = tindex_x - (pattern_data.x*0.5f)*pattern_data.width;
-    float centery = tindex_y - (pattern_data.y*0.5f)*pattern_data.length;
-    
-    uint32_t r1 = (uint32_t) ((centerx + tindex_x) 
-            * intensity_fineness);
-    uint32_t r2 = (uint32_t) ((centery + tindex_y) 
-            * intensity_fineness);
-    
+    // Potential overflow of r1 and r2 is acceptable here.
+    uint32_t r1 = tindex_x*intensity_fineness - 
+        (pattern_data.x*0.5)*pattern_data.width*intensity_fineness;
+    uint32_t r2 = tindex_y*intensity_fineness - 
+        (pattern_data.y*0.5)*pattern_data.length*intensity_fineness;
+
     float xi = sample_TEA_single(r1, r2, 8);
     float log_xi = -logf(xi);
     return log_xi < 10.f ? log_xi : 10.f;
 }
+
 
 static void calculate_length_of_segment(uint8_t warp_above, uint32_t pattern_x,
                 uint32_t pattern_y, uint32_t *steps_left,
@@ -1291,23 +1289,15 @@ tlYarnSegment tl_get_yarn_segment(float total_u, float total_v,
         v = v - floor(v);
     }
 
-    //TODO(Peter): Remove uneccessary variables...
-
     uint32_t pattern_width = params->pattern_width;
     uint32_t pattern_height = params->pattern_height;
     //TODO fmod repeat uvs, to avoiding the u or v == 1 check.
     int32_t pattern_x = (int32_t)floor((total_u*(float)(pattern_width)));
     int32_t pattern_y = (int32_t)floor((total_v*(float)(pattern_height)));
     
-    //non-repeating pattern index (used for specular noise)
-    //int32_t total_pattern_x = total_u*pattern_width;
-    //int32_t total_pattern_y = total_v*pattern_height;
-    
     int32_t pattern_repeat_x = tl_repeat_index(pattern_x, pattern_width);
     int32_t pattern_repeat_y = tl_repeat_index(pattern_y, pattern_height);
-    //int32_t pattern_repeat_x = (u == 1.f) ? pattern_width-1 : (uint32_t)(u*(pattern_width));
-    //int32_t pattern_repeat_y = (v == 1.f) ? pattern_height-1 : (uint32_t)(v*(pattern_height));
-
+    
     //The origin is the pattern entry from which size of segment is calculated. 
     //The origin entry changes if we miss a thin yarn.
     int32_t origin_x = pattern_x;
@@ -1327,15 +1317,14 @@ tlYarnSegment tl_get_yarn_segment(float total_u, float total_v,
     uint32_t initial_coord_across = warp_above ? pattern_x: pattern_y;
 
     //Get segment size of yarn in current position in pattern matrix.
-	//float yarnsize = get_yarn_segment_size(total_pattern_x, total_pattern_y, params, intersection_data);
     float origin_yarnsize = get_yarn_segment_size(origin_x,
             origin_y, params, intersection_data);
     
     //init some flags
-    uint8_t yarn_hit = 0;			//Have we hit the yarn?
-    uint8_t between_parallel = 0;	//for later, are we between parallel yarns?
-    uint8_t extension = 0;          //is what we hit an extention of an adjasent yarn?
-    int32_t origin_offset = 0;      //With how much is the origin offset?
+    uint8_t yarn_hit = 0;			// If we have hit the yarn.
+    uint8_t between_parallel = 0;	// For later, if we are between parallel yarns.
+    uint8_t extension = 0;          // If what we hit is an extention of an adjacent yarn.
+    int32_t origin_offset = 0;      // With how much the origin is offset.
     if (fabsf(2*(*cell_coord_across)-1.f) <= origin_yarnsize) {
         yarn_hit = 1;
     } else {
@@ -1509,13 +1498,16 @@ tlPatternData tl_get_pattern_data(tlIntersectionData intersection_data,
         v_scale = params->vscale;
     }
 
-    float rot=params->uvrotation/180.f*(float)M_PI;
-    float tmp_u=uv_x;
-    float tmp_v=uv_y;
-    uv_x=(tmp_u*cosf(rot)-tmp_v*sinf(rot))*u_scale;
-    uv_y=(tmp_u*sinf(rot)+tmp_v*cosf(rot))*v_scale;
+    // Apply uv rotation
+    {
+        float rot=params->uvrotation/180.f*(float)M_PI;
+        float tmp_u=uv_x;
+        float tmp_v=uv_y;
+        uv_x=(tmp_u*cosf(rot)-tmp_v*sinf(rot))*u_scale;
+        uv_y=(tmp_u*sinf(rot)+tmp_v*cosf(rot))*v_scale;
+    }
 
-    //scaled and non-repeating uv patterns.
+    //scaled and non-repeating uv.
     float total_u = uv_x;
     float total_v = uv_y;
 
@@ -1527,7 +1519,7 @@ tlPatternData tl_get_pattern_data(tlIntersectionData intersection_data,
     if (v_repeat < 0.f) {
         v_repeat = v_repeat - floor(v_repeat);
     }
-    //non-repeating pattern index (used for specular noise)
+//non-repeating pattern index (used for specular noise)
     uint32_t total_pattern_x = (uint32_t)((int32_t)(uv_x*params->pattern_width));
     uint32_t total_pattern_y = (uint32_t)((int32_t)(uv_y*params->pattern_height));
 
