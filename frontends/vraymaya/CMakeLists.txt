@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MACOSX_RPATH 1)
 
-IF(WIN32 AND (NOT (MSVC_VERSION STREQUAL "1700"))) #VS11
-    message(SEND_WARNING "V-Ray requires compiler vc11 (Visual Studio 2012)!")
+IF(WIN32 AND (NOT (MSVC_VERSION STREQUAL "1900"))) #VS11
+    message(SEND_WARNING "V-Ray requires compiler v140!")
 ENDIF()
 
 
@@ -11,7 +11,7 @@ project(thunderLoomVRayMaya)
 
 # Varibles
 set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
-set(MAYA_VERSION "2017" CACHE STRING "Maya version (year)")
+set(MAYA_VERSION "2018" CACHE STRING "Maya version (year)")
 set(OUTPUT_MAYA_PATH "${RELEASE_DIR}/V-Ray for Maya${MAYA_VERSION}/")
 IF (WIN32)
     set(MAYA_ROOT "C:/Program Files/Autodesk/Maya${MAYA_VERSION}" CACHE PATH "Path to Maya")
@@ -20,7 +20,7 @@ IF (WIN32)
     
     set(VRAYMAYA_ROOT "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/" CACHE PATH "Path to V-Ray for Maya")
     set(VRAYMAYA_INCLUDE "${VRAYMAYA_ROOT}/include/" CACHE PATH "Path to V-Ray for Maya include dir. Will use VRAYMAYA_ROOT as starting point if not set.")
-    set(VRAYMAYA_LIB "${VRAYMAYA_ROOT}/lib/x64/vc11/" CACHE PATH "Path to V-Ray for Maya Library dir. Will use VRAYMAYA_ROOT as starting point if not set.")
+    set(VRAYMAYA_LIB "${VRAYMAYA_ROOT}/lib/x64/vc14/" CACHE PATH "Path to V-Ray for Maya Library dir. Will use VRAYMAYA_ROOT as starting point if not set.")
 ENDIF(WIN32)
 IF(APPLE)
     set(MAYA_ROOT "/Applications/Autodesk/maya${MAYA_VERSION}/" CACHE PATH "Path to Maya")
@@ -142,6 +142,8 @@ add_custom_command(TARGET thunderLoomVRayMaya POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${PROJECT_SOURCE_DIR}/vraythunderloommtl.txt
                 ${OUTPUT_MAYA_PATH}/
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+                ${OUTPUT_MAYA_PATH}/thunderloom_maya_module/scripts
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${PROJECT_SOURCE_DIR}/AEVRayThunderLoomMtlTemplate.mel
                 ${OUTPUT_MAYA_PATH}/thunderloom_maya_module/scripts/

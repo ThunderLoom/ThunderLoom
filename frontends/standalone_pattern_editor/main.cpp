@@ -14,6 +14,9 @@ int CALLBACK WinMain(
   _In_ LPSTR     lpCmdLine,
   _In_ int       nCmdShow
 )
+
+#pragma comment(lib, "legacy_stdio_definitions.lib")
+
 #else
 int main(int argc, char **argv)
 #endif

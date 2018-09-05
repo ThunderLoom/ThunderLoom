@@ -36,7 +36,7 @@ more information.
 
 ## Installing the frontends
 Precompiled binaries can be found under the [releases](https://github.com/vidarn/ThunderLoom/releases) tab. The zip file
-includes plugins for V-Ray for 3dsMax (2014/2015/2016/2017) and for the mitsuba renderer.
+includes plugins for V-Ray for 3dsMax, Maya and for the mitsuba renderer.
 
 See the respective README files for specific install instructions.
 

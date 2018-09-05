@@ -9,7 +9,7 @@ The plugin for the actual shader is here: [/frontends/vray/](https://github.com/
 * Install the V-Ray plugin. Either move the vray plugin `vray_thunderloom.dll` 
 to /mayainstall/vray/vrayplugins/ or add the path to the containing folder to 
 the environment variable `VRAY_FOR_MAYAnnnn_PLUGINS_x64`. Where `nnnn` is the
-Maya version (2011, 2012 etc).
+Maya version (2018, 2019 etc).
 * Copy the V-Ray shader translation file `vraythunderloommtl.txt` to
 /mayainstall/vray/shaders/.
 * Change the module file `ThunderLoom.mod` to point to the module directory
@@ -24,11 +24,14 @@ Follow the instructions at
 http://help.autodesk.com/cloudhelp/2017/ENU/Maya-SDK/files/Setting_up_your_build_environment.htm
 for your platform to setup the Maya SDK.
 
+CMake files assume visual studio toolkit v140. Meaning V-Ray version 3.60 and 
+above are supported.
+
 In order to build the material plugin from source you will need...
 
 * Maya and its SDK corresponding to your Maya version.
-* V-Ray version 3.x (for your Maya version) installed.
-* Visual Studio 2012 (for windows)
+* V-Ray version greater than 3.60 (for your Maya version) installed.
+* Visual Studio 2017 (for windows), toolkit v140 (VS2015).
 
 
 ## Windows
@@ -37,7 +40,7 @@ directory run the following commands to generate the visual studio projects.
 ```
 mkdir _build
 cd _build
-cmake -DMAYA_VERSION=2017 -G "Visual Studio 11 Win64" ..
+cmake -DMAYA_VERSION=2018 -G "Visual Studio 15 2017 Win64" -T "v140"..
 ```
 The project can now be opened or built directly with ``cmake --build .``.
 This will create the shell for a Maya plugin module and the resulting `.mll` 
@@ -53,7 +56,7 @@ directory run the following commands,
 ```
 mkdir _build
 cd _build
-cmake -DMAYA_VERSION=2017 ..
+cmake -DMAYA_VERSION=2018 ..
 ```
 The project can now be opened or built directly with ``cmake --build .``.
 This will create the shell for a Maya plugin module and the resulting `.mll` 

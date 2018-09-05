@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MACOSX_RPATH 1)
 
-IF(WIN32 AND (NOT (MSVC_VERSION STREQUAL "1700"))) #VS11
-    message(SEND_WARNING "V-Ray requires compiler vc11 (Visual Studio 2012)!")
+IF(WIN32 AND (NOT (MSVC_VERSION STREQUAL "1900"))) #VS11
+    message(SEND_WARNING "V-Ray requires compiler v140!")
 ENDIF()
 
 project(vray_thunderLoom)
@@ -37,9 +37,9 @@ IF (WIN32)
         "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/include"
     )
 
-    # "C:/Program Files/Chaos Group/V-Ray/Maya 2017 for x64/lib/x64/vc11"
+    # "C:/Program Files/Chaos Group/V-Ray/Standalone for x64/lib/x64/vc14"
     set(LIB_DIRS ${LIB_DIRS} 
-        "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/lib/x64/vc11"
+        "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/lib/x64/vc14"
     )
 
     ADD_DEFINITIONS(-DUNICODE)
@@ -50,11 +50,13 @@ IF(APPLE)
     # -I/Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/include
     set(INCLUDE_DIRS ${INCLUDE_DIRS} 
         "/Applications/ChaosGroup/V-Ray/Maya${MAYA_VERSION}/include"
+        #"/Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/include/"
         "/usr/local/include")
 
     # -I"/Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/lib/mavericks_x64/gcc-4.2-cpp"
     set(LIB_DIRS ${LIB_DIRS} 
         "/Applications/ChaosGroup/V-Ray/Maya${MAYA_VERSION}/lib/mavericks_x64/gcc-4.2-cpp"
+        #"/Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/lib/mavericks_x64/gcc-4.2-cpp"
     )
     set(LIBS ${LIBS} 
         "dl"
