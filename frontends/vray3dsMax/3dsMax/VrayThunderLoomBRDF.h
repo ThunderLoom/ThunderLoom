@@ -8,12 +8,10 @@ namespace VUtils {
 
 class MyBaseBSDF: public BRDFSampler, public BSDFSampler {
 protected:
-	Color diffuse_color;
+	ShadeCol diffuse_color;
 
-	Vector normal, gnormal;
+	ShadeVec normal, gnormal;
     int orig_backside;
-
-	Matrix nm, inm; // A matrix with the normal as the z-axis; can be used for anisotropy
 
     tlWeaveParameters *m_weave_parameters;
 	Texmap **m_texmaps;
@@ -26,12 +24,12 @@ public:
 	void init(const VRayContext &rc, tlWeaveParameters *weave_parameters);
 
 	// From BRDFSampler
-	Vector getDiffuseNormal(const VR::VRayContext &rc);
-	Color getDiffuseColor(Color &lightColor);
-	Color getLightMult(Color &lightColor);
-	Color getTransparency(const VRayContext &rc);
+	ShadeVec getDiffuseNormal(const VR::VRayContext &rc);
+	ShadeCol getDiffuseColor(ShadeCol &lightColor);
+	ShadeCol getLightMult(ShadeCol &lightColor);
+	ShadeCol getTransparency(const VRayContext &rc);
 
-	Color eval(const VRayContext &rc, const Vector &direction, Color &lightColor, Color &origLightColor, float probLight, int flags);
+	ShadeCol eval( const VRayContext &rc, const ShadeVec &direction, ShadeCol &shadowedLight, ShadeCol &origLight, float probLight,int flags);
 	void traceForward(VRayContext &rc, int doDiffuse);
 
 	int getNumSamples(const VRayContext &rc, int doDiffuse);

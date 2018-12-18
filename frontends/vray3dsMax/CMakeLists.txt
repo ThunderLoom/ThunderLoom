@@ -3,16 +3,10 @@ cmake_minimum_required(VERSION 2.8)
 IF(NOT WIN32)
     message(FATAL_ERROR "thunderLoom for V-Ray for 3dsMax can only be built on windows!")
 ENDIF()
-IF(WIN32 AND (NOT (MSVC_VERSION STREQUAL "1700"))) #VS11
-    message(SEND_WARNING "V-Ray requires compiler vc11 (Visual Studio 2012)!")
-ENDIF()
 
-# Maps to Visual Studio solution file (Tutorial.sln)
-# The solution will have all targets (exe, lib, dll) 
-# as Visual Studio projects (.vcproj)
 project(thunderLoomVRay3dsMax)
 
-# Varibles
+# Variables
 set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
 set(3DSMAX_VERSION "2017" CACHE STRING "3dsMax version (year)")
 set(OUTPUT_3DSMAX_PATH "${RELEASE_DIR}/V-Ray for 3dsMax${3DSMAX_VERSION}/")
@@ -36,7 +30,7 @@ set(GLFW_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/glfw/include)
 set(IMGUI_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/imgui)
 
 # Additional library directories
-set(GLFW_LIB ${PROJECT_SOURCE_DIR}/../dependencies/glfw/lib-vc2012)
+set(GLFW_LIB ${PROJECT_SOURCE_DIR}/../dependencies/glfw/lib-vc2015)
 
 ADD_DEFINITIONS(-DUNICODE)
 ADD_DEFINITIONS(-D_UNICODE)
@@ -75,7 +69,7 @@ link_directories(${GLFW_LIB}
 # Set Properties->General->Configuration Type to Dynamic Library(.dll)
 # Creates math.dll with the listed sources collected in the variables
 # Also adds sources to the Solution Explorer
-add_library(thunderLoomVRay3dsMax SHARED ${SOURCES})
+add_library(thunderLoomVRay3dsMax MODULE ${SOURCES})
 set_target_properties(thunderLoomVRay3dsMax PROPERTIES SUFFIX ".dlt")
 IF(MSVC)
     set_target_properties( thunderLoomVRay3dsMax PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH} )
@@ -95,11 +89,12 @@ target_link_libraries (thunderLoomVRay3dsMax
     "odbc32"
     "odbccp32"
     "vray2017"
-    "vutils_s"
-    "plugman_s"
     "vrender2017"
+	"vc14/vutils_s"
+	"vc14/plugman_s"
     "glfw3"
-    "opengl32")
+    "opengl32"
+	)
 
 add_custom_command(TARGET thunderLoomVRay3dsMax POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy

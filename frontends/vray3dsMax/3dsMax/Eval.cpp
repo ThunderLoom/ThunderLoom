@@ -8,11 +8,11 @@
 //using namespace VUtils;
 
 void EvalDiffuseFunc (const VUtils::VRayContext &rc,
-    tlWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
+    tlWeaveParameters *weave_parameters, VUtils::ShadeCol *diffuse_color,
 	tlYarnType* yarn_type, int* yarn_type_id)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
-        *diffuse_color = VUtils::Color(1.f,1.f,0.f);
+        *diffuse_color = VUtils::ShadeCol(1.f,1.f,0.f);
 		*yarn_type = tl_default_yarn_type;
 		*yarn_type_id = 0;
         return;
@@ -37,20 +37,15 @@ void EvalDiffuseFunc (const VUtils::VRayContext &rc,
 	*yarn_type = weave_parameters->yarn_types[pattern_data.yarn_type];
     tlColor d = 
         tl_eval_diffuse( intersection_data, pattern_data, weave_parameters);
-    diffuse_color->r = d.r;
-    diffuse_color->g = d.g;
-    diffuse_color->b = d.b;
+	diffuse_color->set(d.r, d.g, d.b);
 }
 
 void EvalSpecularFunc ( const VUtils::VRayContext &rc,
-const VUtils::Vector &direction, tlWeaveParameters *weave_parameters,
-VUtils::Matrix nm, VUtils::Color *reflection_color)
+const VUtils::ShadeVec &direction, tlWeaveParameters *weave_parameters, VUtils::ShadeCol *reflection_color)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
 		float s = 0.1f;
-		reflection_color->r = s;
-		reflection_color->g = s;
-		reflection_color->b = s;
+		reflection_color->set(s, s, s);
 		return;
     }
     tlIntersectionData intersection_data;
@@ -63,15 +58,15 @@ VUtils::Matrix nm, VUtils::Color *reflection_color)
 
     //Convert the view and light directions to the correct coordinate system
     Point3 viewDir, lightDir;
-    viewDir.x = -rc.rayparams.viewDir.x;
-    viewDir.y = -rc.rayparams.viewDir.y;
-    viewDir.z = -rc.rayparams.viewDir.z;
+    viewDir.x = -rc.rayparams.viewDir.x();
+    viewDir.y = -rc.rayparams.viewDir.y();
+    viewDir.z = -rc.rayparams.viewDir.z();
     viewDir = sc.VectorFrom(viewDir,REF_WORLD);
     viewDir = viewDir.Normalize();
 
-    lightDir.x = direction.x;
-    lightDir.y = direction.y;
-    lightDir.z = direction.z;
+    lightDir.x = direction.x();
+    lightDir.y = direction.y();
+    lightDir.z = direction.z();
     lightDir = sc.VectorFrom(lightDir,REF_WORLD);
     lightDir = lightDir.Normalize();
 
@@ -101,9 +96,7 @@ VUtils::Matrix nm, VUtils::Color *reflection_color)
     tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
         weave_parameters);
     tlColor s = tl_eval_specular(intersection_data, pattern_data, weave_parameters);
-    reflection_color->r = s.r;
-    reflection_color->g = s.g;
-    reflection_color->b = s.b;
+    reflection_color->set(s.r, s.g, s.b);
 }
 
 class SCTexture: public ShadeContext {

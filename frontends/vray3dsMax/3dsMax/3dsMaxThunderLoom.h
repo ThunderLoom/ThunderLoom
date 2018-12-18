@@ -38,6 +38,7 @@ enum {
 #define YARN_TYPE_TEXMAP(param) yrn_texmaps_##param,
 	YARN_TYPE_TEXMAP_PARAMETERS
 #undef YARN_TYPE_PARAM
+#undef YARN_TYPE_TEXMAP
 	NUMBER_OF_YRN_TEXMAPS
 };
 

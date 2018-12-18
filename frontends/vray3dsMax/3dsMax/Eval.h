@@ -20,9 +20,8 @@
 #pragma warning( pop ) 
 
 void EvalDiffuseFunc (const VUtils::VRayContext &rc,
-    tlWeaveParameters *weave_parameters, VUtils::Color *diffuse_color,
+    tlWeaveParameters *weave_parameters, VUtils::ShadeCol *diffuse_color,
 	tlYarnType *yarn_type, int *yarn_type_id);
 
-void EvalSpecularFunc ( const VUtils::VRayContext &rc,
-    const VUtils::Vector &direction, tlWeaveParameters *weave_parameters,
-    VUtils::Matrix nm, VUtils::Color *reflection_color);
+void EvalSpecularFunc(const VUtils::VRayContext &rc,
+	const VUtils::ShadeVec &direction, tlWeaveParameters *weave_parameters, VUtils::ShadeCol *reflection_color) ;

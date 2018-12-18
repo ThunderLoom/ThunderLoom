@@ -233,7 +233,7 @@ public:
 				//swprintf(buffer,L"Thunder Loom v%d.%d.%d (paramblock v%d.%02d)",
 				//	PLUGIN_VERSION_MAJOR,PLUGIN_VERSION_MINOR,PLUGIN_VERSION_PATCH,
 				//	PARAM_VERSION_HIGH,PARAM_VERSION_LOW);
-				swprintf(buffer,L"Thunder Loom v%d.%d.%d",
+				swprintf(buffer,512,L"Thunder Loom v%d.%d.%d",
 					PLUGIN_VERSION_MAJOR,PLUGIN_VERSION_MINOR,PLUGIN_VERSION_PATCH);
 				SetWindowText(GetDlgItem(hWnd,IDC_VERSION),buffer);
 				break;
@@ -445,6 +445,7 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             tlYarnType yarn_type=params->yarn_types[data->yarn_type];
 
 			//NOTE(Peter): List params we want in the interface
+			#undef TL_YARN_PARAMETERS
 			#define TL_YARN_PARAMETERS\
 				TL_FLOAT_PARAM(umax)\
 				TL_FLOAT_PARAM(yarnsize)\
