@@ -514,7 +514,7 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		#define GET_YARN_TYPE\
 			YarnTypeDlgProcData *data = (YarnTypeDlgProcData*)\
-				GetWindowLong(hWnd,GWLP_USERDATA);\
+				GetWindowLongPtr(hWnd,GWLP_USERDATA);\
 			tlYarnType * yarn_type = &data->sm->m_weave_parameters->yarn_types[\
                 data->yarn_type];
 			 //NOTE(Vidar): Hack to update the preview ball
