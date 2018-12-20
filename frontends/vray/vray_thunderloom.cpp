@@ -18,40 +18,39 @@
 namespace VUtils{
 class BRDFThunderLoomSampler: public BRDFSampler, public BSDFSampler {
     int orig_backside;
-    Vector normal, gnormal;
-    Matrix nm, inm;
+    ShadeVec normal, gnormal;
+    ShadeMatrix nm, inm;
     int nmInited;
 
     // Assigned in init()
     tlWeaveParameters* m_tl_wparams;
-    Vector m_uv;
-    Transform m_uv_tm;
-    Color m_diffuse_color;
+    ShadeVec m_uv;
+    ShadeTransform m_uv_tm;
+    ShadeCol m_diffuse_color;
     tlYarnType m_yarn_type;
     int m_yarn_type_id;
 
 public:
-    void init(const VR::VRayContext &rc, tlWeaveParameters *tl_wparams);
+	// Initialization
+	void init(const VRayContext &rc, tlWeaveParameters *weave_parameters);
 
-    //void
+	// From BRDFSampler
+	ShadeVec getDiffuseNormal(const VR::VRayContext &rc);
+	ShadeCol getDiffuseColor(ShadeCol &lightColor);
+	ShadeCol getLightMult(ShadeCol &lightColor);
+	ShadeCol getTransparency(const VRayContext &rc);
 
-    // From BRDFSampler
-    Vector getDiffuseNormal(const VR::VRayContext &rc);
-    Color getDiffuseColor(Color &lightColor);
-    Color getLightMult(Color &lightColor);
-    Color getTransparency(const VR::VRayContext &rc);
+	ShadeCol eval( const VRayContext &rc, const ShadeVec &direction, ShadeCol &shadowedLight, ShadeCol &origLight, float probLight,int flags);
+	void traceForward(VRayContext &rc, int doDiffuse);
 
-    Color eval(const VR::VRayContext &rc, const Vector &direction, Color &lightColor, Color &origLightColor, float probLight, int flags);
-    void traceForward(VR::VRayContext &rc, int doDiffuse);
+	int getNumSamples(const VRayContext &rc, int doDiffuse);
+	VRayContext* getNewContext(const VRayContext &rc, int &samplerID, int doDiffuse);
+	ValidType setupContext(const VRayContext &rc, VRayContext &nrc, float uc, int doDiffuse);
 
-    int getNumSamples(const VR::VRayContext &rc, int doDiffuse);
-    VR::VRayContext* getNewContext(const VR::VRayContext &rc, int &samplerID, int doDiffuse);
-    VR::ValidType setupContext(const VR::VRayContext &rc, VRayContext &nrcm, float uc, int doDiffuse);
+	RenderChannelsInfo* getRenderChannels(void);
 
-    BRDFSampler* getBRDF(BSDFSide side);
-    
-    RenderChannelsInfo* getRenderChannels(void);
-
+	// From BSDFSampler
+	BRDFSampler *getBRDF(BSDFSide side);
 };
 
 }
@@ -169,9 +168,9 @@ struct BRDFThunderLoom: VRayBSDF {
         return VRayPlugin::newInterface(id);
     }
 
-    int isOpaque(void) VRAY_OVERRIDE {
-        return getBRDFPluginFlags(baseBRDFParam);
-    }
+	int getBSDFFlags(void) {
+		return bsdfFlag_none;
+	}
 
 private:
     BRDFPool<BRDFThunderLoomSampler> pool;
@@ -261,9 +260,8 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     
     // Make new VRayContext
     VRayThreadData* vr_tdata = vray->getThreadData(0);
-    VRayCore* vcore = static_cast<VRayCore *>(vray);
     VRayContext rc;
-    rc.init(vr_tdata, vcore);
+    rc.init(vr_tdata, vray);
     
     VRayPluginParameter* uscale = this->getParameter("uscale");
     VRayPluginParameter* vscale = this->getParameter("vscale");
@@ -405,6 +403,10 @@ void BRDFThunderLoom::deleteBSDF(const VRayContext &rc, BSDFSampler *bsdf) {
 using namespace VUtils;
 
 // Implementation of Sampler.
+//NOTE(Vidar): This function is called for each intersection with the material
+// From this point, several rays can be fired in different directions, each
+// one calling eval(). In this function we can do all the work that is common
+// throughout all directions, such as computing the diffuse color.
 void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *tl_wparams) {
     orig_backside = rc.rayresult.realBack;
 
@@ -421,7 +423,7 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
     // instance varaibles.
     m_tl_wparams = tl_wparams;
     if(!m_tl_wparams || m_tl_wparams->pattern ==0) { // Invalid pattern
-        m_diffuse_color = Color(1.0f,1.0f,0.f);
+        m_diffuse_color = ShadeCol(1.0f,1.0f,0.f);
         m_yarn_type = tl_default_yarn_type;
         m_yarn_type_id = 0;
         return;
@@ -431,11 +433,11 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
 
     MappedSurface *mappedSurf=(MappedSurface*) GET_INTERFACE(rc.rayresult.sd, EXT_MAPPED_SURFACE);
     if (mappedSurf) {
-        m_uv_tm = mappedSurf->getLocalUVWTransform(rc, -1);
+        mappedSurf->getLocalUVWTransform(rc, -1, m_uv_tm );
         m_uv = m_uv_tm.offs;
     }
-    intersection_data.uv_x = m_uv.x;
-    intersection_data.uv_y = m_uv.y;
+    intersection_data.uv_x = m_uv.x();
+    intersection_data.uv_y = m_uv.y();
     intersection_data.wi_z = 1.f;
     
     intersection_data.context = (void *)&rc;
@@ -445,53 +447,53 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
     m_yarn_type_id = pattern_data.yarn_type;
     m_yarn_type = m_tl_wparams->yarn_types[pattern_data.yarn_type];
     tlColor d = tl_eval_diffuse( intersection_data, pattern_data, m_tl_wparams);
-    m_diffuse_color.r = d.r;
-    m_diffuse_color.g = d.g;
-    m_diffuse_color.b = d.b;
+	m_diffuse_color.set(d.r, d.g, d.b);
 
     return;
 }
 
 // FROM BRDFSampler
 
-// Returns normal to use for diffuse lightinh
-Vector BRDFThunderLoomSampler::getDiffuseNormal(const VR::VRayContext &rc) {
+//NOTE(Vidar): Return the normal used for diffuse shading. If we do bump mapping
+// on the diffuse color, we will have to return the modified normal here...
+VUtils::ShadeVec BRDFThunderLoomSampler::getDiffuseNormal(const VR::VRayContext &rc)
+{
     return rc.rayresult.origNormal;
 }
 
 // Returns amount of light reflected diffusely by the surface.
-Color BRDFThunderLoomSampler::getDiffuseColor(Color &lightColor) {
-    Color ret = m_diffuse_color*lightColor;
-    lightColor.makeZero();
+VUtils::ShadeCol BRDFThunderLoomSampler::getDiffuseColor(VUtils::ShadeCol &lightColor) {
+    VUtils::ShadeCol ret = m_diffuse_color*lightColor;
+	lightColor.makeZero();
     return ret;
 }
 
 // Total amount of light reflected by the surface.
-Color BRDFThunderLoomSampler::getLightMult(Color &lightColor) {
+ShadeCol BRDFThunderLoomSampler::getLightMult(ShadeCol &lightColor) {
     tlColor s = m_yarn_type.specular_color;
     if(!m_yarn_type.specular_color_enabled
         && m_tl_wparams->num_yarn_types > 0){
         s = m_tl_wparams->yarn_types[0].specular_color;
     }
-    VUtils::Color ret = (m_diffuse_color + Color(s.r,s.g,s.b)) * lightColor;
+    ShadeCol ret = (m_diffuse_color + ShadeCol(s.r,s.g,s.b)) * lightColor;
     lightColor.makeZero();
     return ret;
 }
 
 // Returns transparency of the BRDF at the given point.
-Color BRDFThunderLoomSampler::getTransparency(const VR::VRayContext &rc) {
-	return Color(0.f,0.f,0.f);
+ShadeCol BRDFThunderLoomSampler::getTransparency(const VR::VRayContext &rc) {
+	return ShadeCol(0.f);
 }
 
 // Returns the amount of light transmitted from the given direction into the viewing direction.
-Color BRDFThunderLoomSampler::eval(const VR::VRayContext &rc, const Vector &direction,
-    Color &lightColor, Color &origLightColor, float probLight,
-    int flags) {
+ShadeCol BRDFThunderLoomSampler::eval( const VRayContext &rc, const ShadeVec &direction, ShadeCol &shadowedLight,
+	ShadeCol &origLight, float probLight,int flags)
+{
 
-    Color ret(0.f, 0.f, 0.f);
+    ShadeCol ret(0.f, 0.f, 0.f);
 
-    const Vector &vecN = normal;
-    const Vector &vecL = direction;
+    const ShadeVec &vecN = normal;
+    const ShadeVec &vecL = direction;
     float NL = dotf(vecN, vecL);
 
     NL = VR::clamp(NL, -1.0f, 1.0f); // make sure acosf won't return NaN
@@ -513,16 +515,14 @@ Color BRDFThunderLoomSampler::eval(const VR::VRayContext &rc, const Vector &dire
         ret += m_diffuse_color * k;
     }
     if ((flags & FBRDF_SPECULAR) && ((rc.rayparams.rayType & RT_NOSPECULAR) == 0)) {
-        Color reflect_color(0,0,0);
+        ShadeCol reflect_color(0.f);
         //TODO(Vidar):Better importance sampling... Cosine weighted for now
         float probReflection=cs;
 
         // Evaluate specular reflection!
         if(!m_tl_wparams || m_tl_wparams->pattern == 0){ //Invalid pattern
             float s = 0.1f;
-            reflect_color.r = s;
-            reflect_color.g = s;
-            reflect_color.b = s;
+			reflect_color.set(s, s, s);
             return reflect_color;
         }
         tlIntersectionData intersection_data;
@@ -530,16 +530,16 @@ Color BRDFThunderLoomSampler::eval(const VR::VRayContext &rc, const Vector &dire
         // Convert the view and light directions to the correct coordinate 
         // system. We want these in uvw space, given by dp/du, dp/dv and normal.
         
-        Vector viewDir, lightDir;
+        ShadeVec viewDir, lightDir;
         viewDir = -rc.rayparams.getViewDir();
         lightDir = direction;
 
-        Matrix iuv_tm = m_uv_tm.m; // Transform matrix from world space to uvw.
+        ShadeMatrix iuv_tm = m_uv_tm.m; // Transform matrix from world space to uvw.
         iuv_tm.makeInverse0f();   // Inverse is world space to uvw.
 
-        Vector u_vec = iuv_tm[0].getUnitVector();  // U dir
-        Vector v_vec = iuv_tm[1].getUnitVector();  // V dir
-        Vector n_vec = rc.rayresult.normal.getUnitVector();
+        ShadeVec u_vec = iuv_tm[0].getUnitVector();  // U dir
+        ShadeVec v_vec = iuv_tm[1].getUnitVector();  // V dir
+        ShadeVec n_vec = rc.rayresult.normal.getUnitVector();
         
         // Make sure these are orthonormal
         u_vec = crossf(v_vec, n_vec);
@@ -553,8 +553,8 @@ Color BRDFThunderLoomSampler::eval(const VR::VRayContext &rc, const Vector &dire
         intersection_data.wo_y = dotf(viewDir, v_vec);
         intersection_data.wo_z = dotf(viewDir, n_vec);
 
-        intersection_data.uv_x = m_uv.x;
-        intersection_data.uv_y = m_uv.y;
+        intersection_data.uv_x = m_uv.x();
+        intersection_data.uv_y = m_uv.y();
         
         intersection_data.context = (void *)&rc;
 
@@ -563,19 +563,17 @@ Color BRDFThunderLoomSampler::eval(const VR::VRayContext &rc, const Vector &dire
         tlColor s = 
             tl_eval_specular(intersection_data, pattern_data, m_tl_wparams);
 
-        reflect_color.r = s.r;
-        reflect_color.g = s.g;
-        reflect_color.b = s.b;
+        reflect_color.set(s.r, s.g, s.b);
 
         //NOTE(Vidar): Multiple importance sampling factor
         float weight = getReflectionWeight(probLight,probReflection);
         ret += cs*reflect_color*weight;
     }
 
-    ret *= lightColor;
+    ret *= shadowedLight;
 
-    lightColor.makeZero();
-    origLightColor.makeZero();
+    shadowedLight.makeZero();
+    origLight.makeZero();
 
     return ret;
 }
@@ -586,8 +584,8 @@ void BRDFThunderLoomSampler::traceForward(VR::VRayContext &rc, int doDiffuse) {
 	if (doDiffuse) rc.mtlresult.color+=rc.evalDiffuse()*m_diffuse_color;
     Fragment *f=rc.mtlresult.fragment;
     if(f){
-        VUtils::Color raw_gi=rc.evalDiffuse();
-        VUtils::Color diffuse_gi=raw_gi*m_diffuse_color;
+        ShadeCol raw_gi=rc.evalDiffuse();
+        ShadeCol diffuse_gi=raw_gi*m_diffuse_color;
         f->setChannelDataByAlias(REG_CHAN_VFB_RAWGI,&raw_gi);
         f->setChannelDataByAlias(REG_CHAN_VFB_RAWTOTALLIGHT,&raw_gi);
         f->setChannelDataByAlias(REG_CHAN_VFB_GI,&diffuse_gi);
@@ -610,6 +608,7 @@ int BRDFThunderLoomSampler::getNumSamples(const VR::VRayContext &rc, int doDiffu
 VR::VRayContext* BRDFThunderLoomSampler::getNewContext(const VR::VRayContext &rc, int &samplerID, int doDiffuse) {
 	if (2==doDiffuse) return NULL;
     //TODO use specular strength to weight the samples.
+	//TODO(Vidar):Why does this differ from the 3ds max version?
     return NULL;
 }
 
@@ -621,15 +620,15 @@ ValidType BRDFThunderLoomSampler::setupContext(const VR::VRayContext &rc, VR::VR
     nrc.rayparams.tracedRay.dir=nrc.rayparams.viewDir=dir;
     return true;*/
 
-    VR::Vector dir;
+    ShadeVec dir;
     if (rc.rayresult.getSurfaceHit()!=2) {
         if (!nmInited) {
             makeNormalMatrix(rc.rayresult.normal, nm);
             nmInited=true;
         }
-        dir=nm*VR::getDiffuseDir(uc, getDMCParam(nrc, 1), nrc.rayparams.rayProbability);
+        dir=nm*VR::getDiffuseDir3f(uc, getDMCParam(nrc, 1), nrc.rayparams.rayProbability);
     } else {
-        dir=VR::getSphereDir(2.0f*(uc-0.5f), getDMCParam(nrc, 1));
+        dir=VR::getSphereDir3f(2.0f*(uc-0.5f), getDMCParam(nrc, 1));
         nrc.rayparams.rayProbability=0.5f;
     }
 
@@ -657,9 +656,9 @@ RenderChannelsInfo* BRDFThunderLoomSampler::getRenderChannels(void) { return &Re
 struct MyShadeData: public VRayShadeData, public MappedSurface {
     VRayContext *rcc;
     VRayShadeData *oldShadeData;
-    Vector uvw;
+    ShadeVec uvw;
 
-    MyShadeData(const VRayContext &rc, const Vector &uvw):uvw(uvw) {
+    MyShadeData(const VRayContext &rc, const ShadeVec &uvw):uvw(uvw) {
         oldShadeData=rc.rayresult.sd;
         rcc=const_cast<VRayContext*>(&rc);
         rcc->rayresult.sd=static_cast<VRayShadeData*>(this);
@@ -676,19 +675,19 @@ struct MyShadeData: public VRayShadeData, public MappedSurface {
     }
 
     // From MappedSurface
-    Transform getLocalUVWTransform(const VR::VRayContext &rc, int channel) VRAY_OVERRIDE {
+	void getLocalUVWTransform(const VRayContext &rc, int channel, ShadeTransform &result) VRAY_OVERRIDE
+	{
         // Note that here we initialize the matrix to zero. This will effectively kill any
         // texture filtering. If you want texture filtering, you will need to come up with
         // a suitable way to initialize the Matrix portion of the transform to a matrix that
         // converts world-space changes in the shading point to changes in UVWs.
         Transform res(0);
-
-        // Set the explicit UVWs
-        res.offs=uvw;
-        return res;
+		result.makeZero();
+		result.offs = uvw;
     }
 };
 
+//TODO(Vidar):Is this used anywhere??
 struct tlShadeData: VR::VRayShadeData {
     tlShadeData(float u, float v) {
         this->u = u;
@@ -705,7 +704,6 @@ struct tlShadeData: VR::VRayShadeData {
     }
     float u, v;
 };
-
 
 // Called when a texture is applied to a float parameter.
 float tl_eval_texmap_mono(void* texmap, void* context) {
@@ -737,14 +735,15 @@ float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context)
     // passed as float textures.
 
     if (context) {
-        VR::VRayContext *rc = (VR::VRayContext *)context;
+        VRayContext *rc = (VRayContext *)context;
 
         PluginBase* plug = static_cast<PluginBase *>(texmap);
         TextureInterface* tex = queryInterface<TextureInterface>(plug, EXT_TEXTURE);
         TextureFloatInterface* texf = queryInterface<TextureFloatInterface>(plug, EXT_TEXTURE_FLOAT);
     
-        VR::Vector uvw=VR::Vector(u, v, 0.f);
-        MyShadeData myShadeData(*rc, uvw);
+        ShadeVec uvw(u, v, 0.f);
+		//TODO(Vidar):Reenable this?
+        //MyShadeData myShadeData(*rc, uvw);
 
         if (tex) {
             return tex->getTexColor(*rc).color.r; 
@@ -788,7 +787,7 @@ BRDFSampler* BRDFThunderLoomSampler::getBRDF(BSDFSide side) {
 // #ifdef __VRAY40__
 // SIMPLE_PLUGIN_LIBRARY(BRDFTest_PluginID, "BRDFTest", "BRDFTestLibText", "a simple test plugin/lib", BRDFTest, BRDFTest_Params, EXT_BSDF);
 // #else
-SIMPLE_PLUGIN_LIBRARY(BRDFTest_PluginID, EXT_BSDF, "BRDFThunderLoom", "BRDFTestLibText", BRDFThunderLoom, BRDFThunderLoomParams);
+SIMPLE_PLUGIN_LIBRARY(BRDFTest_PluginID, "BRDFThunderLoom" ,"BRDFThunderLoom", "BRDFTestLibText", BRDFThunderLoom, BRDFThunderLoomParams, EXT_BSDF );
 // #endif
 
 //PLUGIN_DESC(BRDFTest_PluginID, EXT_BSDF, "BRDFTest", BRDFTest, BRDFTest_Params);
