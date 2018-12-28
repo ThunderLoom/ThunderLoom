@@ -14,8 +14,9 @@
 
 #define TL_THUNDERLOOM_IMPLEMENTATION
 #include "thunderloom.h"
+using namespace VUtils;
+using namespace VR;
 
-namespace VUtils{
 class BRDFThunderLoomSampler: public BRDFSampler, public BSDFSampler {
     int orig_backside;
     ShadeVec normal, gnormal;
@@ -53,9 +54,6 @@ public:
 	BRDFSampler *getBRDF(BSDFSide side);
 };
 
-}
-
-using namespace VR;
 
 struct BRDFThunderLoomParams: VRayParameterListDesc {
     BRDFThunderLoomParams(void) {
@@ -262,6 +260,7 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     VRayThreadData* vr_tdata = vray->getThreadData(0);
     VRayContext rc;
     rc.init(vr_tdata, vray);
+	rc.clear();
     
     VRayPluginParameter* uscale = this->getParameter("uscale");
     VRayPluginParameter* vscale = this->getParameter("vscale");
@@ -375,7 +374,7 @@ TL_VRAY_FLOAT_PARAMS
 
     }
 
-    tl_prepare_with_context(m_tl_wparams, (void *)&rc);
+    tl_prepare(m_tl_wparams);
 
     pool.init(vray->getSequenceData().maxRenderThreads);
     return;

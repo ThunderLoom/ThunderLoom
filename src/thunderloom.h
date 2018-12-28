@@ -603,7 +603,7 @@ static void halton_4(int n, float val[]){
     }
 }
 
-void tl_prepare_with_context(tlWeaveParameters *params, void * context)
+void tl_prepare(tlWeaveParameters *params)
 {
     //Calculate normalization factor for the specular reflection
 	if (params->pattern) {
@@ -613,25 +613,28 @@ void tl_prepare_with_context(tlWeaveParameters *params, void * context)
 
 		float highest_result = 0.f;
 
-		// Temporarily disable speuclar noise...
+		//NOTE(Vidar):We copy the weave parameters and change some settings
+		tlYarnType *tmp_yarn_types = (tlYarnType*)calloc(params->num_yarn_types, sizeof(tlYarnType));
+		memcpy(tmp_yarn_types, params->yarn_types, params->num_yarn_types * sizeof(tlYarnType));
+		tlWeaveParameters *tmp_params = (tlWeaveParameters*)calloc(1, sizeof(tlWeaveParameters));
+		memcpy(tmp_params, params, sizeof(tlWeaveParameters));
+		tmp_params->yarn_types = tmp_yarn_types;
+
+
+		// Temporarily disable textures and speuclar noise...
 		float tmp_specular_noise[TL_MAX_YARN_TYPES];
-		for(unsigned int i=0;i<params->num_yarn_types;i++){
-			tmp_specular_noise[i] = params->yarn_types[i].specular_noise;
-			params->yarn_types[i].specular_noise = 0.f;
+		for(unsigned int i=0;i<tmp_params->num_yarn_types;i++){
+			tmp_yarn_types[i].specular_noise = 0.f;
+			tmp_yarn_types[i].specular_color.r = 1.f;
+			tmp_yarn_types[i].specular_color_texmap = 0;
+			tmp_yarn_types[i].specular_amount = 1.f;
+			tmp_yarn_types[i].specular_amount_texmap = 0;
 		}
 
 		// Normalize by the largest reflection across all uv coords and
 		// incident directions
-		for(unsigned int yarn_type = 0; yarn_type < params->num_yarn_types;
+		for(unsigned int yarn_type = 0; yarn_type < tmp_params->num_yarn_types;
 			yarn_type++){
-			float tmp_specular_color_red = params->yarn_types[yarn_type].specular_color.r;
-			params->yarn_types[yarn_type].specular_color.r = 1.f;
-			void * tmp_specular_color_texmap = params->yarn_types[yarn_type].specular_color_texmap;
-			params->yarn_types[yarn_type].specular_color_texmap = 0;
-			float tmp_specular_amount = params->yarn_types[yarn_type].specular_amount;
-			params->yarn_types[yarn_type].specular_amount = 1.f;
-			void * tmp_specular_amount_texmap = params->yarn_types[yarn_type].specular_amount_texmap;
-			params->yarn_types[yarn_type].specular_amount_texmap = 0;
 
 			for (int i = 0; i < nLocationSamples; i++) {
 				float result = 0.0f;
@@ -646,9 +649,8 @@ void tl_prepare_with_context(tlWeaveParameters *params, void * context)
 				pattern_data.warp_above = 0;
 				pattern_data.yarn_type = yarn_type;
 				pattern_data.yarn_hit = 1;
-				tlIntersectionData intersection_data;
-				intersection_data.context=context;
-				calculate_segment_uv_and_normal(&pattern_data, params,
+				tlIntersectionData intersection_data = { 0 };
+				calculate_segment_uv_and_normal(&pattern_data, tmp_params,
 					&intersection_data);
 				pattern_data.total_index_x = 0;
 				pattern_data.total_index_y = 0;
@@ -665,17 +667,15 @@ void tl_prepare_with_context(tlWeaveParameters *params, void * context)
 					sample_cosine_hemisphere(halton_direction[0], halton_direction[1],
 						&intersection_data.wo_x, &intersection_data.wo_y,
 						&intersection_data.wo_z);
-					result += tl_eval_specular(intersection_data, pattern_data, params).r;
+					result += tl_eval_specular(intersection_data, pattern_data, tmp_params).r;
 				}
 				if (result > highest_result) {
 					highest_result = result;
 				}
 			}
-            params->yarn_types[yarn_type].specular_color.r = tmp_specular_color_red;
-			params->yarn_types[yarn_type].specular_color_texmap = tmp_specular_color_texmap;
-			params->yarn_types[yarn_type].specular_amount = tmp_specular_amount;
-			params->yarn_types[yarn_type].specular_amount_texmap = tmp_specular_amount_texmap;
 		}
+		free(tmp_yarn_types);
+		free(tmp_params);
 
 		if (highest_result <= 0.0001f) {
 			params->specular_normalization = 0.f;
@@ -684,14 +684,7 @@ void tl_prepare_with_context(tlWeaveParameters *params, void * context)
 			params->specular_normalization =
 				(float)nDirectionSamples / highest_result;
 		}
-		for(unsigned int i=0;i<params->num_yarn_types;i++){
-			params->yarn_types[i].specular_noise = tmp_specular_noise[i];
-		}
 	}
-}
-void inline tl_prepare(tlWeaveParameters *params)
-{
-	tl_prepare_with_context(params, NULL);
 }
 
 tlWeaveParameters *tl_weave_pattern_from_data(uint8_t *warp_above, uint8_t *yarn_type,

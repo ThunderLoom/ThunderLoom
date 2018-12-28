@@ -2,15 +2,12 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MACOSX_RPATH 1)
 
-IF(WIN32 AND (NOT (MSVC_VERSION STREQUAL "1900"))) #VS11
-    message(SEND_WARNING "V-Ray requires compiler v140!")
-ENDIF()
-
 project(vray_thunderLoom)
 
 # Varibles
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
+set(MAYA_VERSION "2018" CACHE STRING "Maya version (year)")
 set(LIBRARY_OUTPUT_PATH ${RELEASE_DIR}/V-Ray/)
 
 # Additional includes

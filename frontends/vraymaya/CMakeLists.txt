@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MACOSX_RPATH 1)
 
-IF(WIN32 AND (NOT (MSVC_VERSION STREQUAL "1900"))) #VS11
-    message(SEND_WARNING "V-Ray requires compiler v140!")
-ENDIF()
-
 
 project(thunderLoomVRayMaya)
 
