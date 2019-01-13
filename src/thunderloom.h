@@ -396,6 +396,7 @@ static tlVector tlVector_add(tlVector a, tlVector b)
 }
 
 // -- //
+#include <stddef.h>
 
 //NOTE(Vidar):These are the building blocks of a PTN file
 struct tlPtnEntry  {
@@ -403,12 +404,12 @@ struct tlPtnEntry  {
     const char *name;
 };
 #define TL_PTN_ENTRY(parent_struct,name,size) \
-    {2,(uint32_t)((intptr_t)&tmp_##parent_struct.name-(intptr_t)&tmp_##parent_struct),\
+    {2,offsetof(parent_struct, name),\
         size, 1, #name},
 
 //This is what is read from/written to the .PTN files for each struct
 tlWeaveParameters tmp_tlWeaveParameters;
-tlPtnEntry ptn_entry_weave_params[]={
+struct tlPtnEntry ptn_entry_weave_params[]={
     {1,0,0,1, "tlWeaveParameters"},
 #define TL_FLOAT_PARAM(name) TL_PTN_ENTRY(tlWeaveParameters,name,sizeof(float))
 #define TL_INT_PARAM(name)  TL_PTN_ENTRY(tlWeaveParameters,name,sizeof(uint8_t))
@@ -427,7 +428,7 @@ tlPtnEntry ptn_entry_weave_params[]={
 };
 
 tlYarnType tmp_tlYarnType;
-tlPtnEntry ptn_entry_yarn_type[]={
+struct tlPtnEntry ptn_entry_yarn_type[]={
     {1,0,0,1, "tlYarnType"},
 #define TL_FLOAT_PARAM(name) TL_PTN_ENTRY(tlYarnType,name,sizeof(float)) \
     TL_PTN_ENTRY(tlYarnType,name##_enabled,sizeof(uint8_t)) 
@@ -444,7 +445,7 @@ tlPtnEntry ptn_entry_yarn_type[]={
 
 //NOTE(Vidar):This is a bit special, the size will be multiplied by 
 // the number of entries in the pattern
-tlPtnEntry ptn_entry_pattern = {3,0,2*sizeof(uint8_t),1, "tlPattern"};
+struct tlPtnEntry ptn_entry_pattern = {3,0,2*sizeof(uint8_t),1, "tlPattern"};
 
 
 //atof equivalent function wich is not dependent
@@ -582,29 +583,9 @@ void calculate_segment_uv_and_normal(tlPatternData *pattern_data,
     pattern_data->normal_z = normal_z;
 }
 
-
-static const int halton_4_base[] = {2, 3, 5, 7};
-static const float halton_4_base_inv[] =
-        {1.f/2.f, 1.f/3.f, 1.f/5.f, 1.f/7.f};
-
-//Sets the elements of val to the n-th 4-dimensional point
-//in the Halton sequence
-static void halton_4(int n, float val[]){
-    int j;
-    for(j=0;j<4;j++){
-        float f = 1.f;
-        int i = n;
-        val[j] = 0.f;
-        while(i>0){
-            f = f * halton_4_base_inv[j];
-            val[j] = val[j] + f * (i % halton_4_base[j]);
-            i = i / halton_4_base[j];
-        }
-    }
-}
-
 void tl_prepare(tlWeaveParameters *params)
 {
+    /*
     //Calculate normalization factor for the specular reflection
 	if (params->pattern) {
 		int nLocationSamples = 100;
@@ -685,6 +666,7 @@ void tl_prepare(tlWeaveParameters *params)
 				(float)nDirectionSamples / highest_result;
 		}
 	}
+        */
 }
 
 tlWeaveParameters *tl_weave_pattern_from_data(uint8_t *warp_above, uint8_t *yarn_type,
@@ -723,18 +705,18 @@ tlWeaveParameters *tl_weave_pattern_from_file(const char *filename,const char **
 		len++;
 	}
 	if(len >=5){
-		bool wif_ok = true;
-		bool ptn_ok = true;
+		int wif_ok = 1;
+		int ptn_ok = 1;
 		const char *wif_ext = ".wif";
 		const char *ptn_ext = ".ptn";
 		for(int i=0;i<4;i++){
 			char c = filename[len-1-i];
 			c = (c <= 'Z' && c >= 'A') ? c + 32 : c;
 			if(c != wif_ext[3-i]){
-				wif_ok = false;
+				wif_ok = 0;
 			}
 			if(c != ptn_ext[3-i]){
-				ptn_ok = false;
+				ptn_ok = 0;
 			}
         }   
         if(wif_ok || ptn_ok){
@@ -775,18 +757,18 @@ tlWeaveParameters *tl_weave_pattern_from_wif_wchar(const wchar_t *filename,const
 		len++;
 	}
 	if(len >=5){
-		bool wif_ok = true;
-		bool ptn_ok = true;
+		int wif_ok = 1;
+		int ptn_ok = 1;
 		wchar_t *wif_ext = L".wif";
 		wchar_t *ptn_ext = L".ptn";
 		for(int i=0;i<4;i++){
 			wchar_t c = filename[len-1-i];
 			c = towlower(c);
 			if(c != wif_ext[3-i]){
-				wif_ok = false;
+				wif_ok = 0;
 			}
 			if(c != ptn_ext[3-i]){
-				ptn_ok = false;
+				ptn_ok = 0;
 			}
 		}
 		if(wif_ok || ptn_ok){
@@ -836,18 +818,18 @@ tlWeaveParameters *tl_weave_pattern_from_wif(unsigned char *data,long len,const 
 #endif
 
 struct tlPtnWriteCommand{
-    tlPtnEntry *entry;
+    struct tlPtnEntry *entry;
     unsigned char *data;
 };
 
 static unsigned char* tl_buffer_from_ptn_write_commands(int num_write_commands,
-    tlPtnWriteCommand* write_commands, long *ret_len)
+    struct tlPtnWriteCommand* write_commands, long *ret_len)
 {
     int version = 2;
     //NOTE(Vidar):Calculate needed size of buffer
     size_t len = 2*sizeof(int); //Version number & end specifier
     for(int i=0;i<num_write_commands;i++) {
-        tlPtnEntry *entry = write_commands[i].entry;
+        struct tlPtnEntry *entry = write_commands[i].entry;
         do{
 			size_t name_len = strlen(entry->name)+1;
             len+= 4*sizeof(uint32_t) + entry->size+name_len;
@@ -865,7 +847,7 @@ static unsigned char* tl_buffer_from_ptn_write_commands(int num_write_commands,
 
     //NOTE(Vidar):Write data
     for(int i=0;i<num_write_commands;i++) {
-        tlPtnEntry *entry = write_commands[i].entry;
+        struct tlPtnEntry *entry = write_commands[i].entry;
         do{
 			uint32_t name_len = (uint32_t)(strlen(entry->name)+1);
             ((uint32_t*)dest)[0]=entry->type;
@@ -891,14 +873,14 @@ static unsigned char * tl_pattern_to_ptn_file(tlWeaveParameters *param,
 {
     uint32_t pattern_size = param->pattern_width*param->pattern_height;
     int num_write_commands = 2+param->num_yarn_types;
-    tlPtnWriteCommand *write_commands =
-        (tlPtnWriteCommand*)calloc(num_write_commands,
-        sizeof(tlPtnWriteCommand));
+    struct tlPtnWriteCommand *write_commands =
+        (struct tlPtnWriteCommand*)calloc(num_write_commands,
+        sizeof(struct tlPtnWriteCommand));
     write_commands[0].entry = ptn_entry_weave_params;
     write_commands[0].data  = (unsigned char *)param;
     //NOTE(vidar):We make a copy of the pattern entry so that we can change the
     // size
-    tlPtnEntry pattern_entry = ptn_entry_pattern;
+    struct tlPtnEntry pattern_entry = ptn_entry_pattern;
     pattern_entry.size      *= pattern_size;
     write_commands[1].entry  = &pattern_entry;
     write_commands[1].data   = (unsigned char *)param->pattern;
@@ -937,7 +919,7 @@ static struct tlPtnConverter tl_ptn_converters[]={
 static uint32_t tl_num_ptn_converters=sizeof(tl_ptn_converters)/sizeof(*tl_ptn_converters);
 
 unsigned char *tl_read_ptn_section(void *out, unsigned char* data,
-    tlPtnEntry *entries)
+    struct tlPtnEntry *entries)
 {
     uint32_t type;
     do{
@@ -949,12 +931,12 @@ unsigned char *tl_read_ptn_section(void *out, unsigned char* data,
         const char *name = (char*)data;
         printf("  name: %s\n",name);
         data += name_len;
-        tlPtnEntry *entry = entries;
+        struct tlPtnEntry *entry = entries;
         int must_free=0;
         unsigned char *entry_data=data;
         data += size;
         for(unsigned int i=0;i<tl_num_ptn_converters;i++){
-            static tlPtnConverter c=tl_ptn_converters[i];
+            struct tlPtnConverter c=tl_ptn_converters[i];
             if(c.src_version==version && c.src_size==size && strcmp(c.src_name,name)==0){
                 version=c.target_version;
                 size=c.target_size;
@@ -1039,13 +1021,13 @@ static tlWeaveParameters *tl_pattern_from_ptn_file_v1(unsigned char *data,
     int num_yarn_types = *(int*)(data + 24);
     printf("num yarn types: %d\n",num_yarn_types);
     int num_write_commands = 2+num_yarn_types;
-    tlPtnWriteCommand *write_commands =
-        (tlPtnWriteCommand*)calloc(num_write_commands,sizeof(tlPtnWriteCommand));
+    struct tlPtnWriteCommand *write_commands =
+        (struct tlPtnWriteCommand*)calloc(num_write_commands,sizeof(struct tlPtnWriteCommand));
     int pattern_size = *(int*)(data+16) * *(int*)(data+20);
     printf("Pattern size: %d\n",pattern_size);
 
     //NOTE(Vidar):These are the structures as of v 0.91
-    tlPtnEntry ptn_entry_weave_paramsv091[]={
+    struct tlPtnEntry ptn_entry_weave_paramsv091[]={
         {1,  0,  0, 1, "tlWeaveParameters"},
         {2,  0,  4, 1, "uscale"},
         {2,  4,  4, 1, "vscale"},
@@ -1061,7 +1043,7 @@ static tlWeaveParameters *tl_pattern_from_ptn_file_v1(unsigned char *data,
     };
     int weave_paramsv091_len = 64;
 
-    tlPtnEntry ptn_entry_yarn_typev091[]={
+    struct tlPtnEntry ptn_entry_yarn_typev091[]={
         {1,  0,  0, 1, "tlYarnType"},
         {2,  0,  4, 1, "umax"},
         {2, 44,  1, 1, "umax_enabled"},
@@ -1093,9 +1075,9 @@ static tlWeaveParameters *tl_pattern_from_ptn_file_v1(unsigned char *data,
         write_commands[2+i].data = data;
         data += yarn_typev091_len;
     }
-    tlPtnEntry ptn_entry_patternv091 = {3,0,
+    struct tlPtnEntry ptn_entry_patternv091 = {3,0,
         (uint32_t)(2*sizeof(uint8_t)*pattern_size),1, "tlPattern"};
-    tlPtnEntry pattern_entry = ptn_entry_pattern;
+    struct tlPtnEntry pattern_entry = ptn_entry_pattern;
     pattern_entry.size      *= pattern_size;
     write_commands[1].entry  = &ptn_entry_patternv091;
     write_commands[1].data   = data;
@@ -1887,9 +1869,6 @@ tlColor tl_eval_specular(tlIntersectionData intersection_data,
     // staple or filament. They are treated differently in order
     // to work better numerically. 
     float reflection = 0.f;
-    if(params->pattern == 0){
-        return ret;
-    }
 	if(!data.yarn_hit){
         //have not hit a yarn...
         return ret;
@@ -1912,6 +1891,8 @@ tlColor tl_eval_specular(tlIntersectionData intersection_data,
     }
     tlColor specular_color=tl_yarn_type_get_specular_color(params,
         data.yarn_type,intersection_data.context);
+    //TODO(Vidar): Remove specular_normalization from tlWeaveParameters,
+    // Look up in table instead
     float specular_amount = tl_yarn_type_get_specular_amount(params,
         data.yarn_type,intersection_data.context);
 	float factor = reflection * params->specular_normalization * noise * specular_amount;
