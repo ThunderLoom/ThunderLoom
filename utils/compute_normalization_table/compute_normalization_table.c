@@ -1,7 +1,9 @@
 #define TL_THUNDERLOOM_IMPLEMENTATION
 #define TL_NO_TEXTURE_CALLBACKS
 #include "thunderloom.h"
+#include "pcg_basic.h"
 #include <stdio.h>
+#include <float.h>
 
 static const int halton_4_base[] = {2, 3, 5, 7};
 static const float halton_4_base_inv[] =
@@ -23,12 +25,17 @@ static void halton_4(int n, float val[]){
     }
 }
 
+double get_rand(pcg32_random_t *rng)
+{
+	return ldexp(pcg32_random_r(rng), -32);
+}
 
-float compute_normalization_factor(float umax, float psi, float alpha, float beta)
+
+float compute_normalization_factor(float umax, float psi, float alpha, float beta, pcg32_random_t *rng)
 {
     //Calculate normalization factor for the specular reflection
-    int nLocationSamples = 100;
-    int nDirectionSamples = 100;
+    int nLocationSamples = 10;
+    int nDirectionSamples = 1000;
 
     float highest_result = 0.f;
 
@@ -48,14 +55,14 @@ float compute_normalization_factor(float umax, float psi, float alpha, float bet
 
     // Normalize by the largest reflection across all uv coords and
     // incident directions
+	// The reason we have two loops is that for each point, we want to make sure that the BRDF is normalized,
+	// i.e. that it does not integrate to a value higher than 1 over all incident directions.
     for (int i = 0; i < nLocationSamples; i++) {
-        float result = 0.0f;
-        float halton_point[4];
-        halton_4(i + 50, halton_point);
+        double result = 0.0;
         tlPatternData pattern_data = {0};
         // Pick a random location on a segment rectangle...
-        pattern_data.x = -1.f + 2.f*halton_point[0];
-        pattern_data.y = -1.f + 2.f*halton_point[1];
+        pattern_data.x = -1.f + 2.f*get_rand(rng);
+        pattern_data.y = -1.f + 2.f*get_rand(rng);
         pattern_data.length = 1.f;
         pattern_data.width = 1.f;
         pattern_data.warp_above = 0;
@@ -65,28 +72,29 @@ float compute_normalization_factor(float umax, float psi, float alpha, float bet
         calculate_segment_uv_and_normal(&pattern_data, &params,
                 &intersection_data);
 
-        sample_uniform_hemisphere(halton_point[2], halton_point[3],
+        sample_uniform_hemisphere(get_rand(rng), get_rand(rng),
                 &intersection_data.wi_x, &intersection_data.wi_y,
                 &intersection_data.wi_z);
 
         for (int j = 0; j < nDirectionSamples; j++) {
-            float halton_direction[4];
-            halton_4(j + 50 + nLocationSamples, halton_direction);
             // Since we use cosine sampling here, we can ignore the cos term
             // in the integral
-            sample_cosine_hemisphere(halton_direction[0], halton_direction[1],
+            sample_cosine_hemisphere(get_rand(rng), get_rand(rng),
                     &intersection_data.wo_x, &intersection_data.wo_y,
                     &intersection_data.wo_z);
             result += tl_eval_specular(intersection_data, pattern_data, &params).r;
         }
-        if (result > highest_result) {
-            highest_result = result;
+		result = result / (double)nDirectionSamples;
+        if (result > (double)highest_result) {
+            highest_result = (float)result;
         }
     }
-    return (float)nDirectionSamples / highest_result;
+    return highest_result;
 }
 
-int main(int argc, char **argv){
+int main(int argc, char **argv)
+{
+	pcg32_random_t rng;
 	float epsilon = 0.0001f;
 	int umax_steps = 20;
 	int psi_steps = 20;
@@ -100,18 +108,21 @@ int main(int argc, char **argv){
 			float psi = (float)i_psi / (float)(psi_steps - 1);
 			for (int i_alpha = 0; i_alpha < alpha_steps; i_alpha++) {
 				float alpha = (float)i_alpha / (float)(alpha_steps - 1);
-				float factor = compute_normalization_factor(umax, psi, alpha, 4.f);
+				float factor = compute_normalization_factor(umax, psi, alpha, 4.f, &rng);
                 data[i_alpha + alpha_steps*(i_psi + psi_steps*(i_umax))] = factor;
 			}
 		}
         printf("Progress: %3.0f%%\n", 100.f*(float)(i_umax+1)/(float)umax_steps);
 	}
-    //TODO(Vidar):Write data for plotting
     FILE *fp = fopen("out.h", "wt");
     if(fp){
-        fprintf(fp,"unsigned char normalization_table[] = {\n");
-        for(int i=0;i<n*sizeof(float);i++){
-            fprintf(fp,"%d,",((unsigned char*)data)[i]);
+        fprintf(fp,"float normalization_table[] = {\n");
+        for(int i=0;i<n;i++){
+//This weird pair of macros converts the value of a preprocessor token to a string
+#define STRINGIZE2(s) #s
+#define STRINGIZE(s) STRINGIZE2(s)
+			//FLT_DECIMAL_DIG is the number of decimal digits we need to keep the floating point precision
+            fprintf(fp,"%."STRINGIZE(FLT_DECIMAL_DIG)"e,",data[i]);
             if(i%128==127){ fputc('\n',fp);}
         }
         fprintf(fp,"};\n");
