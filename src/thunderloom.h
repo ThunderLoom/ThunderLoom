@@ -63,7 +63,7 @@ void tl_free_weave_parameters(tlWeaveParameters *params);
 /* --- Yarn Parameters ---
  * Furthermore, there are some settings which affect the yarn that the cloth
  * consists of.
- * Each color in the wif file will be separated into its own ''yarn type'', 
+ * Each color in the ptn file will be separated into its own ''yarn type'', 
  * and can be given separate settings. There is an array of yarn types at
  * tlWeaveParameters.yarn_types, and the number of yarn types is stored in
  * tlWeaveParameters.num_yarn_types.
@@ -83,17 +83,12 @@ void tl_free_weave_parameters(tlWeaveParameters *params);
 	TL_FLOAT_PARAM(umax)\
 	TL_FLOAT_PARAM(yarnsize)\
 	TL_FLOAT_PARAM(psi)\
-	TL_FLOAT_PARAM(alpha)\
-	TL_FLOAT_PARAM(beta)\
-	TL_FLOAT_PARAM(delta_x)\
-	TL_COLOR_PARAM(specular_color)\
-	TL_FLOAT_PARAM(specular_amount)\
 	TL_FLOAT_PARAM(specular_noise)\
     TL_COLOR_PARAM(color) \
 	TL_FLOAT_PARAM(color_amount) \
 	TL_FLOAT_PARAM(roughness_azimuthal)\
 	TL_FLOAT_PARAM(roughness_longitudinal)\
-	TL_FLOAT_PARAM(fresnel)\
+	TL_FLOAT_PARAM(ior)\
 	TL_COLOR_PARAM(normal_map)\
 	TL_COLOR_PARAM(tangent_map)
 
@@ -145,6 +140,8 @@ TL_FUNC_PREFIX tlColor tl_eval_texmap_color(void *texmap, void *context);
 /* ------------ Implementation --------------------- */
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 
 typedef struct
@@ -230,15 +227,8 @@ tlWeaveParameters *tl_weave_pattern_from_data(uint8_t *warp_above,
     uint32_t pattern_width, uint32_t pattern_height);
 /* tl_weave_pattern_from_file calles one of the functions below depending on
  * file extension*/
-tlWeaveParameters *tl_weave_pattern_from_wif(unsigned char *data,long len,
-                const char **error);
 tlWeaveParameters *tl_weave_pattern_from_ptn(unsigned char *data,long len,
                 const char **error);
-
-#ifdef TL_WCHAR
-tlWeaveParameters *tl_weave_pattern_from_wif_wchar(const wchar_t *filename,
-	const char **error);
-#endif
 
 unsigned char * tl_pattern_to_ptn_file(tlWeaveParameters *param,
 	long *ret_len);
@@ -259,17 +249,12 @@ tlYarnType tl_default_yarn_type =
 	0.5f,  //umax
 	1.0f,  //yarnsize
 	0.5f,  //psi
-	0.05f, //alpha
-	4.f,   //beta
-	0.3f,  //delta_x
-    {0.4f, 0.4f, 0.4f},  //specular color
-    1.f,   //specular_amount
     0.f,   //specular_noise
     {0.3f, 0.3f, 0.3f},  //color
     1.f,   //color_amount
     0.3f,   //roughness_azimuthal
     0.3f,   //roughness_longitudinal
-    1.6f,  //fresnel
+    1.6f,  //ior
     {0.5f, 0.5f, 1.f},  //normal_map
     {0.5f, 1.0f, 0.5f},  //tangent_map
     0
@@ -350,12 +335,6 @@ TL_YARN_PARAMETERS
 /* ----------- IMPLEMENTATION --------------- */
 
 #ifdef TL_THUNDERLOOM_IMPLEMENTATION
-
-#ifndef TL_NO_FILES
-#define REALWORLD_UV_WIF_TO_MM 10.0f
-#include "wif/wif.cpp"
-#include "wif/ini.cpp"
-#endif
 
 // For M_PI etc.
 #ifndef _USE_MATH_DEFINES
@@ -469,28 +448,6 @@ struct tlPtnEntry ptn_entry_yarn_type[]={
 struct tlPtnEntry ptn_entry_pattern = {3,0,2*sizeof(uint8_t),1, "tlPattern"};
 
 
-//atof equivalent function wich is not dependent
-//on local. Heavily inspired by inplementation in K & R.
-static double str2d(char s[]) {
-    double val, power;
-    int i, sign;
-
-    for (i = 0; isspace(s[i]); i++)
-        ;
-    sign = (s[i] == '-') ? -1 : 1;
-    if (s[i] == '+' || s[i] == '-')
-        i++;
-    for (val = 0.0; isdigit(s[i]); i++)
-        val = 10.0 * val + (s[i] - '0');
-    if (s[i] == '.')
-        i++;
-    for (power = 1.0; isdigit(s[i]); i++) {
-        val = 10.0 * val + (s[i] - '0');
-        power *= 10.0;
-    }
-    return sign * val / power;
-}
-
 static float tl_clamp(float x, float min, float max)
 {
     return (x < min) ? min : (x > max) ? max : x;
@@ -590,28 +547,18 @@ tlWeaveParameters *tl_weave_pattern_from_file(const char *filename,const char **
 		len++;
 	}
 	if(len >=5){
-		int wif_ok = 1;
 		int ptn_ok = 1;
-		const char *wif_ext = ".wif";
 		const char *ptn_ext = ".ptn";
 		for(int i=0;i<4;i++){
 			char c = filename[len-1-i];
 			c = (c <= 'Z' && c >= 'A') ? c + 32 : c;
-			if(c != wif_ext[3-i]){
-				wif_ok = 0;
-			}
 			if(c != ptn_ext[3-i]){
 				ptn_ok = 0;
 			}
         }   
-        if(wif_ok || ptn_ok){
+        if(ptn_ok){
             FILE *fp = 0;
-            if(wif_ok){
-             fp = fopen(filename,"rt");
-            }
-            if(ptn_ok){
-             fp = fopen(filename,"rb");
-            }
+			fp = fopen(filename,"rb");
             if (!fp) {
 				if (error) {
 					*error = "File not found.";
@@ -624,83 +571,11 @@ tlWeaveParameters *tl_weave_pattern_from_file(const char *filename,const char **
             unsigned char *data = (unsigned char*)calloc(len,1);
             fread(data,1,len,fp);
             fclose(fp);
-            if(wif_ok){
-                param = tl_weave_pattern_from_wif(data,len,error);
-            }
-            if(ptn_ok){
-                param = tl_weave_pattern_from_ptn(data,len,error);
-            }
+			param = tl_weave_pattern_from_ptn(data,len,error);
             free(data);
 		}
 	}
 	return param;
-}
-#ifdef TL_WCHAR
-tlWeaveParameters *tl_weave_pattern_from_wif_wchar(const wchar_t *filename,const char **error)
-{
-	tlWeaveParameters *param = 0;
-	int len = 0;
-	while(filename[len] != 0){
-		len++;
-	}
-	if(len >=5){
-		int wif_ok = 1;
-		int ptn_ok = 1;
-		wchar_t *wif_ext = L".wif";
-		wchar_t *ptn_ext = L".ptn";
-		for(int i=0;i<4;i++){
-			wchar_t c = filename[len-1-i];
-			c = towlower(c);
-			if(c != wif_ext[3-i]){
-				wif_ok = 0;
-			}
-			if(c != ptn_ext[3-i]){
-				ptn_ok = 0;
-			}
-		}
-		if(wif_ok || ptn_ok){
-			FILE *fp;
-			if(wif_ok){
-			 fp = _wfopen(filename,L"rt");
-			}
-			if(ptn_ok){
-			 fp = _wfopen(filename,L"rb");
-			}
-			fseek(fp,0,SEEK_END);
-			long len = ftell(fp);
-			fseek(fp,0,SEEK_SET);
-			unsigned char *data = (unsigned char*)calloc(len,1);
-			fread(data,1,len,fp);
-			fclose(fp);
-			if(wif_ok){
-				param = tl_weave_pattern_from_wif(data,len,error);
-			}
-			if(ptn_ok){
-				param = tl_weave_pattern_from_ptn(data,len,error);
-			}
-			free(data);
-		}else{
-			*error = "Unknown file format";
-		}
-	}else{
-		*error = "Unknown file format";
-	}
-	return param;
-}
-#endif
-
-tlWeaveParameters *tl_weave_pattern_from_wif(unsigned char *data,long len,const char **error)
-{
-    WeaveData *weave_data = wif_read((char*)data,len,error);
-    if(weave_data){
-        tlWeaveParameters *params = (tlWeaveParameters*)calloc(sizeof(tlWeaveParameters),1);
-        wif_get_pattern(params, weave_data,
-            &params->pattern_width, &params->pattern_height,
-            &params->pattern_realwidth, &params->pattern_realheight);
-        wif_free_weavedata(weave_data);
-        return params;
-    }
-    return 0;
 }
 #endif
 
@@ -1086,25 +961,6 @@ TL_FUNC_PREFIX static void calculate_length_of_segment(uint8_t warp_above, uint3
     } while(*incremented_coord != initial_coord);
 }
 
-TL_FUNC_PREFIX static float von_mises(float cos_x, float b) {
-    // assumes a = 0, b > 0 is a concentration parameter.
-    float I0, absB = fabsf(b);
-    if (fabsf(b) <= 3.75f) {
-        float t = absB / 3.75f;
-        t = t * t;
-        I0 = 1.0f + t*(3.5156229f + t*(3.0899424f + t*(1.2067492f
-            + t*(0.2659732f + t*(0.0360768f + t*0.0045813f)))));
-    } else {
-        float t = 3.75f / absB;
-        I0 = expf(absB) / sqrtf(absB) * (0.39894228f + t*(0.01328592f
-            + t*(0.00225319f + t*(-0.00157565f + t*(0.00916281f
-            + t*(-0.02057706f + t*(0.02635537f + t*(-0.01647633f
-            + t*0.00392377f))))))));
-    }
-
-    return expf(b * cos_x) / (2 * (float)M_PI * I0);
-}
-
 TL_FUNC_PREFIX static void lookup_pattern_entry(PatternEntry* entry, const tlWeaveParameters* params, const int8_t x, const int8_t y) {
     //function to get pattern entry. Takes care of coordinate wrapping!
     int32_t tmpx = (int32_t)fmodf(x,(float)params->pattern_width);
@@ -1483,303 +1339,6 @@ TL_FUNC_PREFIX tlPatternData tl_get_pattern_data(tlIntersectionData intersection
     
 }
 
-// Evaluates the specular component given the yarn properties and the 
-// intersection data under the assumption that we have staple yarn (psi != 0).
-// Algorithm 3 from 'Specular Reflection from Woven Cloth', P. Irawan,
-// S. Marschner, 2012.
-TL_FUNC_PREFIX float tl_eval_staple_specular(tlIntersectionData intersection_data,
-    tlPatternData data, const tlWeaveParameters *params)
-{
-    // The algorithm in this function assumes yarn local coordiantes.
-    // That is, y-axis always runs along yarn segment and x-axis runs across, 
-    // regardless if yarn is warp or weft.
-    
-    // To ensure yarn local coordinates, y-components of in and out directions,
-    // wi and wo (in global coordinate space) are swapped with their respective
-    // y-componenets if yarn_segment is weft.
-    tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
-        intersection_data.wi_z);
-    tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
-        intersection_data.wo_z);
-
-	float tmp_i = wi.x*data.cos_rot_angle + wi.y*data.sin_rot_angle;
-	float tmp_o = wo.x*data.cos_rot_angle + wo.y*data.sin_rot_angle;
-	wi.x = -wi.x*data.sin_rot_angle + wi.y*data.cos_rot_angle;
-	wo.x = -wo.x*data.sin_rot_angle + wo.y*data.cos_rot_angle;
-	wi.y = tmp_i;
-	wo.y = tmp_o;
-
-    // ALG: 'COMPUTE u FROM y'
-    // Yarn coordinates have been transformed previously to the local
-    // coordinate system before hand by tl_get_pattern_data and available here 
-    // in the data parameter.
-    float u = data.u;
-    float x = data.x;
-    
-    // ALG: 'COMPUTE v USING (3)'
-    tlVector H = tlVector_normalize(tlVector_add(wi, wo)); //Bisector of wi, wo
-    float psi = tl_yarn_type_get_psi(params,data.yarn_type,
-		intersection_data.context);
-    float D;
-    {
-        float a = H.y*sinf(u) + H.z*cosf(u);
-        D = (H.y*cosf(u)-H.z*sinf(u))/(sqrtf(H.x*H.x + a*a))/
-			tanf(psi);
-    }
-    // NOTE(Peter): plus or minus on acos?
-    float specular_v = atan2f(-H.y*sinf(u) - H.z*cosf(u), H.x) + acosf(D);
-    
-    
-    float reflection = 0.f;
-
-    // ALG: 'IF ABS(v) < pi/2'
-    if (fabsf(specular_v) < M_PI_2 && fabsf(D) < 1.f) {
-        
-        // TODO(Vidar): Clamp specular_v, do we need it?
-        // Make normal for highlights, uses u and specular_v
-        tlVector highlight_normal = tlVector_normalize(tlvector(sinf(specular_v),
-            sinf(u)*cosf(specular_v), cosf(u)*cosf(specular_v)));
-
-        // Transform from angle to coordante on yarn surface.
-        // get specular_x, using irawans transformation.
-        float specular_x = specular_v/((float)M_PI_2);
-        // our transformation
-        //float specular_x = sinf(specular_v);
-
-        // Get neccessary yarn params for current type.
-        float delta_x = tl_yarn_type_get_delta_x(params,data.yarn_type,
-			intersection_data.context);
-        float umax;
-        if (data.ext_between_parallel){
-            // if current segment is an extension between two parallel yarns
-            // -> bend = 0
-            umax = 0.001f;
-        } else {
-            umax = tl_yarn_type_get_umax(params,data.yarn_type,
-                    intersection_data.context);
-        }
-
-        // Clamp specular_x
-        specular_x = specular_x < 1.f - delta_x ? specular_x :
-            1.f - delta_x;
-        specular_x = specular_x > -1.f + delta_x ? specular_x :
-            -1.f + delta_x;
-
-        // Check that we are in the highlight width area.
-        // This takes the role of Chi in the irawan paper.
-        if (fabsf(specular_x - x) < delta_x) {
-            float alpha = tl_yarn_type_get_alpha(params,data.yarn_type,
-				intersection_data.context);
-            float beta  = tl_yarn_type_get_beta( params,data.yarn_type,
-				intersection_data.context);
-
-            // ALG: 'COMPUTE G_v USING (5)'
-            float a = 1.f; // radius of yarn
-            float R = 1.f/(sin(umax)); // radius of curvature
-            float Gv = a*(R + a*cosf(specular_v))/(
-                tlVector_magnitude(tlVector_add(wi,wo)) *
-                tlVector_dot(highlight_normal,H) * fabsf(sinf(psi)));
-
-            // ALG: 'COMPUTE f_c USING (7)'
-            float cos_x = -tlVector_dot(wi, wo);
-            float fc = alpha + von_mises(cos_x, beta);
-
-            // ALG: 'COMPUTE A USING (8)'
-            float widotn = tlVector_dot(wi, highlight_normal);
-            float wodotn = tlVector_dot(wo, highlight_normal);
-            widotn = (widotn < 0.f) ? 0.f : widotn;   
-            wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
-            //TODO(Vidar): This is where we get the NAN
-            float A = 0.f;
-            if(widotn > 0.f && wodotn > 0.f){
-                A = 1.f / (4.0f * (float)M_PI) * (widotn*wodotn)/(widotn + wodotn);
-            }
-
-            // ALG: 'CLAMP x to range +/- (w-delta_x)/2'
-            // ALG: 'COMPUTE X USING (12)'
-            // We skip calculation of clamping function CHI. This is done 
-            // by the if clause above.
-
-            // ALG: 'COMPUTE BTF T USING (13)'
-            float w = 2.f; //omega
-            reflection = 2.f*w*umax*fc*Gv*A/delta_x; // The specular component!
-        }
-    }
-    return reflection;
-}
-
-// Evaluates the specular component given the yarn properties and the 
-// intersection data under the assumption that we have filament yarn (psi = 0).
-// Algorithm 4 from "Specular Reflection from Woven Cloth", P. Irawan,
-// S. Marschner, 2012.
-TL_FUNC_PREFIX float tl_eval_filament_specular(tlIntersectionData intersection_data,
-    tlPatternData data, const tlWeaveParameters *params)
-{
-    // The algorithm in this function assumes yarn local coordiantes.
-    // That is, y-axis always runs along yarn segment and x-axis runs across, 
-    // regardless if yarn is warp or weft.
-    
-    // To ensure yarn local coordinates, y-components of in and out directions,
-    // wi and wo (in global coordinate space) are swapped with their respective
-    // y-componenets if yarn_segment is weft.
-    tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
-        intersection_data.wi_z);
-    tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
-        intersection_data.wo_z);
-
-	float tmp_i = wi.x*data.cos_rot_angle + wi.y*data.sin_rot_angle;
-	float tmp_o = wo.x*data.cos_rot_angle + wo.y*data.sin_rot_angle;
-	wi.x = -wi.x*data.sin_rot_angle + wi.y*data.cos_rot_angle;
-	wo.x = -wo.x*data.sin_rot_angle + wo.y*data.cos_rot_angle;
-	wi.y = tmp_i;
-	wo.y = tmp_o;
-
-    // ALG: 'COMPUTE v FROM x'
-    // Yarn coordinates have been transformed previously to the local
-    // coordinate system by tl_get_pattern_data and available here 
-    // in the data parameter.
-    float v = data.v;
-    float y = data.y;
-    
-    // ALG: 'COMPUTE u USING (4)'
-    tlVector H = tlVector_normalize(tlVector_add(wi, wo)); //Bisector of wi, wo
-    float specular_u = atan2f(-H.z, H.y) + (float)M_PI_2; // plus or minus?
-    //float specular_u = atan2f(H.y, H.z);// + (float)M_PI_2; // plus or minus?
-
-    float umax;
-    if (data.ext_between_parallel == 1){
-        // if current segment is an extension between two parallel yarns
-        // -> bend = 0
-        umax = 0.0001f;
-    } else {
-        umax = tl_yarn_type_get_umax(params,data.yarn_type,
-                intersection_data.context);
-    }
-    
-    float reflection = 0.f;
-    
-    // ALG: 'IF ABS(u) < umax'
-    if (fabsf(specular_u) < umax){
-       
-        // Make normal for highlights, uses v and specular_u
-        tlVector highlight_normal = tlVector_normalize(tlvector(sinf(v),
-            sinf(specular_u)*cosf(v), cosf(specular_u)*cosf(v)));
-
-        // Make tangent for highlights, uses v and specular_u
-        tlVector highlight_tangent = tlVector_normalize(tlvector(0.f, 
-            cosf(specular_u), -sinf(specular_u)));
-
-        // Transform from angle to coordante on yarn surface.
-        // get specular_y, using irawans transformation.
-        float specular_y = specular_u/umax;
-        // our transformation
-        //float specular_y = sinf(specular_u)/sinf(m_umax);
-
-        float delta_x = tl_yarn_type_get_delta_x(params, data.yarn_type,
-			intersection_data.context);
-        
-        // Clamp specular_y
-        specular_y = specular_y < 1.f - delta_x ? specular_y :
-            1.f - delta_x;
-        specular_y = specular_y > -1.f + delta_x ? specular_y :
-            -1.f + delta_x;
-
-        // Check that we are in the highlight width area.
-        // This takes the role of Chi in the irawan paper.
-        if (fabsf(specular_y - y) < delta_x) {
-            // ALG: 'COMPUTE G_u USING (6)'
-            // 'We can not use u as the parameter for filament yarns. 
-            // We integrate over u for staple and v for filament.' 
-            // That is, we need Gv for staple and Gu for filament.
-            float a = 1.f; //radius of yarn
-            float R = 1.f/(sin(umax)); //radius of curvature
-            float Gu = a*(R + a*cosf(v)) / (
-                tlVector_magnitude(tlVector_add(wi,wo)) *
-                fabsf((tlVector_cross(highlight_tangent,H).x)) );
-
-            float alpha = tl_yarn_type_get_alpha(params, data.yarn_type,
-				intersection_data.context);
-            float beta = tl_yarn_type_get_beta(params, data.yarn_type,
-				intersection_data.context);
-
-            // ALG: 'COMPUTE f_c USING (7)'
-            float cos_x = -tlVector_dot(wi, wo);
-            float fc = alpha + von_mises(cos_x, beta);
-
-            // ALG: 'COMPUTE A USING (8)'
-            float widotn = tlVector_dot(wi, highlight_normal);
-            float wodotn = tlVector_dot(wo, highlight_normal);
-            widotn = (widotn < 0.f) ? 0.f : widotn;   
-            wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
-            float A = 0.f;
-            if(widotn > 0.f && wodotn > 0.f){
-                A = 1.f / (4.0f*(float)M_PI) * (widotn*wodotn)/(widotn+wodotn);
-                //TODO(Peter): Explain from where the 1/4*PI factor comes from
-            }
-
-            // ALG: 'COMPUTE As USING (9)'
-            //TODO(Peter): Implement As, -- smoothes the dissapeares of the
-            // higlight near the ends. Described in (9).
-            
-            // ALG: 'CLAMP y to range +/- (l-delta_y)/2'
-            // ALG: 'COMPUTE X USING (12)'
-            // We skip calculation of clamping function Chi. This is done 
-            // by the if clause above.
-            
-            // ALG: 'COMPUTE BTF T USING (13)'
-            float w = 2.f;
-            reflection = 2.f*w*umax*Gu*fc*A/delta_x; // The specular component!
-        }
-    }
-    return reflection;
-}
-
-TL_FUNC_PREFIX float old_lighting(float u, float v, tlVector wi, tlVector wo, float spec_or_diff,
-	const tlWeaveParameters *params ,void *context)
-{
-	tlVector normal = tlVector_normalize(tlvector(sinf(v),
-		sinf(u)*cosf(v), cosf(u)*cosf(v)));
-	tlVector tangent = tlVector_normalize(tlvector(cosf(v), 
-		-sinf(u)*sinf(v), -cosf(u)*sinf(v)));
-	tlVector fiber_direction = tlVector_normalize(tlvector(0.f, 
-		cosf(u), -sinf(u)));
-
-	tlVector wi_fiber = tlvector(tlVector_dot(wi,tangent),
-		tlVector_dot(wi,fiber_direction), tlVector_dot(wi,normal));
-	tlVector wo_fiber = tlvector(tlVector_dot(wo,tangent),
-		tlVector_dot(wo,fiber_direction), tlVector_dot(wo,normal));
-	tlVector H = tlVector_normalize(tlVector_add(wi_fiber, wo_fiber));
-
-	float sin_theta_H = H.y;
-	float cos_theta_H = sqrtf(1.f - sin_theta_H * sin_theta_H);
-
-	float cos_phi = wi_fiber.x*wo_fiber.x + wi_fiber.z*wo_fiber.z;
-
-	float roughness_a = powf(31.f,1.f - tl_yarn_type_get_roughness_azimuthal(params, 0, context))-1.f;
-	float roughness_l = powf(31.f,1.f - tl_yarn_type_get_roughness_longitudinal(params, 0, context))-1.f;
-
-	float fresnel = tl_yarn_type_get_fresnel(params, 0, context);
-
-	float cos_theta = H.z;
-	int num_lobes = 4;
-	float remaining_energy = 1.f;
-	float reflection = 0.f;
-	float roughness_a_step = roughness_a / (float)(num_lobes-1);
-	float roughness_l_step = roughness_l / (float)(num_lobes-1);
-    float reflected_energy = 1.f/((float) num_lobes);
-	for (int i = 0; i < num_lobes; i++) {
-        //NOTE(Vidar):This lobe is at t=i/(m+1)
-		float specular_amount = (float)i / (float)(num_lobes - 1);
-		float amount = fabsf(spec_or_diff - specular_amount);
-        //TODO(Vidar):Proper calculation of variance
-        // Use wrapped normal distribution instead??
-		reflection += amount*reflected_energy*(von_mises(cos_theta_H, roughness_a)*von_mises(cos_phi, roughness_l))/(float)num_lobes*2.f;
-		roughness_a -= roughness_a_step;
-		roughness_l -= roughness_l_step;
-	}
-	return reflection;
-}
-
 //NOTE(Vidar): From https://www.atnf.csiro.au/computing/software/gipsy/sub/bessel.c
 TL_FUNC_PREFIX static double bessi0(double x)
 /*------------------------------------------------------------*/
@@ -1863,7 +1422,7 @@ TL_FUNC_PREFIX float new_lighting(float u, float v, tlVector wi, tlVector wo, fl
     float sin_theta_d_sq = (1-cos_2theta_d)/2;
     float cos_theta_d = sqrtf((1+cos_2theta_d)/2);
 
-	float ior = tl_yarn_type_get_fresnel(params, 0, context);
+	float ior = tl_yarn_type_get_ior(params, 0, context);
     float mod_ior = sqrtf(ior*ior - sin_theta_d_sq)/cos_theta_d;
     
 
@@ -1891,8 +1450,6 @@ TL_FUNC_PREFIX float new_lighting(float u, float v, tlVector wi, tlVector wo, fl
 	return reflection;
 }
 
-#define USE_NEW_LIGHTING 1
-
 TL_FUNC_PREFIX tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
         tlPatternData data, const tlWeaveParameters *params)
 {
@@ -1912,59 +1469,24 @@ TL_FUNC_PREFIX tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
             intersection_data.context);
 	}
 
-	if ((USE_NEW_LIGHTING)) {
-		tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
-			intersection_data.wi_z);
-		tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
-			intersection_data.wo_z);
+	tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
+		intersection_data.wi_z);
+	tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
+		intersection_data.wo_z);
 
-		float tmp_i = wi.x*data.cos_rot_angle + wi.y*data.sin_rot_angle;
-		float tmp_o = wo.x*data.cos_rot_angle + wo.y*data.sin_rot_angle;
-		wi.x = -wi.x*data.sin_rot_angle + wi.y*data.cos_rot_angle;
-		wo.x = -wo.x*data.sin_rot_angle + wo.y*data.cos_rot_angle;
-		wi.y = tmp_i;
-		wo.y = tmp_o;
+	float tmp_i = wi.x*data.cos_rot_angle + wi.y*data.sin_rot_angle;
+	float tmp_o = wo.x*data.cos_rot_angle + wo.y*data.sin_rot_angle;
+	wi.x = -wi.x*data.sin_rot_angle + wi.y*data.cos_rot_angle;
+	wo.x = -wo.x*data.sin_rot_angle + wo.y*data.cos_rot_angle;
+	wi.y = tmp_i;
+	wo.y = tmp_o;
 
-		float reflection = new_lighting(data.u, data.v, wi, wo, 0.f, params, intersection_data.context);
-		//TODO(Vidar):Temporarily set to 0
-		reflection = 0.f;
-		color.r *= reflection;
-		color.g *= reflection;
-		color.b *= reflection;
-	}
-	else {
-
-		// Apply multiplier
-		float color_amount = tl_yarn_type_get_color_amount(params, data.yarn_type,
-			intersection_data.context);
-		if (color_amount != 1.f) {
-			color.r *= color_amount;
-			color.g *= color_amount;
-			color.b *= color_amount;
-		}
-
-		float value = intersection_data.wi_z;
-		color.r *= value;
-		color.g *= value;
-		color.b *= value;
-
-		//NOTE(Vidar): We use the max of the specular color for dimming the diffuse
-		tlColor specular_color = tl_yarn_type_get_specular_color(params,
-			data.yarn_type, intersection_data.context);
-		float specular_strength = specular_color.r > specular_color.g ?
-			specular_color.r : specular_color.g;
-		specular_strength = specular_color.b > specular_strength ?
-			specular_color.b : specular_strength;
-		float specular_amount = tl_yarn_type_get_specular_amount(params,
-			data.yarn_type, intersection_data.context);
-		specular_strength *= specular_amount;
-
-		float specular_strength_complement = 1.f - specular_strength;
-		color.r *= specular_strength_complement;
-		color.g *= specular_strength_complement;
-		color.b *= specular_strength_complement;
-	}
-
+	float reflection = new_lighting(data.u, data.v, wi, wo, 0.f, params, intersection_data.context);
+	//TODO(Vidar):Temporarily set to 0
+	reflection = 0.f;
+	color.r *= reflection;
+	color.g *= reflection;
+	color.b *= reflection;
     return color;
 }
 
@@ -1980,30 +1502,18 @@ TL_FUNC_PREFIX tlColor tl_eval_specular(tlIntersectionData intersection_data,
         //have not hit a yarn...
         return ret;
 	}
-    if((!USE_NEW_LIGHTING)){
-        float psi = tl_yarn_type_get_psi(params, data.yarn_type,
-            intersection_data.context);
-        if (psi <= 0.001f) {
-            //Filament yarn
-            reflection = tl_eval_filament_specular(intersection_data, data, params); 
-        } else {
-            //Staple yarn
-            reflection = tl_eval_staple_specular(intersection_data, data, params); 
-        }
-	}
-	else {
-		tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
-			intersection_data.wi_z);
-		tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
-			intersection_data.wo_z);
-		float tmp_i = wi.x*data.cos_rot_angle + wi.y*data.sin_rot_angle;
-		float tmp_o = wo.x*data.cos_rot_angle + wo.y*data.sin_rot_angle;
-		wi.x = -wi.x*data.sin_rot_angle + wi.y*data.cos_rot_angle;
-		wo.x = -wo.x*data.sin_rot_angle + wo.y*data.cos_rot_angle;
-		wi.y = tmp_i;
-		wo.y = tmp_o;
-		reflection = new_lighting(data.u, data.v, wi, wo, 1.f, params, intersection_data.context);
-	}
+
+	tlVector wi = tlvector(intersection_data.wi_x, intersection_data.wi_y,
+		intersection_data.wi_z);
+	tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y,
+		intersection_data.wo_z);
+	float tmp_i = wi.x*data.cos_rot_angle + wi.y*data.sin_rot_angle;
+	float tmp_o = wo.x*data.cos_rot_angle + wo.y*data.sin_rot_angle;
+	wi.x = -wi.x*data.sin_rot_angle + wi.y*data.cos_rot_angle;
+	wo.x = -wo.x*data.sin_rot_angle + wo.y*data.cos_rot_angle;
+	wi.y = tmp_i;
+	wo.y = tmp_o;
+	reflection = new_lighting(data.u, data.v, wi, wo, 1.f, params, intersection_data.context);
 
 	float specular_noise=tl_yarn_type_get_specular_noise(params,
 		data.yarn_type,intersection_data.context);
@@ -2012,16 +1522,10 @@ TL_FUNC_PREFIX tlColor tl_eval_specular(tlIntersectionData intersection_data,
 		float iv = intensity_variation(data);
 		noise=(1.f-specular_noise)+specular_noise * iv;
     }
-    tlColor specular_color=tl_yarn_type_get_specular_color(params,
-        data.yarn_type,intersection_data.context);
-    //TODO(Vidar): Remove specular_normalization from tlWeaveParameters,
-    // Look up in table instead
-    float specular_amount = tl_yarn_type_get_specular_amount(params,
-        data.yarn_type,intersection_data.context);
-	float factor = reflection /* params->specular_normalization */ * noise * specular_amount;
-    ret.r=specular_color.r*factor;
-    ret.g=specular_color.g*factor;
-    ret.b=specular_color.b*factor;
+	float factor = reflection * noise;
+    ret.r=factor;
+    ret.g=factor;
+    ret.b=factor;
     return ret;
 }
 

@@ -416,12 +416,16 @@ VUtils::ShadeCol BRDFThunderLoomSampler::getDiffuseColor(VUtils::ShadeCol &light
 
 // Total amount of light reflected by the surface.
 ShadeCol BRDFThunderLoomSampler::getLightMult(ShadeCol &lightColor) {
+	/*
     tlColor s = m_yarn_type.specular_color;
     if(!m_yarn_type.specular_color_enabled
         && m_tl_wparams->num_yarn_types > 0){
         s = m_tl_wparams->yarn_types[0].specular_color;
     }
     ShadeCol ret = (m_diffuse_color + ShadeCol(s.r,s.g,s.b)) * lightColor;
+	*/
+	//TODO(Vidar):What does this function do??
+    ShadeCol ret = ShadeCol(1.0,1.0,1.0) * lightColor;
     lightColor.makeZero();
     return ret;
 }

@@ -44,12 +44,16 @@ VUtils::ShadeCol MyBaseBSDF::getDiffuseColor(VUtils::ShadeCol &lightColor) {
     return ret;
 }
 VUtils::ShadeCol MyBaseBSDF::getLightMult(VUtils::ShadeCol &lightColor) {
-    tlColor s = m_yarn_type.specular_color;
-    if(!m_yarn_type.specular_color_enabled
-        && m_weave_parameters->num_yarn_types > 0){
-        s = m_weave_parameters->yarn_types[0].specular_color;
-    }
-    VUtils::ShadeCol ret = (diffuse_color + VUtils::ShadeCol(s.r,s.g,s.b)) * lightColor;
+	/*
+	tlColor s = m_yarn_type.specular_color;
+	if(!m_yarn_type.specular_color_enabled
+		&& m_tl_wparams->num_yarn_types > 0){
+		s = m_tl_wparams->yarn_types[0].specular_color;
+	}
+	ShadeCol ret = (m_diffuse_color + ShadeCol(s.r,s.g,s.b)) * lightColor;
+	*/
+	//TODO(Vidar):What does this function do??
+	ShadeCol ret = ShadeCol(1.0,1.0,1.0)* lightColor;
     lightColor.makeZero();
     return ret;
 }
@@ -125,24 +129,9 @@ VRayContext* MyBaseBSDF::getNewContext(const VRayContext &rc, int &samplerID, in
     //doDiffuse == 0 => only specular
     //doDiffuse == 1 => specular & diffuse
     //doDiffuse == 2 => only diffuse
-	if (2==doDiffuse) return NULL;
 
-    tlColor s = m_yarn_type.specular_color;
-    if(!m_yarn_type.specular_color_enabled &&
-        m_weave_parameters->num_yarn_types > 0){
-        s = m_weave_parameters->yarn_types[0].specular_color;
-    }
-    VUtils::ShadeCol reflect_filter = VUtils::ShadeCol(s.r,s.g,s.b);
-	VUtils::RayFlags ray_flags(RT_REFLECT | RT_GLOSSY | RT_ENVIRONMENT);
-	VRayContext &nrc=rc.newSpawnContext(2, reflect_filter, ray_flags, normal);
-
-	// Set up the new context
-	nrc.rayparams.dDdx.makeZero(); // Zero out the directional derivatives
-	nrc.rayparams.dDdy.makeZero();
-	nrc.rayparams.mint=0.0f; // Set the ray extents
-	nrc.rayparams.maxt=1e18f;
-	nrc.rayparams.tracedRay.p=rc.rayresult.wpoint; // Set the new ray origin to be the surface hit point
-	return &nrc;
+	//TODO(Vidar): Importance sampling!
+	return NULL;
 }
 
 ValidType MyBaseBSDF::setupContext(const VRayContext &rc, VRayContext &nrc, float uc, int doDiffuse) {

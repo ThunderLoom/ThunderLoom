@@ -447,16 +447,6 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             tlYarnType yarn_type=params->yarn_types[data->yarn_type];
 
 			//NOTE(Peter): List params we want in the interface
-			#undef TL_YARN_PARAMETERS
-			#define TL_YARN_PARAMETERS\
-				TL_FLOAT_PARAM(umax)\
-				TL_FLOAT_PARAM(yarnsize)\
-				TL_FLOAT_PARAM(psi)\
-				TL_FLOAT_PARAM(alpha)\
-				TL_FLOAT_PARAM(delta_x)\
-				TL_COLOR_PARAM(specular_color)\
-				TL_FLOAT_PARAM(specular_noise)\
-			    TL_COLOR_PARAM(color)
 
             //NOTE(Vidar): Setup spinners
             #define TL_FLOAT_PARAM(name){\
@@ -480,17 +470,19 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             }
             //NOTE(Vidar): Setup color picker
             #define TL_COLOR_PARAM(name){\
-            HWND swatch_hwnd=GetDlgItem(hWnd,IDC_##name##_SWATCH);\
-                IColorSwatch *swatch=GetIColorSwatch(swatch_hwnd);\
-                Color col(yarn_type.name.r,yarn_type.name.g,\
-                    yarn_type.name.b);\
-                swatch->SetColor(col);\
-                ReleaseIColorSwatch(swatch);\
-                if(data->yarn_type>0){\
-                    uint8_t enabled=yarn_type.name##_enabled;\
-                    Button_SetCheck(GetDlgItem(hWnd,IDC_##name##_OVERRIDE),enabled);\
-                    EnableWindow(swatch_hwnd,enabled);\
-                }\
+				HWND swatch_hwnd=GetDlgItem(hWnd,IDC_##name##_SWATCH);\
+				if(swatch_hwnd){\
+					IColorSwatch *swatch=GetIColorSwatch(swatch_hwnd);\
+					Color col(yarn_type.name.r,yarn_type.name.g,\
+						yarn_type.name.b);\
+					swatch->SetColor(col);\
+					ReleaseIColorSwatch(swatch);\
+					if(data->yarn_type>0){\
+						uint8_t enabled=yarn_type.name##_enabled;\
+						Button_SetCheck(GetDlgItem(hWnd,IDC_##name##_OVERRIDE),enabled);\
+						EnableWindow(swatch_hwnd,enabled);\
+					}\
+				}\
             }
             TL_YARN_PARAMETERS
             #undef TL_FLOAT_PARAM
