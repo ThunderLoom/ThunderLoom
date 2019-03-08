@@ -1,5 +1,8 @@
 #pragma once
+extern "C" {
 #include "thunderloom.h"
+#include "raytracer.h"
+}
 tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param);
 
 // -- Usage --
@@ -93,6 +96,20 @@ static const char * pattern_frag =
     "color *= alpha;\n"
 "}\n";
 
+static const char * preview_frag = 
+"#version 330\n"
+"uniform sampler2D Texture;\n"
+"uniform float w;\n"
+"uniform float h;\n"
+"uniform float alpha;\n"
+"in vec2 Frag_UV;\n"
+"out vec4 color;\n"
+"void main()\n"
+"{\n"
+    "color = texture(Texture, Frag_UV);\n"
+	"color.a = 1.0;\n"
+"}\n";
+
 static double scroll = 0.0; 
 
 const int entry_size=20;
@@ -110,6 +127,10 @@ typedef struct{
                               // in the center of the canvas. In the range 0 - 1
     float magnification; // The number of pixels that is shown in the canvas
                          // (across the smallest axis)
+	GLuint pbo;
+	int preview_w, preview_h;
+	float sun_x, sun_y;
+    unsigned char *pixels;
 } EditorData;
 
 static void pattern_editor_set_imgui_style();
@@ -266,10 +287,27 @@ static void draw_pattern_texture(unsigned char *bitmap, tlWeaveParameters *param
 
 static void redraw_pattern(EditorData *data, tlWeaveParameters *param, GLuint pattern_tex)
 {
+	param->uscale = param->vscale = 0.5f;
+    if((0)){
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, data->pbo);
+        tl_raytracer_render_to_opengl_pbo(data->sun_x, data->sun_y, data->preview_w, param, data->pbo);
+        glBindTexture(GL_TEXTURE_2D,pattern_tex);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data->preview_w, data->preview_h, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    }else{
+        tl_raytracer_render_to_memory(data->sun_x, data->sun_y, data->preview_w, param, data->pixels);
+        glBindTexture(GL_TEXTURE_2D,pattern_tex);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data->preview_w, data->preview_h, GL_RGBA, GL_UNSIGNED_BYTE, data->pixels);
+    }
+
+    printf("Redraw!!\n");
+
+	/*
     draw_pattern_texture(data->bitmap, param);
     glBindTexture(GL_TEXTURE_2D,pattern_tex);
     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,param->pattern_width,param->pattern_height,0,
         GL_RGBA,GL_UNSIGNED_BYTE,data->bitmap);
+		*/
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -280,6 +318,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
 {
+    printf("pattern editor\n");
         // Setup window
     glfwSetErrorCallback(error_callback);
     if (!glfwInit())
@@ -295,7 +334,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
     glfwMakeContextCurrent(window);
     gl3wInit();
 
-    EditorData data={};
+    EditorData data={0};
     data.bitmap=(unsigned char*)calloc(param->pattern_width*param->pattern_height,4);
     data.center_x = 0.5f;
     data.center_y = 0.5f;
@@ -311,7 +350,8 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
     ImVec4 clear_color = ImColor(35, 35, 35);
     pattern_editor_set_imgui_style();
 
-    int pattern_shader = compile_shader(pattern_vert,pattern_frag);
+    //int pattern_shader = compile_shader(pattern_vert,pattern_frag);
+    int pattern_shader = compile_shader(pattern_vert,preview_frag);
 
     GLuint vert_array;
     glGenVertexArrays(1,&vert_array);
@@ -332,6 +372,30 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
     int attrib_w = glGetUniformLocation(pattern_shader,"w");
     int attrib_h = glGetUniformLocation(pattern_shader,"h");
     int attrib_alpha = glGetUniformLocation(pattern_shader,"alpha");
+
+	data.preview_w = 1024;
+	data.preview_h = 1024;
+
+    GLuint preview_tex;
+    glGenTextures(1,&preview_tex);
+    glBindTexture(GL_TEXTURE_2D,preview_tex);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,data.preview_w,data.preview_h,0,
+        GL_RGBA,GL_UNSIGNED_BYTE, 0);
+
+
+    if((0)){
+        glGenBuffers(1, &data.pbo);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, data.pbo);
+        glBufferData(GL_PIXEL_UNPACK_BUFFER, data.preview_w*data.preview_h * 4, 0, GL_STREAM_DRAW);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    }else{
+        data.pixels = (unsigned char*)calloc(data.preview_w*data.preview_h, 4);
+    }
+
+	redraw_pattern(&data,param,preview_tex);
+
 
     GLuint pattern_tex;
     glGenTextures(1,&pattern_tex);
@@ -387,7 +451,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                         data.current_yarn_type=1;
                         free(data.bitmap);
                         data.bitmap=(unsigned char*)calloc(param->pattern_width*param->pattern_height,4);
-                        redraw_pattern(&data,param,pattern_tex);
+                        redraw_pattern(&data,param,preview_tex);
                         size[0] = param->pattern_width;
                         size[1] = param->pattern_height;
                     }else{
@@ -429,7 +493,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                 param->pattern_height = size[1];
                 free(data.bitmap);
                 data.bitmap=(unsigned char*)calloc(param->pattern_width*param->pattern_height,4);
-                redraw_pattern(&data,param,pattern_tex);
+                redraw_pattern(&data,param,preview_tex);
             }
             ImGui::Columns(2, NULL, false);
             if (ImGui::Selectable("Warp",data.warp==1)) {data.warp = data.warp==1 ? -1 : 1;}
@@ -449,11 +513,11 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                     
                     tlYarnType *yt = param->yarn_types;
                     if(ImGui::Checkbox("##diffuse_color_enabled",(bool*)&param->yarn_types[i].color_enabled)){
-                        redraw_pattern(&data,param,pattern_tex);
+                        redraw_pattern(&data,param,preview_tex);
                     }
                     ImGui::SameLine();
                     if(ImGui::ColorEdit3("##diffuse_color",(float*)&(yt+i)->color)){
-                        redraw_pattern(&data,param,pattern_tex);
+                        redraw_pattern(&data,param,preview_tex);
                     }
                     if(param->num_yarn_types>2){
                         ImGui::SameLine();
@@ -475,7 +539,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                             if(data.current_yarn_type>=i){
                                 data.current_yarn_type--;
                             }
-                            redraw_pattern(&data,param,pattern_tex);
+                            redraw_pattern(&data,param,preview_tex);
                         }
                     }
                     
@@ -528,7 +592,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
 						ImGui::Text(#name); \
                         ImGui::Checkbox("",(bool*)&(yt+i)->name##_enabled); \
                         ImGui::SameLine(); \
-                        ImGui::InputFloat(" ", (float*)&(yt+i)->name); \
+                        if(ImGui::InputFloat(" ", (float*)&(yt+i)->name)){redraw_pattern(&data,param,preview_tex);} \
                         ImGui::PopID();
 
 #define TL_COLOR_PARAM(name)\
@@ -585,7 +649,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                     if(data.current_yarn_type>0){
                         pe->yarn_type = data.current_yarn_type;
                     }
-                    redraw_pattern(&data,param,pattern_tex);
+                    redraw_pattern(&data,param,preview_tex);
                 }
             }
             if(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_MIDDLE)){
@@ -607,11 +671,16 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                 dragging=false;
             }
             if(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_RIGHT)){
+				/*
                 if(!zooming){
                     glfwSetInputMode(window,GLFW_CURSOR,GLFW_CURSOR_DISABLED);
                 }
                 zoom+=delta_x;
                 zooming=true;
+				*/
+				data.sun_x = xpos - 0.5f;
+				data.sun_y = ypos - 0.5f;
+				redraw_pattern(&data,param,preview_tex);
             } else{
                 if(zooming && !dragging){
                     glfwSetInputMode(window,GLFW_CURSOR,GLFW_CURSOR_NORMAL);
@@ -643,7 +712,8 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
             glUniform1f(attrib_h,(float)param->pattern_height);
             glUniform1i(attrib_tex, 0);
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D,pattern_tex);
+            //glBindTexture(GL_TEXTURE_2D,pattern_tex);
+            glBindTexture(GL_TEXTURE_2D,preview_tex);
             if(data.tile){
                 glUniform1f(attrib_alpha,0.75f);
                 for(int y=-1;y<=1;y++){

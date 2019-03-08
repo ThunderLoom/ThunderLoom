@@ -5,10 +5,10 @@ set(CMAKE_MACOSX_RPATH 1)
 project(vray_thunderLoom)
 
 # Varibles
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
-set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
+#set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
+#set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
 set(MAYA_VERSION "2018" CACHE STRING "Maya version (year)")
-set(LIBRARY_OUTPUT_PATH ${RELEASE_DIR}/V-Ray/)
+#set(LIBRARY_OUTPUT_PATH ${RELEASE_DIR}/V-Ray/)
 
 # Additional includes
 set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../src)
@@ -27,16 +27,16 @@ set(LIBS
     "putils_s"
     "plugman_s")
 
+
 # Platform specific libs, files configs
 IF (WIN32)
-    # "C:/Program Files/Chaos Group/V-Ray/Standalone for x64/include"
+    set(VRAY_DIR "C:/Program Files/Chaos Group/V-Ray/Standalone for x64/")
+    #set(VRAY_DIR "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/include")
     set(INCLUDE_DIRS ${INCLUDE_DIRS} 
-        "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/include"
-    )
+        "${VRAY_DIR}/include")
 
-    # "C:/Program Files/Chaos Group/V-Ray/Standalone for x64/lib/x64/vc14"
     set(LIB_DIRS ${LIB_DIRS} 
-        "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/lib/x64/vc14"
+        "${VRAY_DIR}/lib/x64/vc14"
     )
 
     ADD_DEFINITIONS(-DUNICODE)
@@ -44,16 +44,13 @@ IF (WIN32)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS) # supress MSVC warn C4996
 ENDIF (WIN32)
 IF(APPLE)
-    # -I/Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/include
+    set(VRAY_DIR /Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/)
     set(INCLUDE_DIRS ${INCLUDE_DIRS} 
-        "/Applications/ChaosGroup/V-Ray/Maya${MAYA_VERSION}/include"
-        #"/Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/include/"
+        "${VRAY_DIR}/include"
         "/usr/local/include")
 
-    # -I"/Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/lib/mavericks_x64/gcc-4.2-cpp"
     set(LIB_DIRS ${LIB_DIRS} 
-        "/Applications/ChaosGroup/V-Ray/Maya${MAYA_VERSION}/lib/mavericks_x64/gcc-4.2-cpp"
-        #"/Applications/ChaosGroup/V-Ray/Standalone_for_mavericks_x64/lib/mavericks_x64/gcc-4.2-cpp"
+        "${VRAY_DIR}/lib/mavericks_x64/gcc-4.2-cpp"
     )
     set(LIBS ${LIBS} 
         "dl"
@@ -77,18 +74,8 @@ include_directories(SYSTEM ${INCLUDE_DIRS})
 link_directories(${LIB_DIRS})
 
 # Build
-IF (WIN32)
-    add_library(vray_thunderLoom SHARED ${SOURCES})
-    IF(MSVC)
-        # Do not put resulting dll in VisualStudios Debug/Release folders
-        set_target_properties( vray_thunderLoom PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH} )
-        set_target_properties( vray_thunderLoom PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${LIBRARY_OUTPUT_PATH} )
-        set_target_properties( vray_thunderLoom PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LIBRARY_OUTPUT_PATH} )
-        set_target_properties( vray_thunderLoom PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${LIBRARY_OUTPUT_PATH} )
-    ENDIF(MSVC)
-ENDIF (WIN32)
+add_library(vray_thunderLoom MODULE ${SOURCES})
 IF(APPLE)
-    add_library(vray_thunderLoom SHARED ${SOURCES})
     set_target_properties(vray_thunderLoom PROPERTIES SUFFIX ".so")
     target_compile_definitions(vray_thunderLoom PRIVATE
         REQUIRE_IOSTREAM=1
@@ -121,8 +108,10 @@ endif()
 # Link Libs
 target_link_libraries(vray_thunderLoom ${LIBS})
 
-add_custom_command(TARGET vray_thunderLoom POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${PROJECT_SOURCE_DIR}/README.md
-                ${RELEASE_DIR}/README_V-Ray_Standalone.md
-                )
+install(TARGETS vray_thunderLoom DESTINATION .)
+
+#add_custom_command(TARGET vray_thunderLoom POST_BUILD
+#COMMAND ${CMAKE_COMMAND} -E copy
+#${PROJECT_SOURCE_DIR}/README.md
+#${RELEASE_DIR}/README_V-Ray_Standalone.md
+#)

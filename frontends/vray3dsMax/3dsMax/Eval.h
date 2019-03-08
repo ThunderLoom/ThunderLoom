@@ -12,7 +12,9 @@
 #include "vraycore.h"
 #include "vrayrenderer.h"
 #include "dbgprint.h"
+extern "C" {
 #include "thunderloom.h"
+}
 #include "imtl.h"
 #include "object.h"
 #include "render.h"

@@ -33,7 +33,9 @@
 #define YARN_TYPE_TEXMAP_PARAMETERS\
 	YARN_TYPE_TEXMAP(color)\
 	YARN_TYPE_TEXMAP(specular_color)\
-	YARN_TYPE_TEXMAP(yarnsize)
+	YARN_TYPE_TEXMAP(yarnsize)\
+	YARN_TYPE_TEXMAP(normal_map)\
+	YARN_TYPE_TEXMAP(tangent_map)
 enum {
 #define YARN_TYPE_TEXMAP(param) yrn_texmaps_##param,
 	YARN_TYPE_TEXMAP_PARAMETERS

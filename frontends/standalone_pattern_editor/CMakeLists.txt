@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(patternEditor)
+option(USE_CUDA "Enable realtime preview using CUDA" OFF)
+if(USE_CUDA)
+project(patternEditor LANGUAGES C CXX CUDA)
+else()
+project(patternEditor LANGUAGES C CXX)
+endif()
 
 # Varibles
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
-set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
-set(EXECUTABLE_OUTPUT_PATH ${RELEASE_DIR}/PatternEditor/)
+#set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
+#set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
+#set(EXECUTABLE_OUTPUT_PATH ${RELEASE_DIR}/PatternEditor/)
 
 # Additional includes
 set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../src)
@@ -14,17 +19,26 @@ set(GL3W_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/include)
 set(GLFW_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/glfw/include)
 set(IMGUI_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/imgui)
 
+if(USE_CUDA)
+    set(RAYTRACER_SRC "${CMAKE_CURRENT_SOURCE_DIR}/../raytracer/raytracer.cu")
+else()
+    set(RAYTRACER_SRC "${CMAKE_CURRENT_SOURCE_DIR}/../raytracer/raytracer.c")
+endif()
 set(SOURCES
     "main.cpp"
+    ${RAYTRACER_SRC}
     "${GL3W_SRC}/gl3w.c"
     "${IMGUI_INCLUDE}/imgui.cpp"
     "${IMGUI_INCLUDE}/imgui_draw.cpp"
-    "${IMGUI_INCLUDE}/imgui_impl_glfw_gl3.cpp")
+    "${IMGUI_INCLUDE}/imgui_impl_glfw_gl3.cpp"
+)
 
 set(INCLUDE_DIRS ${TL_H_SOURCE_DIR}
     ${GL3W_INCLUDE}
     ${GLFW_INCLUDE}
-    ${IMGUI_INCLUDE})
+    ${IMGUI_INCLUDE}
+	${CMAKE_CURRENT_SOURCE_DIR}/../raytracer/
+	)
 
 set(LIB_DIRS "")
 
@@ -39,6 +53,7 @@ IF (WIN32)
         "opengl32")
 ENDIF (WIN32)
 IF(APPLE)
+    set(LIB_DIRS "/usr/local/lib")
     set(SOURCES ${SOURCES} macos_wrapper.mm)
     set(INCLUDE_DIRS ${INCLUDE_DIRS}
         "/usr/local/include")
@@ -69,3 +84,5 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
         "-Wno-unused-function"
         )
 endif()
+
+install(TARGETS patternEditor DESTINATION pattern_editor)

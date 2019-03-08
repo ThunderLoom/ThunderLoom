@@ -4,23 +4,32 @@ IF(NOT WIN32)
     message(FATAL_ERROR "thunderLoom for V-Ray for 3dsMax can only be built on windows!")
 ENDIF()
 
-project(thunderLoomVRay3dsMax)
+option(USE_CUDA "Enable realtime preview using CUDA" OFF)
+if(USE_CUDA)
+project(thunderLoomVRay3dsMax LANGUAGES C CXX CUDA)
+else()
+project(thunderLoomVRay3dsMax LANGUAGES C CXX)
+endif()
 
 # Variables
-set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
-set(3DSMAX_VERSION "2017" CACHE STRING "3dsMax version (year)")
-set(OUTPUT_3DSMAX_PATH "${RELEASE_DIR}/V-Ray for 3dsMax${3DSMAX_VERSION}/")
+set(3DSMAX_VERSION "2019" CACHE STRING "3dsMax version (year)")
 
 set(3DSMAXSDK_ROOT $ENV{ADSK_3DSMAX_SDK_${3DSMAX_VERSION}} CACHE PATH "Path to 3dsMax SDK.")
 set(3DSMAXSDK_INCLUDE "${3DSMAXSDK_ROOT}/include" CACHE PATH "Path to 3dsMax SDK include dir. Will use MAYA_ROOT as starting point if not set.")
 set(3DSMAXSDK_LIB "${3DSMAXSDK_ROOT}/lib/x64/Release" CACHE PATH "Path to 3dsMax SDK library dir. Will use MAYA_ROOT as starting point if not set.")
 
-set(VRAY3DSMAX_ROOT $ENV{VRAY_OSL_PATH_3DSMAX${3DSMAX_VERSION}_x64}/../ CACHE PATH "Path to V-Ray for 3dsMax")
+set(VRAY3DSMAX_ROOT "C:/Program Files/Chaos Group/V-Ray/3ds Max 2019" CACHE PATH "Path to V-Ray for 3dsMax")
 set(VRAY3DSMAX_INCLUDE "${VRAY3DSMAX_ROOT}/include/" CACHE PATH "Path to V-Ray for 3dsMax include dir. Will use VRAYMAYA_ROOT as starting point if not set.")
 set(VRAY3DSMAX_LIB "${VRAY3DSMAX_ROOT}/lib/x64/" CACHE PATH "Path to V-Ray for 3dsMax Library dir. Will use VRAYMAYA_ROOT as starting point if not set.")
 
+set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
+set(OUTPUT_3DSMAX_PATH "${RELEASE_DIR}/V-Ray for 3dsMax${3DSMAX_VERSION}/")
+
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${OUTPUT_3DSMAX_PATH})
+
+set(INSTALL_DIR $ENV{ADSK_3DSMAX_x64_${3DSMAX_VERSION}}/Plugins/vrayplugins CACHE PATH "Installation directory")
+
 
 # Additional includes
 set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../src)
@@ -28,6 +37,13 @@ set(GL3W_SRC ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/src)
 set(GL3W_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/include)
 set(GLFW_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/glfw/include)
 set(IMGUI_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/imgui)
+
+set(RAYTRACER_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/../raytracer/")
+if(USE_CUDA)
+    set(RAYTRACER_SRC "${CMAKE_CURRENT_SOURCE_DIR}/../raytracer/raytracer.cu")
+else()
+    set(RAYTRACER_SRC "${CMAKE_CURRENT_SOURCE_DIR}/../raytracer/raytracer.c")
+endif()
 
 # Additional library directories
 set(GLFW_LIB ${PROJECT_SOURCE_DIR}/../dependencies/glfw/lib-vc2015)
@@ -37,6 +53,7 @@ ADD_DEFINITIONS(-D_UNICODE)
 ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS) # supress MSVC warn C4996
 
 set  (SOURCES
+	${RAYTRACER_SRC}
     "3dsMax/3dsMaxThunderLoom.h"
     "3dsMax/3dsMaxThunderLoom.cpp"
     "3dsMax/Eval.h"
@@ -54,6 +71,7 @@ set  (SOURCES
 
 # Properties->C/C++->General->Additional Include Directories
 include_directories (${TL_H_SOURCE_DIR}
+    ${RAYTRACER_INCLUDE}
     ${GL3W_INCLUDE}
     ${GLFW_INCLUDE}
     ${IMGUI_INCLUDE}
@@ -88,8 +106,8 @@ target_link_libraries (thunderLoomVRay3dsMax
     "comctl32"
     "odbc32"
     "odbccp32"
-    "vray2017"
-    "vrender2017"
+    "vray${3DSMAX_VERSION}"
+    "vrender${3DSMAX_VERSION}"
 	"vc14/vutils_s"
 	"vc14/plugman_s"
     "glfw3"
@@ -101,3 +119,6 @@ add_custom_command(TARGET thunderLoomVRay3dsMax POST_BUILD
                 ${PROJECT_SOURCE_DIR}/README.md
                 ${RELEASE_DIR}/README_3dsMax.md
                 )
+
+
+install(TARGETS thunderLoomVRay3dsMax DESTINATION ${INSTALL_DIR})

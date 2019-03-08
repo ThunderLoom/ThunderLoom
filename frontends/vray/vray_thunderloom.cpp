@@ -65,47 +65,32 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         // Yarn settings.
         // These are to be stored as lists in the .vrscene file. The index in
         // the list corresponds to the yarn_type.
-        addParamTextureFloat("bend", 0.5f, -1, "How much each visible yarn segment gets bent.");
-        addParamTextureFloat("yarnsize", 1.0f, -1, "Width of yarn.");
-        addParamTextureFloat("twist", 0.5f, -1, "How strongly to simulate the twisting nature of the yarn. Usually synthetic yarns, such as polyester, have less twist than organic yarns, such as cotton.");
-        addParamTextureFloat("phase_alpha", 0.05f, -1, "Alpha value. Constant term to the fiber scattering function.");
-        addParamTextureFloat("phase_beta", 4.f, -1, "Beta value. Directionality intensity of the fiber scattering function.");
-        addParamTexture("specular_color", Color(0.4f, 0.4f, 0.4f), -1, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
-        addParamTextureFloat("specular_color_amount", 1.0f, -1, "Factor to multiply specular color with.");
-        addParamTextureFloat("specular_noise", 0.4f, -1, "Noise on specular reflections.");
-        addParamTextureFloat("highlight_width", 0.4f, -1, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
-        addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
-        addParamTextureFloat("diffuse_color_amount", 1.0f, -1, "Factor to multiply diffuse color with.");
+#define TL_FLOAT_PARAM(name) addParamTextureFloat(#name , 1.f, -1, "TODO(Vidar):Specify defaults and descriptions");
+#define TL_COLOR_PARAM(name) addParamTexture(#name , Color(1.f,1.f,1.f), -1, "TODO(Vidar):Specify defaults and descriptions");
+		TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_COLOR_PARAM
+        //addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
+        //addParamTextureFloat("diffuse_color_amount", 1.0f, -1, "Factor to multiply diffuse color with.");
         
         // Stored as lists, just like above. These parameters allow us to 
         // specify what parameters we want to override, for a specific yarn.
-        addParamBool("bend_on",                     false, -1, "");
-        addParamBool("yarnsize_on",                 false, -1, "");
-        addParamBool("twist_on",                    false, -1, "");
-        addParamBool("phase_alpha_on",              false, -1, "");
-        addParamBool("phase_beta_on",               false, -1, "");
-        addParamBool("specular_color_on",           false, -1, "");
-        addParamBool("specular_color_amount_on",    false, -1, "");
-        addParamBool("specular_noise_on",           false, -1, "");
-        addParamBool("highlight_width_on",          false, -1, "");
-        addParamBool("diffuse_color_on",            false, -1, "");
-        addParamBool("diffuse_color_amount_on",     false, -1, "");
+#define TL_FLOAT_PARAM(name) addParamBool(#name "_on", false, -1, "");
+#define TL_COLOR_PARAM(name) addParamBool(#name "_on", false, -1, "");
+		TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_COLOR_PARAM
+        //addParamBool("diffuse_color_amount_on",     false, -1, "");
 
         // MAYA FIX
         // It seems that only float params can be retrieved from Maya into the 
         // vrscene file. And only as a texture if the floats are put into an 
         // array. We allow the _on params to be specified as a float aswell.
-        addParamTextureFloat("bend_on_float",                  false, -1, "");
-        addParamTextureFloat("yarnsize_on_float",              false, -1, "");
-        addParamTextureFloat("twist_on_float",                 false, -1, "");
-        addParamTextureFloat("phase_alpha_on_float",           false, -1, "");
-        addParamTextureFloat("phase_beta_on_float",            false, -1, "");
-        addParamTextureFloat("specular_color_on_float",        false, -1, "");
-        addParamTextureFloat("specular_color_amount_on_float", false, -1, "");
-        addParamTextureFloat("specular_noise_on_float",        false, -1, "");
-        addParamTextureFloat("highlight_width_on_float",       false, -1, "");
-        addParamTextureFloat("diffuse_color_on_float",         false, -1, "");
-        addParamTextureFloat("diffuse_color_amount_on_float",  false, -1, "");
+#define TL_FLOAT_PARAM(name) addParamTextureFloat(#name "_on_float", false, -1, "");
+#define TL_COLOR_PARAM(name) addParamTextureFloat(#name "_on_float", false, -1, "");
+		TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_COLOR_PARAM
         
         addParamFloat("bends2", 0.5f, -1, "");
     }
@@ -113,17 +98,11 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
 
 //Struct for intermediatly storing yarn parameters.
 typedef struct {
-    float umax;
-    float yarnsize;
-    float psi;
-    float alpha;
-    float beta;
-    float delta_x;
-    Color specular_color;
-    float specular_amount;
-    float specular_noise;
-    float color_amount;
-    Color color;
+#define TL_FLOAT_PARAM(name) float name;
+#define TL_COLOR_PARAM(name) Color name;
+		TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_COLOR_PARAM
 } tlIntermediateYrnParam;
 
 struct BRDFThunderLoom: VRayBSDF {
@@ -134,17 +113,12 @@ struct BRDFThunderLoom: VRayBSDF {
         paramList->setParamCache("vscale", &m_vscale);
         paramList->setParamCache("uvrotation", &m_uvrotation);
         
-        paramList->setParamCache("bend", &yrn0.umax);
-        paramList->setParamCache("yarnsize", &yrn0.yarnsize);
-        paramList->setParamCache("twist", &yrn0.psi);
-        paramList->setParamCache("phase_alpha", &yrn0.alpha);
-        paramList->setParamCache("phase_beta", &yrn0.beta);
-        paramList->setParamCache("highlight_width", &yrn0.delta_x);
-        paramList->setParamCache("specular_color", &yrn0.specular_color);
-        paramList->setParamCache("specular_color_amount", &yrn0.specular_amount);
-        paramList->setParamCache("specular_noise", &yrn0.specular_noise);
-        paramList->setParamCache("diffuse_color", &yrn0.color);
-        paramList->setParamCache("diffuse_color_amount", &yrn0.color_amount);
+#define TL_FLOAT_PARAM(name) paramList->setParamCache(#name, &yrn0.name);
+#define TL_COLOR_PARAM(name) paramList->setParamCache(#name, &yrn0.name);
+		TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_COLOR_PARAM
+        //paramList->setParamCache("diffuse_color_amount", &yrn0.color_amount);
         
     }
 
@@ -210,8 +184,8 @@ inline int set_texparam(VRayPluginParameter* param, void **target, int i) {
     return 0;
 }
 
-int get_bool(VRayPluginParameter * param, int i, VRayContext& rc) {
-    if (param->getType(i,0) == VRayParameterType::paramtype_bool && param->getBool(i))
+int get_bool(VRayPluginParameter * param, int i, VRayContext& rc, double t) {
+    if (param->getType(i,0) == VRayParameterType::paramtype_bool && param->getBool(i,t))
       return 1;
     
     // For maya support ([param]_on_float), float arrays are sent as textures.
@@ -229,7 +203,13 @@ int get_bool(VRayPluginParameter * param, int i, VRayContext& rc) {
 void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     // Get filepath
     VRayPluginParameter* filepath_param = this->getParameter("filepath");
-    CharString filepath = filepath_param->getString();
+	CharString filepath;
+	if (filepath_param) {
+		filepath = filepath_param->getString();
+	}
+
+	const VUtils::VRayFrameData frame_data = vray->getFrameData();
+	double time = frame_data.t;
 
     //Check for file, at path, then in VRAY_ASSETS_PATH and so forth.
     VUtils::checkAssetPath(filepath, vray->getSequenceData());
@@ -265,54 +245,28 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     VRayPluginParameter* uscale = this->getParameter("uscale");
     VRayPluginParameter* vscale = this->getParameter("vscale");
     VRayPluginParameter* uvrotation = this->getParameter("uvrotation");
-    m_tl_wparams->uscale = uscale->getFloat();
-    m_tl_wparams->vscale = vscale->getFloat();
-    m_tl_wparams->uvrotation = uvrotation->getFloat();
+    m_tl_wparams->uscale = uscale->getFloat(0,time);
+    m_tl_wparams->vscale = vscale->getFloat(0,time);
+    m_tl_wparams->uvrotation = uvrotation->getFloat(0,time);
 
     // Yarn type params
-    VRayPluginParameter* bend = this->getParameter("bend");
-    VRayPluginParameter* bend_on = this->getParameter("bend_on");
-    VRayPluginParameter* bend_on_float = this->getParameter("bend_on_float");
-
-    VRayPluginParameter* yarnsize = this->getParameter("yarnsize");
-    VRayPluginParameter* yarnsize_on = this->getParameter("yarnsize_on");
-    VRayPluginParameter* yarnsize_on_float = this->getParameter("yarnsize_on_float");
-
-    VRayPluginParameter* twist = this->getParameter("twist");
-    VRayPluginParameter* twist_on = this->getParameter("twist_on");
-    VRayPluginParameter* twist_on_float = this->getParameter("twist_on_float");
+#define TL_FLOAT_PARAM(name) \
+    VRayPluginParameter* name = this->getParameter(#name);\
+	VRayPluginParameter* name##_on = this->getParameter(#name "_on");\
+	VRayPluginParameter* name##_on_float = this->getParameter(#name "_on_float");
+#define TL_COLOR_PARAM(name) \
+    VRayPluginParameter* name = this->getParameter(#name);\
+	VRayPluginParameter* name##_on = this->getParameter(#name "_on");\
+	VRayPluginParameter* name##_on_float = this->getParameter(#name "_on_float");
+		TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_COLOR_PARAM
     
-    VRayPluginParameter* phase_alpha = this->getParameter("phase_alpha");
-    VRayPluginParameter* phase_alpha_on = this->getParameter("phase_alpha_on");
-    VRayPluginParameter* phase_alpha_on_float = this->getParameter("phase_alpha_on_float");
-
-    VRayPluginParameter* phase_beta = this->getParameter("phase_beta");
-    VRayPluginParameter* phase_beta_on = this->getParameter("phase_beta_on");
-    VRayPluginParameter* phase_beta_on_float = this->getParameter("phase_beta_on_float");
-
-    VRayPluginParameter* specular_color = this->getParameter("specular_color");
-    VRayPluginParameter* specular_color_on = this->getParameter("specular_color_on");
-    VRayPluginParameter* specular_color_on_float = this->getParameter("specular_color_on_float");
-    
-    VRayPluginParameter* specular_color_amount = this->getParameter("specular_color_amount");
-    VRayPluginParameter* specular_color_amount_on = this->getParameter("specular_color_amount_on");
-    VRayPluginParameter* specular_color_amount_on_float = this->getParameter("specular_color_amount_on_float");
-
-    VRayPluginParameter* specular_noise = this->getParameter("specular_noise");
-    VRayPluginParameter* specular_noise_on = this->getParameter("specular_noise_on");
-    VRayPluginParameter* specular_noise_on_float = this->getParameter("specular_noise_on_float");
-
-    VRayPluginParameter* highlight_width = this->getParameter("highlight_width");
-    VRayPluginParameter* highlight_width_on = this->getParameter("highlight_width_on");
-    VRayPluginParameter* highlight_width_on_float = this->getParameter("highlight_width_on_float");
-    
-    VRayPluginParameter* diffuse_color = this->getParameter("diffuse_color");
-    VRayPluginParameter* diffuse_color_on = this->getParameter("diffuse_color_on");
-    VRayPluginParameter* diffuse_color_on_float = this->getParameter("diffuse_color_on_float");
-    
-    VRayPluginParameter* diffuse_color_amount = this->getParameter("diffuse_color_amount");
+    /*
+	VRayPluginParameter* diffuse_color_amount = this->getParameter("diffuse_color_amount");
     VRayPluginParameter* diffuse_color_amount_on = this->getParameter("diffuse_color_amount_on");
     VRayPluginParameter* diffuse_color_amount_on_float = this->getParameter("diffuse_color_amount_on_float");
+	*/
 
 
     // Loop through yarn types and set parameters from list
@@ -320,45 +274,37 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
         //get parameter from config string
         tlYarnType* yarn_type = &m_tl_wparams->yarn_types[i];
 
-#define TL_VRAY_SET_PARAM(name,tl_name) \
+#define TL_FLOAT_PARAM(name) \
         if (is_param_valid(name, i)) {\
-            if (!set_texparam(name, &yarn_type->tl_name##_texmap, i))\
-                yarn_type->tl_name = name->getFloat(i);\
+            if (!set_texparam(name, &yarn_type->name##_texmap, i))\
+                yarn_type->name = name->getFloat(i,time);\
         }\
         if (is_param_valid(name##_on, i)) \
-            yarn_type->tl_name##_enabled = get_bool(name##_on, i, rc); \
+            yarn_type->name##_enabled = get_bool(name##_on, i, rc, time); \
         else if (is_param_valid(name##_on_float, i)) \
-            yarn_type->tl_name##_enabled = get_bool(name##_on_float, i, rc);
-
-#define TL_VRAY_FLOAT_PARAMS\
-        TL_VRAY_SET_PARAM(bend, umax)\
-        TL_VRAY_SET_PARAM(yarnsize, yarnsize)\
-        TL_VRAY_SET_PARAM(twist, psi)\
-        TL_VRAY_SET_PARAM(phase_alpha, alpha)\
-        TL_VRAY_SET_PARAM(phase_beta, beta)\
-        TL_VRAY_SET_PARAM(highlight_width, delta_x)\
-        TL_VRAY_SET_PARAM(specular_color_amount, specular_amount)\
-        TL_VRAY_SET_PARAM(specular_noise, specular_noise)\
-        TL_VRAY_SET_PARAM(diffuse_color_amount, color_amount)\
-
-TL_VRAY_FLOAT_PARAMS
+            yarn_type->name##_enabled = get_bool(name##_on_float, i, rc, time);
+#define TL_COLOR_PARAM(name)  \
+        if (is_param_valid(name, i)) { \
+			if (!set_texparam(name, &yarn_type->name##_texmap, i)) { \
+				Color tmp_col = name->getColor(i,time); \
+				tlColor tl_col; \
+				tl_col.r = tmp_col.r; tl_col.g = tmp_col.g; tl_col.b = tmp_col.b; \
+                yarn_type->name = tl_col; \
+            } \
+        } \
+        if (is_param_valid(name##_on, i)) \
+            yarn_type->name##_enabled = get_bool(name##_on, i, rc, time); \
+        else if (is_param_valid(name##_on_float, i)) \
+            yarn_type->name##_enabled = get_bool(name##_on_float, i, rc, time); 
+		TL_YARN_PARAMETERS
+#undef TL_FLOAT_PARAM
+#undef TL_COLOR_PARAM
 
 #undef TL_VRAY_FLOAT_PARAMS
 #undef TL_VRAY_SET_PARAM
 
-        if (is_param_valid(specular_color, i)) {
-            if (!set_texparam(specular_color, &yarn_type->specular_color_texmap, i)) {
-                Color tmp_specular_color = specular_color->getColor(i);
-                tlColor tl_specular_color;
-                tl_specular_color.r = tmp_specular_color.r; tl_specular_color.g = tmp_specular_color.g; tl_specular_color.b = tmp_specular_color.b;
-                yarn_type->color = tl_specular_color;
-            }
-        }
-        if (is_param_valid(specular_color_on, i))
-            yarn_type->specular_color_enabled = get_bool(specular_color_on, i, rc);
-        else if (is_param_valid(specular_color_on_float, i))
-            yarn_type->specular_color_enabled = get_bool(specular_color_on_float, i, rc);
 
+	/*
         if (is_param_valid(diffuse_color, i)) {
             if (!set_texparam(diffuse_color, &yarn_type->color_texmap, i)) {
                 Color tmp_diffuse_color = diffuse_color->getColor(i);
@@ -371,6 +317,7 @@ TL_VRAY_FLOAT_PARAMS
             yarn_type->color_enabled = get_bool(diffuse_color_on, i, rc);
         else if (is_param_valid(diffuse_color_on_float, i))
             yarn_type->color_enabled = get_bool(diffuse_color_on_float, i, rc);
+	*/
 
     }
 
