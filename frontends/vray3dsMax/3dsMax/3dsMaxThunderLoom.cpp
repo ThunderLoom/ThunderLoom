@@ -167,6 +167,7 @@ struct YarnTypeDlgProcData
 
 INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+#pragma optimize("", off)
 class PatternRolloutDlgProc: public ParamMap2UserDlgProc{
 public:
 	IParamMap *pmap;
@@ -238,6 +239,7 @@ public:
 				swprintf(buffer,512,L"Thunder Loom v%d.%d.%d",
 					PLUGIN_VERSION_MAJOR,PLUGIN_VERSION_MINOR,PLUGIN_VERSION_PATCH);
 				SetWindowText(GetDlgItem(hWnd,IDC_VERSION),buffer);
+
 				break;
 			}
 			case WM_DESTROY:
@@ -385,6 +387,7 @@ public:
 		update_yarn_type_rollups();
 	}
 };
+#pragma optimize("", on)
 
 
 /*===========================================================================*\
@@ -447,6 +450,12 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             tlYarnType yarn_type=params->yarn_types[data->yarn_type];
 
 			//NOTE(Peter): List params we want in the interface
+
+			//TODO(Vidar): Create controls for all yarn parameters!
+			/*
+			CreateWindowA("BUTTON", "TEST", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+				0, 0, 100, 100, hWnd, 0, hInstance, 0);
+				*/
 
             //NOTE(Vidar): Setup spinners
             #define TL_FLOAT_PARAM(name){\

@@ -252,8 +252,8 @@ tlYarnType tl_default_yarn_type =
     0.f,   //specular_noise
     {0.3f, 0.3f, 0.3f},  //color
     1.f,   //color_amount
-    0.3f,   //roughness_azimuthal
-    0.3f,   //roughness_longitudinal
+    0.6f,   //roughness_azimuthal
+    0.6f,   //roughness_longitudinal
     1.6f,  //ior
     {0.5f, 0.5f, 1.f},  //normal_map
     {0.5f, 1.0f, 0.5f},  //tangent_map
@@ -1373,8 +1373,24 @@ TL_FUNC_PREFIX float logistic_distribution(float x, float _s)
     return val/inv_norm;
 }
 
-TL_FUNC_PREFIX float new_lighting(float u, float v, tlVector wi, tlVector wo, float spec_or_diff,
-	const tlWeaveParameters *params ,void *context)
+TL_FUNC_PREFIX float fresnel(float prev_ior, float next_ior, float cos_theta_i)
+{
+	float sin_theta_i_2 = 1.f - cos_theta_i * cos_theta_i;
+	float eta = prev_ior / next_ior;
+	float sin_theta_i = sqrtf(sin_theta_i_2);
+	float sin_theta_t = sin_theta_i * eta;
+	if (sin_theta_t >= 1.f) return 1.f; //NOTE(Vidar): Total internal reflection
+	float cos_theta_t = sqrtf(1.f - sin_theta_t*sin_theta_t);
+
+	float r_parallel = (prev_ior*cos_theta_i - next_ior * cos_theta_t) /
+		(prev_ior*cos_theta_i + next_ior * cos_theta_t);
+	float r_perperdicular = (next_ior*cos_theta_i - prev_ior * cos_theta_t) /
+		(next_ior*cos_theta_i + prev_ior * cos_theta_t);
+	return (r_parallel*r_parallel + r_perperdicular * r_perperdicular)*0.5f;
+}
+
+TL_FUNC_PREFIX tlColor new_lighting(float u, float v, tlVector wi, tlVector wo, float spec_or_diff,
+	const tlWeaveParameters *params ,void *context, int yarn_type)
 {
 	tlVector normal = tlVector_normalize(tlvector(sinf(v),
 		sinf(u)*cosf(v), cosf(u)*cosf(v)));
@@ -1402,9 +1418,18 @@ TL_FUNC_PREFIX float new_lighting(float u, float v, tlVector wi, tlVector wo, fl
 	float sin_theta_o = wo_fiber.y;
 	float cos_theta_o = sqrtf(1.f - sin_theta_o * sin_theta_o);
 
-	float roughness_a = tl_yarn_type_get_roughness_azimuthal(params, 0, context);
-	float roughness_l = tl_yarn_type_get_roughness_longitudinal(params, 0, context);
+	float roughness_l = tl_yarn_type_get_roughness_longitudinal(params, yarn_type, context);
+	//NOTE(Vidar):Mapping according to Chiang, Bitterli, Tappan and Burley  eq. (7)
+	float variance_l = 0.726f*roughness_l + 0.812f*roughness_l*roughness_l + 3.7f*powf(roughness_l, 20.f);
+	variance_l *= variance_l;
 
+	float roughness_a = tl_yarn_type_get_roughness_azimuthal(params, yarn_type, context);
+	float roughness_a2 = roughness_a * roughness_a;
+	float roughness_a3 = roughness_a * roughness_a2;
+	float roughness_a4 = roughness_a2 * roughness_a2;
+	float roughness_a5 = roughness_a2 * roughness_a3;
+	//NOTE(Vidar):Mapping according to Chiang, Bitterli, Tappan and Burley  eq. (8)
+	float logistic_scale = 0.265f*roughness_a + 1.194*roughness_a2 + 5.372f*powf(roughness_a, 22.f);
 
 	float cos_theta = H.z;
 
@@ -1412,8 +1437,8 @@ TL_FUNC_PREFIX float new_lighting(float u, float v, tlVector wi, tlVector wo, fl
 	//TODO(Vidar):Better csch
 	//TODO(Vidar):What should be the roughness term??
 	float M_p = 
-		expf(-sin_theta_i * sin_theta_o / roughness_l)* bessi0(cos_theta_i*cos_theta_o / roughness_l)
-		/(sinhf(1.f / roughness_l)*2.f*roughness_l);
+		expf(-sin_theta_i * sin_theta_o / variance_l)* bessi0(cos_theta_i*cos_theta_o / variance_l)
+		/(sinhf(1.f / variance_l)*2.f*variance_l);
 
     //Azimuthal direction
     //Theta_d = (theta_r - theta_i)/2
@@ -1422,11 +1447,11 @@ TL_FUNC_PREFIX float new_lighting(float u, float v, tlVector wi, tlVector wo, fl
     float sin_theta_d_sq = (1-cos_2theta_d)/2;
     float cos_theta_d = sqrtf((1+cos_2theta_d)/2);
 
-	float ior = tl_yarn_type_get_ior(params, 0, context);
+	float ior = tl_yarn_type_get_ior(params, yarn_type, context);
     float mod_ior = sqrtf(ior*ior - sin_theta_d_sq)/cos_theta_d;
-    
 
-	float N_p = 0.f;
+	float N_p0 = 0.f;
+	float N_p2 = 0.f;
 
     float h = -v/M_PI_2;//2.f*v-1.f; //TODO(Vidar):I think??
     float gamma_i = asinf(h);
@@ -1436,18 +1461,49 @@ TL_FUNC_PREFIX float new_lighting(float u, float v, tlVector wi, tlVector wo, fl
 		float phi_refl = 2.f*mode*gamma_t - 2.f*gamma_i + mode * M_PI;
 
 		//TODO(Vidar):Make sure this angle is in the correct interval
-		N_p += logistic_distribution(phi - phi_refl, roughness_a);
+		N_p0 = logistic_distribution(phi - phi_refl, logistic_scale);
 	}
 	{
 		float mode = 2.f; // R-0 TT-1 TRT-2 ...
 		float phi_refl = 2.f*mode*gamma_t - 2.f*gamma_i;// +mode * M_PI;
 
 		//TODO(Vidar):Make sure this angle is in the correct interval
-		N_p += logistic_distribution(phi - phi_refl, roughness_a);
+		N_p2 = logistic_distribution(phi - phi_refl, logistic_scale);
 	}
 
-	float reflection = M_p * N_p;
-	return reflection;
+	float sin_theta_t = sin_theta_i / ior;
+	float cos_theta_t = sqrtf(1.f - sin_theta_t * sin_theta_t);
+	tlColor color = tl_yarn_type_get_color(params, yarn_type, context);
+	float absorption[3] = { color.r, color.g, color.b }; 
+	for (int i = 0; i < 3; i++) {
+		absorption[i] = logf(absorption[i]) / (5.969f - 0.215f*roughness_a + 2.532f*roughness_a2
+			- 10.73f*roughness_a3 + 5.574f*roughness_a4 + 0.245f*roughness_a5);
+		absorption[i] *= absorption[i];
+		absorption[i] /= cos_theta_t;
+	}
+	//TODO(Vidar):Fresnel term in absorption
+	float cos_twice_half_angle = tlVector_dot(wi, wo);
+	float cos_half_angle = sqrtf(0.5f*(1.f + cos_twice_half_angle));
+
+	float cos_gamma_o = sqrtf(1.f - h * h);
+	float cos_transmission_angle = cos_theta_o * cos_gamma_o;
+	float f = fresnel(1.f, ior, cos_transmission_angle);
+	float f_compl = 1.f - f;
+	float f_compl2 = f_compl*f_compl;
+
+	float col[3] = { 0.f };
+	for (int i = 0; i < 3; i++) {
+		col[i] = M_p * N_p0  * f
+			+ M_p * N_p2*expf(-2.f*absorption[i] * (1.f + cosf(2.f*gamma_t)))
+			* f_compl2*f;
+	}
+
+	if(0){
+		col[0] = col[1] = col[2] = cos_twice_half_angle;
+	}
+	tlColor ret = { col[0], col[1], col[2] };
+
+	return ret;
 }
 
 TL_FUNC_PREFIX tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
@@ -1481,9 +1537,9 @@ TL_FUNC_PREFIX tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
 	wi.y = tmp_i;
 	wo.y = tmp_o;
 
-	float reflection = new_lighting(data.u, data.v, wi, wo, 0.f, params, intersection_data.context);
+	color = new_lighting(data.u, data.v, wi, wo, 0.f, params, intersection_data.context, data.yarn_type);
 	//TODO(Vidar):Temporarily set to 0
-	reflection = 0.f;
+	float reflection = 0.f;
 	color.r *= reflection;
 	color.g *= reflection;
 	color.b *= reflection;
@@ -1513,7 +1569,7 @@ TL_FUNC_PREFIX tlColor tl_eval_specular(tlIntersectionData intersection_data,
 	wo.x = -wo.x*data.sin_rot_angle + wo.y*data.cos_rot_angle;
 	wi.y = tmp_i;
 	wo.y = tmp_o;
-	reflection = new_lighting(data.u, data.v, wi, wo, 1.f, params, intersection_data.context);
+	ret = new_lighting(data.u, data.v, wi, wo, 1.f, params, intersection_data.context, data.yarn_type);
 
 	float specular_noise=tl_yarn_type_get_specular_noise(params,
 		data.yarn_type,intersection_data.context);
@@ -1522,10 +1578,10 @@ TL_FUNC_PREFIX tlColor tl_eval_specular(tlIntersectionData intersection_data,
 		float iv = intensity_variation(data);
 		noise=(1.f-specular_noise)+specular_noise * iv;
     }
-	float factor = reflection * noise;
-    ret.r=factor;
-    ret.g=factor;
-    ret.b=factor;
+	float factor = noise;
+    ret.r*=factor;
+    ret.g*=factor;
+    ret.b*=factor;
     return ret;
 }
 

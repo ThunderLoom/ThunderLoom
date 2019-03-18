@@ -41,6 +41,10 @@ void trace_rays(float3 sun_dir, uint8_t *pixels, tlWeaveParameters *params)
 	intersection_data.context = 0;
 
 	tlColor col = tl_shade(intersection_data, params);
+	float mult = 5.f;
+	col.r *= mult;
+	col.g *= mult;
+	col.b *= mult;
 	
 	pixels[i * 4 + 0] = (uint8_t)(saturate(col.r)*255.f);
 	pixels[i * 4 + 1] = (uint8_t)(saturate(col.g)*255.f);
