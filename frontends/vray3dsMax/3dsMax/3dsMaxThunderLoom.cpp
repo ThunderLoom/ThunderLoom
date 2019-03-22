@@ -437,6 +437,12 @@ static ParamBlockDesc2 thunder_loom_param_blk_desc(
 PB_END
 );									 
 
+void get_yarn_param_pos(int i, int *x, int *y)
+{
+	*x = (i % 2)*160;
+	*y = (i / 2)*20;
+}
+
 INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     int id = LOWORD(wParam);
@@ -452,19 +458,34 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			//NOTE(Peter): List params we want in the interface
 
 			//TODO(Vidar): Create controls for all yarn parameters!
-			/*
-			CreateWindowA("BUTTON", "TEST", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-				0, 0, 100, 100, hWnd, 0, hInstance, 0);
-				*/
+			int param_index = 0;
 
             //NOTE(Vidar): Setup spinners
             #define TL_FLOAT_PARAM(name){\
-                HWND spinner_hwnd = GetDlgItem(hWnd, IDC_##name##_SPIN);\
-                HWND edit_hwnd = GetDlgItem(hWnd, IDC_##name##_EDIT);\
+				int offset_x, offset_y;\
+				get_yarn_param_pos(param_index++,&offset_x,&offset_y);\
+				HWND override_hwnd=0;\
+				if(data->yarn_type>0){\
+					override_hwnd=\
+						CreateWindowA("Button", #name "_override",  BS_AUTOCHECKBOX | WS_TABSTOP | WS_VISIBLE | WS_CHILD ,\
+						offset_x+11, offset_y, 90 , 20, hWnd, (HMENU)IDC_##name##_OVERRIDE, hInstance, 0);\
+				}else{\
+					override_hwnd=\
+						CreateWindowA("static", #name "_label",  WS_VISIBLE | WS_CHILD ,\
+						offset_x+6, offset_y, 160, 20, hWnd, 0, hInstance, 0);\
+				}\
+				SetWindowTextA(override_hwnd, #name ":");\
+                HWND edit_hwnd =\
+					CreateWindowA("CustEdit", #name "_edit",   WS_TABSTOP | WS_VISIBLE | WS_CHILD ,\
+					offset_x+90, offset_y, 27 , 20, hWnd, (HMENU)IDC_##name##_EDIT, hInstance, 0);\
+				HWND spinner_hwnd=\
+					CreateWindowA("SpinnerControl", #name "_spin",   WS_TABSTOP | WS_VISIBLE | WS_CHILD ,\
+					offset_x+120, offset_y, 7 , 20, hWnd, (HMENU)IDC_##name##_SPIN, hInstance, 0);\
                 if(spinner_hwnd && edit_hwnd){\
                     ISpinnerControl * s = GetISpinner(spinner_hwnd);\
                     s->LinkToEdit(edit_hwnd, EDITTYPE_FLOAT);\
-                    s->SetLimits(0.f, 1.f, FALSE);\
+					/*TODO(Vidar):Configure the limits somewhere in thunderloom.h*/\
+                    s->SetLimits(0.f, 10.f, FALSE);\
                     s->SetScale(0.01f);\
                     s->SetValue(yarn_type.name, FALSE);\
                     ReleaseISpinner(s);\
@@ -479,7 +500,25 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             }
             //NOTE(Vidar): Setup color picker
             #define TL_COLOR_PARAM(name){\
-				HWND swatch_hwnd=GetDlgItem(hWnd,IDC_##name##_SWATCH);\
+				int offset_x, offset_y;\
+				get_yarn_param_pos(param_index++,&offset_x,&offset_y);\
+				HWND override_hwnd=0;\
+				if(data->yarn_type>0){\
+					override_hwnd=\
+						CreateWindowA("Button", #name "_override",  BS_AUTOCHECKBOX | WS_TABSTOP | WS_VISIBLE | WS_CHILD ,\
+						offset_x+11, offset_y, 90 , 20, hWnd, (HMENU)IDC_##name##_OVERRIDE, hInstance, 0);\
+				}else{\
+					override_hwnd=\
+						CreateWindowA("static", #name "_label",  WS_VISIBLE | WS_CHILD ,\
+						offset_x +6, offset_y, 160, 20, hWnd, 0, hInstance, 0);\
+				}\
+				SetWindowTextA(override_hwnd, #name ":");\
+				HWND swatch_hwnd=\
+					CreateWindowA("ColorSwatch", #name "_swatch", WS_TABSTOP | WS_VISIBLE | WS_CHILD ,\
+					offset_x +100, offset_y, 16, 12, hWnd, (HMENU)IDC_##name##_SWATCH, hInstance, 0);\
+				HWND tex_hwnd=\
+					CreateWindowA("CustButton", #name "_tex",  WS_TABSTOP | WS_VISIBLE | WS_CHILD ,\
+					offset_x +120, offset_y, 12 , 10, hWnd, (HMENU)IDC_YRN_TEX_##name##_BUTTON, hInstance, 0);\
 				if(swatch_hwnd){\
 					IColorSwatch *swatch=GetIColorSwatch(swatch_hwnd);\
 					Color col(yarn_type.name.r,yarn_type.name.g,\
@@ -488,7 +527,7 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					ReleaseIColorSwatch(swatch);\
 					if(data->yarn_type>0){\
 						uint8_t enabled=yarn_type.name##_enabled;\
-						Button_SetCheck(GetDlgItem(hWnd,IDC_##name##_OVERRIDE),enabled);\
+						Button_SetCheck(override_hwnd,enabled);\
 						EnableWindow(swatch_hwnd,enabled);\
 					}\
 				}\

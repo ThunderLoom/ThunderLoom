@@ -1399,14 +1399,13 @@ TL_FUNC_PREFIX tlColor new_lighting(float u, float v, tlVector wi, tlVector wo, 
 	tlVector fiber_direction = tlVector_normalize(tlvector(0.f, 
 		cosf(u), -sinf(u)));
 
+	//TODO(Vidar): This should be the input parameters
 	tlVector wi_fiber = tlvector(tlVector_dot(wi,tangent),
 		tlVector_dot(wi,fiber_direction), tlVector_dot(wi,normal));
 	tlVector wo_fiber = tlvector(tlVector_dot(wo,tangent),
 		tlVector_dot(wo,fiber_direction), tlVector_dot(wo,normal));
-	tlVector H = tlVector_normalize(tlVector_add(wi_fiber, wo_fiber));
-
-	float sin_theta_H = H.y;
-	float cos_theta_H = sqrtf(1.f - sin_theta_H * sin_theta_H);
+	//TODO(Vidar): Eliminate h parameter?? Should be possible to replace it with normal direction I think
+    float h = -v/M_PI_2;
 
 	//TODO(Vidar):There should be a smarter way of doing this...
 	float phi_i = atan2f(wi_fiber.x, wi_fiber.z);
@@ -1431,11 +1430,8 @@ TL_FUNC_PREFIX tlColor new_lighting(float u, float v, tlVector wi, tlVector wo, 
 	//NOTE(Vidar):Mapping according to Chiang, Bitterli, Tappan and Burley  eq. (8)
 	float logistic_scale = 0.265f*roughness_a + 1.194*roughness_a2 + 5.372f*powf(roughness_a, 22.f);
 
-	float cos_theta = H.z;
-
 	//Longitudinal scattering function (d.Eon sec. 4.2)
 	//TODO(Vidar):Better csch
-	//TODO(Vidar):What should be the roughness term??
 	float M_p = 
 		expf(-sin_theta_i * sin_theta_o / variance_l)* bessi0(cos_theta_i*cos_theta_o / variance_l)
 		/(sinhf(1.f / variance_l)*2.f*variance_l);
@@ -1453,7 +1449,6 @@ TL_FUNC_PREFIX tlColor new_lighting(float u, float v, tlVector wi, tlVector wo, 
 	float N_p0 = 0.f;
 	float N_p2 = 0.f;
 
-    float h = -v/M_PI_2;//2.f*v-1.f; //TODO(Vidar):I think??
     float gamma_i = asinf(h);
     float gamma_t = asinf(h/mod_ior);
 	if((1)){
@@ -1481,7 +1476,7 @@ TL_FUNC_PREFIX tlColor new_lighting(float u, float v, tlVector wi, tlVector wo, 
 		absorption[i] *= absorption[i];
 		absorption[i] /= cos_theta_t;
 	}
-	//TODO(Vidar):Fresnel term in absorption
+
 	float cos_twice_half_angle = tlVector_dot(wi, wo);
 	float cos_half_angle = sqrtf(0.5f*(1.f + cos_twice_half_angle));
 
@@ -1498,9 +1493,6 @@ TL_FUNC_PREFIX tlColor new_lighting(float u, float v, tlVector wi, tlVector wo, 
 			* f_compl2*f;
 	}
 
-	if(0){
-		col[0] = col[1] = col[2] = cos_twice_half_angle;
-	}
 	tlColor ret = { col[0], col[1], col[2] };
 
 	return ret;
