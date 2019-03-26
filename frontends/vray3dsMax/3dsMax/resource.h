@@ -202,6 +202,9 @@
 #define IDC_normal_map_OVERRIDE        1218
 #define IDC_tangent_map_SWATCH        1219
 #define IDC_tangent_map_OVERRIDE        1220
+#define IDC_fiber_count_SPIN        1221
+#define IDC_fiber_count_EDIT        1222
+#define IDC_fiber_count_OVERRIDE        1223
 
 // Next default values for new objects
 // 
@@ -209,7 +212,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        112
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1221
+#define _APS_NEXT_CONTROL_VALUE         1224
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -1,9 +1,5 @@
 //#define TL_THUNDERLOOM_IMPLEMENTATION
 #define TL_NO_TEXTURE_CALLBACKS
-extern "C"
-{
-#include "thunderloom.h"
-}
 #define TL_PATTERN_EDITOR_IMPLEMENTATION
 #include "pattern_editor.h"
 #include <stdio.h>

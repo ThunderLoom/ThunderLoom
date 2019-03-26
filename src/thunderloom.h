@@ -82,6 +82,7 @@ void tl_free_weave_parameters(tlWeaveParameters *params);
 #define TL_YARN_PARAMETERS\
 	TL_FLOAT_PARAM(umax)\
 	TL_FLOAT_PARAM(yarnsize)\
+	TL_FLOAT_PARAM(fiber_count)\
 	TL_FLOAT_PARAM(psi)\
 	TL_FLOAT_PARAM(specular_noise)\
     TL_COLOR_PARAM(color) \
@@ -248,12 +249,13 @@ tlYarnType tl_default_yarn_type =
 {
 	0.5f,  //umax
 	1.0f,  //yarnsize
-	0.5f,  //psi
+	3.0f,  //fiber_count
+	0.f,  //psi
     0.f,   //specular_noise
     {0.3f, 0.3f, 0.3f},  //color
     1.f,   //color_amount
-    0.6f,   //roughness_azimuthal
-    0.6f,   //roughness_longitudinal
+    0.3f,   //roughness_azimuthal
+    0.3f,   //roughness_longitudinal
     1.6f,  //ior
     {0.5f, 0.5f, 1.f},  //normal_map
     {0.5f, 1.0f, 0.5f},  //tangent_map
@@ -1389,23 +1391,9 @@ TL_FUNC_PREFIX float fresnel(float prev_ior, float next_ior, float cos_theta_i)
 	return (r_parallel*r_parallel + r_perperdicular * r_perperdicular)*0.5f;
 }
 
-TL_FUNC_PREFIX tlColor new_lighting(float u, float v, tlVector wi, tlVector wo, float spec_or_diff,
+TL_FUNC_PREFIX tlColor tl_shade_fiber(tlVector wi_fiber, tlVector wo_fiber,
 	const tlWeaveParameters *params ,void *context, int yarn_type)
 {
-	tlVector normal = tlVector_normalize(tlvector(sinf(v),
-		sinf(u)*cosf(v), cosf(u)*cosf(v)));
-	tlVector tangent = tlVector_normalize(tlvector(cosf(v), 
-		-sinf(u)*sinf(v), -cosf(u)*sinf(v)));
-	tlVector fiber_direction = tlVector_normalize(tlvector(0.f, 
-		cosf(u), -sinf(u)));
-
-	//TODO(Vidar): This should be the input parameters
-	tlVector wi_fiber = tlvector(tlVector_dot(wi,tangent),
-		tlVector_dot(wi,fiber_direction), tlVector_dot(wi,normal));
-	tlVector wo_fiber = tlvector(tlVector_dot(wo,tangent),
-		tlVector_dot(wo,fiber_direction), tlVector_dot(wo,normal));
-	//TODO(Vidar): Eliminate h parameter?? Should be possible to replace it with normal direction I think
-    float h = -v/M_PI_2;
 
 	//TODO(Vidar):There should be a smarter way of doing this...
 	float phi_i = atan2f(wi_fiber.x, wi_fiber.z);
@@ -1449,8 +1437,8 @@ TL_FUNC_PREFIX tlColor new_lighting(float u, float v, tlVector wi, tlVector wo, 
 	float N_p0 = 0.f;
 	float N_p2 = 0.f;
 
-    float gamma_i = asinf(h);
-    float gamma_t = asinf(h/mod_ior);
+    float gamma_i = atan2f(wo_fiber.x, wo_fiber.z);
+	float gamma_t = asinf(wo_fiber.x / mod_ior);
 	if((1)){
 		float mode = 0.f; // R-0 TT-1 TRT-2 ...
 		float phi_refl = 2.f*mode*gamma_t - 2.f*gamma_i + mode * M_PI;
@@ -1477,10 +1465,8 @@ TL_FUNC_PREFIX tlColor new_lighting(float u, float v, tlVector wi, tlVector wo, 
 		absorption[i] /= cos_theta_t;
 	}
 
-	float cos_twice_half_angle = tlVector_dot(wi, wo);
-	float cos_half_angle = sqrtf(0.5f*(1.f + cos_twice_half_angle));
 
-	float cos_gamma_o = sqrtf(1.f - h * h);
+	float cos_gamma_o = cosf(gamma_i);
 	float cos_transmission_angle = cos_theta_o * cos_gamma_o;
 	float f = fresnel(1.f, ior, cos_transmission_angle);
 	float f_compl = 1.f - f;
@@ -1492,6 +1478,11 @@ TL_FUNC_PREFIX tlColor new_lighting(float u, float v, tlVector wi, tlVector wo, 
 			+ M_p * N_p2*expf(-2.f*absorption[i] * (1.f + cosf(2.f*gamma_t)))
 			* f_compl2*f;
 	}
+	/*
+	col[0] = h;// cosf(gamma_i);
+	col[1] = sinf(gamma_i);
+	col[2] = 0.f;// gamma_i/4.f;
+	*/
 
 	tlColor ret = { col[0], col[1], col[2] };
 
@@ -1529,8 +1520,7 @@ TL_FUNC_PREFIX tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
 	wi.y = tmp_i;
 	wo.y = tmp_o;
 
-	color = new_lighting(data.u, data.v, wi, wo, 0.f, params, intersection_data.context, data.yarn_type);
-	//TODO(Vidar):Temporarily set to 0
+	//NOTE(Vidar):Temporarily set to 0
 	float reflection = 0.f;
 	color.r *= reflection;
 	color.g *= reflection;
@@ -1545,7 +1535,6 @@ TL_FUNC_PREFIX tlColor tl_eval_specular(tlIntersectionData intersection_data,
     // Depending on the given psi parameter the yarn is considered
     // staple or filament. They are treated differently in order
     // to work better numerically. 
-    float reflection = 0.f;
 	if(!data.yarn_hit){
         //have not hit a yarn...
         return ret;
@@ -1561,7 +1550,83 @@ TL_FUNC_PREFIX tlColor tl_eval_specular(tlIntersectionData intersection_data,
 	wo.x = -wo.x*data.sin_rot_angle + wo.y*data.cos_rot_angle;
 	wi.y = tmp_i;
 	wo.y = tmp_o;
-	ret = new_lighting(data.u, data.v, wi, wo, 1.f, params, intersection_data.context, data.yarn_type);
+
+    float fiber_count = tl_yarn_type_get_fiber_count(params, data.yarn_type,
+        intersection_data.context);
+
+    float u = data.u;
+    float v = data.v;
+
+	/*
+	tlVector yarn_normal = tlVector_normalize(tlvector(0.f,
+		sinf(u), cosf(u)));
+	tlVector yarn_tangent = tlVector_normalize(tlvector(1.f, 
+		0.f, 0.f));
+	tlVector yarn_direction = tlVector_normalize(tlvector(0.f, 
+		1.f, 0.f));
+	*/
+	tlVector yarn_normal = tlVector_normalize(tlvector(sinf(v),
+		sinf(u)*cosf(v), cosf(u)*cosf(v)));
+	tlVector yarn_tangent = tlVector_normalize(tlvector(cosf(v),
+		-sinf(u)*sinf(v), -cosf(u)*sinf(v)));
+	tlVector yarn_direction = tlVector_normalize(tlvector(0.f,
+		cosf(u), -sinf(u)));
+
+    float psi = tl_yarn_type_get_psi(params, data.yarn_type,
+        intersection_data.context);
+
+    float c = cosf(psi*M_PI_2);
+    float s = sinf(psi*M_PI_2);
+
+	float x = data.x;
+	float y = -data.y;
+	float x_fiber =  x * c - y * s;
+	float y_fiber = x * s + y * c;
+
+	tlVector fiber_normal = tlVector_normalize(tlvector(yarn_normal.x,
+		yarn_normal.y, yarn_normal.z));
+    tlVector fiber_tangent = tlvector(
+            yarn_tangent.x * c - yarn_direction.x * s,
+            yarn_tangent.y * c - yarn_direction.y * s,
+            yarn_tangent.z * c - yarn_direction.z * s
+            );
+    tlVector fiber_direction = tlvector(
+            yarn_tangent.x * s + yarn_direction.x * c,
+            yarn_tangent.y * s + yarn_direction.y * c,
+            yarn_tangent.z * s + yarn_direction.z * c
+            );
+
+	{
+		float fiber_bump_angle = (x_fiber+1.f) * (fiber_count - 1.f)*M_PI_2;
+		float c = cosf(fiber_bump_angle);
+		float s = sinf(fiber_bump_angle);
+		tlVector tmp = fiber_normal;
+		fiber_normal = tlvector(
+			fiber_normal.x * c + fiber_tangent.x * s,
+			fiber_normal.y * c + fiber_tangent.y * s,
+			fiber_normal.z * c + fiber_tangent.z * s
+		);
+		fiber_tangent = tlvector(
+			-tmp.x * s + fiber_tangent.x * c,
+			-tmp.y * s + fiber_tangent.y * c,
+			-tmp.z * s + fiber_tangent.z * c
+		);
+	}
+	tlVector wi_fiber = tlvector(tlVector_dot(wi,fiber_tangent),
+		tlVector_dot(wi,fiber_direction), tlVector_dot(wi,fiber_normal));
+	tlVector wo_fiber = tlvector(tlVector_dot(wo,fiber_tangent),
+		tlVector_dot(wo,fiber_direction), tlVector_dot(wo,fiber_normal));
+	if (wo_fiber.z < 0.f) {
+		wi_fiber.x *= -1.f;
+		wi_fiber.y *= -1.f;
+		wi_fiber.z *= -1.f;
+		wo_fiber.x *= -1.f;
+		wo_fiber.y *= -1.f;
+		wo_fiber.z *= -1.f;
+	}
+
+	ret = tl_shade_fiber(wi_fiber, wo_fiber, params,
+            intersection_data.context, data.yarn_type);
 
 	float specular_noise=tl_yarn_type_get_specular_noise(params,
 		data.yarn_type,intersection_data.context);
