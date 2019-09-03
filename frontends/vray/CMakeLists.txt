@@ -13,8 +13,11 @@ set(LIBRARY_OUTPUT_PATH ${RELEASE_DIR}/V-Ray/)
 # Additional includes
 set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../src)
 
-set(SOURCES "vray_thunderloom.cpp")
+set(SOURCES vray_thunderloom.cpp
+			vray_thunderloom_updated.cpp
+			vray_thunderloom.h)
 include_directories(${TL_H_SOURCE_DIR})
+include_directories(.)
 
 set(INCLUDE_DIRS "")
 
