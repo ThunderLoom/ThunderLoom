@@ -1,58 +1,9 @@
 // test plugin
 
-// Disable MSVC warnings for external headers.
-#pragma warning( push )
-#pragma warning( disable : 4251)
-#pragma warning( disable : 4996 )
-#include "vrayplugins.h"
-#include "vrayinterface.h"
-#include "vrayrenderer.h"
-#include "brdfs.h"
-#include "vraytexutils.h"
-#include "defparams.h"
-#pragma warning( pop ) 
-
 #define TL_THUNDERLOOM_IMPLEMENTATION
-#include "thunderloom.h"
+#include "vray_thunderloom.h"
 using namespace VUtils;
 using namespace VR;
-
-class BRDFThunderLoomSampler: public BRDFSampler, public BSDFSampler {
-    int orig_backside;
-    ShadeVec normal, gnormal;
-    ShadeMatrix nm, inm;
-    int nmInited;
-
-    // Assigned in init()
-    tlWeaveParameters* m_tl_wparams;
-    ShadeVec m_uv;
-    ShadeTransform m_uv_tm;
-    ShadeCol m_diffuse_color;
-    tlYarnType m_yarn_type;
-    int m_yarn_type_id;
-
-public:
-	// Initialization
-	void init(const VRayContext &rc, tlWeaveParameters *weave_parameters);
-
-	// From BRDFSampler
-	ShadeVec getDiffuseNormal(const VR::VRayContext &rc);
-	ShadeCol getDiffuseColor(ShadeCol &lightColor);
-	ShadeCol getLightMult(ShadeCol &lightColor);
-	ShadeCol getTransparency(const VRayContext &rc);
-
-	ShadeCol eval( const VRayContext &rc, const ShadeVec &direction, ShadeCol &shadowedLight, ShadeCol &origLight, float probLight,int flags);
-	void traceForward(VRayContext &rc, int doDiffuse);
-
-	int getNumSamples(const VRayContext &rc, int doDiffuse);
-	VRayContext* getNewContext(const VRayContext &rc, int &samplerID, int doDiffuse);
-	ValidType setupContext(const VRayContext &rc, VRayContext &nrc, float uc, int doDiffuse);
-
-	RenderChannelsInfo* getRenderChannels(void);
-
-	// From BSDFSampler
-	BRDFSampler *getBRDF(BSDFSide side);
-};
 
 
 struct BRDFThunderLoomParams: VRayParameterListDesc {
@@ -111,45 +62,17 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
     }
 };
 
-//Struct for intermediatly storing yarn parameters.
-typedef struct {
-    float umax;
-    float yarnsize;
-    float psi;
-    float alpha;
-    float beta;
-    float delta_x;
-    Color specular_color;
-    float specular_amount;
-    float specular_noise;
-    float color_amount;
-    Color color;
-} tlIntermediateYrnParam;
-
 struct BRDFThunderLoom: VRayBSDF {
-    BRDFThunderLoom(VRayPluginDesc *pluginDesc):VRayBSDF(pluginDesc), bends2() {
+    BRDFThunderLoom(VRayPluginDesc *pluginDesc):VRayBSDF(pluginDesc) {
         //bends("bend_vals");
         paramList->setParamCache("filepath", &m_filepath);
         paramList->setParamCache("uscale", &m_uscale);
         paramList->setParamCache("vscale", &m_vscale);
         paramList->setParamCache("uvrotation", &m_uvrotation);
         
-        paramList->setParamCache("bend", &yrn0.umax);
-        paramList->setParamCache("yarnsize", &yrn0.yarnsize);
-        paramList->setParamCache("twist", &yrn0.psi);
-        paramList->setParamCache("phase_alpha", &yrn0.alpha);
-        paramList->setParamCache("phase_beta", &yrn0.beta);
-        paramList->setParamCache("highlight_width", &yrn0.delta_x);
-        paramList->setParamCache("specular_color", &yrn0.specular_color);
-        paramList->setParamCache("specular_color_amount", &yrn0.specular_amount);
-        paramList->setParamCache("specular_noise", &yrn0.specular_noise);
-        paramList->setParamCache("diffuse_color", &yrn0.color);
-        paramList->setParamCache("diffuse_color_amount", &yrn0.color_amount);
-        
     }
 
     tlWeaveParameters *m_tl_wparams;
-    tlIntermediateYrnParam yrn0;
 
     // From VRayBSDF
     void renderBegin(VRayRenderer *vray) {return;};
@@ -174,43 +97,13 @@ private:
     BRDFPool<BRDFThunderLoomSampler> pool;
     CharString m_filepath;
     float m_uscale, m_vscale, m_uvrotation;
-    //DefFloatListParam bends;
-    FloatList bends2;
 
     // Parameters
     PluginBase *baseBRDFParam;
 };
 
-//Param helpers
-inline int is_param_valid(VRayPluginParameter* param, int i) {
-    // Checks if there is a entry for the paremter with the given index i
-    if (!param)
-        return 0;
 
-    int count = param->getCount(0);
-    if (count == -1)
-        count = 1;
-
-    if (i >= count)
-        return 0;
-
-    return 1;
-}
-
-inline int set_texparam(VRayPluginParameter* param, void **target, int i) {
-    // returns true if it is a texture and sets target to the texture pointer.
-    VRayParameterType type = param->getType(i, 0);
-
-    if (type == paramtype_object) {
-        //TODO check if it has interface.
-		PluginBase* newPlug = param->getObject(i);
-		*target = newPlug;
-        return 1;
-    }
-    return 0;
-}
-
-int get_bool(VRayPluginParameter * param, int i, VRayContext& rc) {
+FORCEINLINE int get_bool(VRayPluginParameter * param, int i, VRayContext& rc) {
     if (param->getType(i,0) == VRayParameterType::paramtype_bool && param->getBool(i))
       return 1;
     
@@ -227,27 +120,32 @@ int get_bool(VRayPluginParameter * param, int i, VRayContext& rc) {
 }
 
 void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
-    // Get filepath
-    VRayPluginParameter* filepath_param = this->getParameter("filepath");
-    CharString filepath = filepath_param->getString();
+    if (!vray) return;
+	// Calling parent frameBegin so the caching of params can work
+    VRayBSDF::frameBegin(vray);
 
     //Check for file, at path, then in VRAY_ASSETS_PATH and so forth.
-    VUtils::checkAssetPath(filepath, vray->getSequenceData());
+    VUtils::checkAssetPath(m_filepath, vray->getSequenceData());
 	
     //Check again, if exits and abort if not.
     VUtils::ProgressCallback *prog = vray->getSequenceData().progress;
-    if (!VUtils::checkAssetPath(filepath, prog, true))
+    if (!VUtils::checkAssetPath(m_filepath, prog, true))
         return;
 
 
     // Load file and set the global settings.
-    const char* filepath_str = (char*)filepath.ptr();
+    const char* filepath_str = (char*)m_filepath.ptr();
     const char *errors = 0;
     m_tl_wparams = tl_weave_pattern_from_file(filepath_str, &errors);
     if (errors) {
         prog->error("Error: ThunderLoom: %s", errors);
-        return; //Abort a littel ncier
+        return; //Abort a little nicer
     }
+
+    if (!m_tl_wparams) {
+        return;
+    }
+
     if (m_tl_wparams) {
         m_tl_wparams->uscale = 1.f;
         m_tl_wparams->vscale = 1.f;
@@ -262,12 +160,9 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     rc.init(vr_tdata, vray);
 	rc.clear();
     
-    VRayPluginParameter* uscale = this->getParameter("uscale");
-    VRayPluginParameter* vscale = this->getParameter("vscale");
-    VRayPluginParameter* uvrotation = this->getParameter("uvrotation");
-    m_tl_wparams->uscale = uscale->getFloat();
-    m_tl_wparams->vscale = vscale->getFloat();
-    m_tl_wparams->uvrotation = uvrotation->getFloat();
+	m_tl_wparams->uscale = m_uscale;
+	m_tl_wparams->vscale = m_vscale;
+	m_tl_wparams->uvrotation = m_uvrotation;
 
     // Yarn type params
     VRayPluginParameter* bend = this->getParameter("bend");
@@ -644,12 +539,6 @@ ValidType BRDFThunderLoomSampler::setupContext(const VR::VRayContext &rc, VR::VR
 
 RenderChannelsInfo* BRDFThunderLoomSampler::getRenderChannels(void) { return &RenderChannelsInfo::reflectChannels; }
 
-
-
-
-
-
-
 // Following is used to to allow custom uv lookups in texture maps, see...
 // https://forums.chaosgroup.com/forum/v-ray-for-maya-forums/v-ray-for-maya-sdk/76255-texture-lookup-with-uv-on-non-bitmap-textures
 struct MyShadeData: public VRayShadeData, public MappedSurface {
@@ -684,24 +573,6 @@ struct MyShadeData: public VRayShadeData, public MappedSurface {
 		result.makeZero();
 		result.offs = uvw;
     }
-};
-
-//TODO(Vidar):Is this used anywhere??
-struct tlShadeData: VR::VRayShadeData {
-    tlShadeData(float u, float v) {
-        this->u = u;
-        this->v = v;
-    }
-
-    VR::Vector getUVWCoords(const VR::VRayContext &rc, int channel) {
-        return VR::Vector(this->u, this->v, 0.f);
-    }
-    
-    void getUVWderivs(const VR::VRayContext &rc, int channel, VR::Vector derivs[2]) {
-        derivs[0].makeZero();
-        derivs[1].makeZero();
-    }
-    float u, v;
 };
 
 // Called when a texture is applied to a float parameter.
@@ -782,11 +653,70 @@ BRDFSampler* BRDFThunderLoomSampler::getBRDF(BSDFSide side) {
 }
 
 
-#define BRDFTest_PluginID PluginID(LARGE_CONST(2017041301))
-// #ifdef __VRAY40__
-// SIMPLE_PLUGIN_LIBRARY(BRDFTest_PluginID, "BRDFTest", "BRDFTestLibText", "a simple test plugin/lib", BRDFTest, BRDFTest_Params, EXT_BSDF);
-// #else
-SIMPLE_PLUGIN_LIBRARY(BRDFTest_PluginID, "BRDFThunderLoom" ,"BRDFThunderLoom", "BRDFTestLibText", BRDFThunderLoom, BRDFThunderLoomParams, EXT_BSDF );
-// #endif
+#define BRDFThunderLoom_PluginID PluginID(LARGE_CONST(2017041301))
 
-//PLUGIN_DESC(BRDFTest_PluginID, EXT_BSDF, "BRDFTest", BRDFTest, BRDFTest_Params);
+// With this explicit library descriptor declaration we are making sure that
+// the correct ThunderLoom version is loaded for the correct VRay version
+
+static BRDFThunderLoomParams pluginParams;
+static BRDFThunderLoomParamsUpdated pluginParamsUpdated;
+
+static struct UserPluginDesc : VRayPluginDesc {
+    UserPluginDesc(void)
+        : VRayPluginDesc(getParams()) {}
+
+    PluginID getPluginID(void) { return BRDFThunderLoom_PluginID; }
+
+    Plugin* newPlugin(PluginHost* host) { 
+		// The only differences than the macro variant are in here and in the delete below
+		if (shouldBeUpdatedVersion()) return new BRDFThunderLoomUpdated(this);
+		else return new BRDFThunderLoom(this); 
+	}
+    void deletePlugin(Plugin* obj) {
+		if (shouldBeUpdatedVersion()) delete (BRDFThunderLoomUpdated*)obj;
+		else delete (BRDFThunderLoom*)obj;
+	}
+
+    bool supportsInterface(InterfaceID id) { return _supportsInterface(id, EXT_VRAY_PLUGIN, EXT_BSDF, +0, 0); }
+    VRAY3_CONST_COMPAT tchar* getName(void) { return "BRDFThunderLoom"; }
+    const tchar* getCopyright(void) { return NULL; }
+    const tchar* getDescription() const { return "Cloth and fabric BRDF"; }
+    const tchar* getDeprecation() const { return NULL; }
+    const tchar* getAliases() const { return NULL; }
+private:
+	static FORCEINLINE bool shouldBeUpdatedVersion() {
+		return getVRayRevision() >= 0x42010;
+	}
+
+	static FORCEINLINE VRayParameterListDesc* getParams() {
+		if (shouldBeUpdatedVersion()) return &pluginParamsUpdated;
+		else return &pluginParams;
+	}
+
+    bool _supportsInterface(InterfaceID id, ...)
+    {
+        va_list vargs;
+        va_start(vargs, id);
+        unsigned long long i;
+        while ((i = va_arg(vargs, unsigned long long))) {
+            if (id == i) {
+                va_end(vargs);
+                return true;
+            }
+        }
+        va_end(vargs);
+        return false;
+    }
+} pluginDesc;
+struct LibDesc : PluginLibDesc {
+    VRAY3_CONST_COMPAT tchar* getName(void) { return "BRDFThunderLoom"; }
+    VRAY3_CONST_COMPAT tchar* getText(void) { return "BRDFThunderLoom"; }
+    int enumPluginDescs(EnumPluginDescCallback* cb)
+    {
+        if (cb)
+            cb->process(&pluginDesc);
+        return 1;
+    }
+} libDesc;
+EXPORT_PLUGIN_LIBRARY(libDesc);
+;
