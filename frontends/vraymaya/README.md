@@ -11,11 +11,13 @@ to /mayainstall/vray/vrayplugins/ or add the path to the containing folder to
 the environment variable `VRAY_FOR_MAYAnnnn_PLUGINS_x64`. Where `nnnn` is the
 Maya version (2018, 2019 etc).
 * Copy the V-Ray shader translation file `vraythunderloommtl.txt` to
-/mayainstall/vray/shaders/.
+/mayainstall/vray/shaders/. *__NOTE:__ If you are running a version of VRay older than 4.20 (V-Ray Next Update 2 released in June 2019), you will have to use the file `vraythunderloommtl_old.txt` instead. Rename it to `vraythunderloommtl.txt` before copying it.*
 * Change the module file `ThunderLoom.mod` to point to the module directory
 `thunderloom_maya_module`. Copy the `.mod` to any accepted Maya module path.
 You can view these paths by calling `getenv MAYA_MODULE_PATH` in the Maya 
 console.
+
+
 
 The plugin should now show up in the Maya plug-ins manager.
 
