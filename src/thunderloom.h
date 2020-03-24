@@ -1011,6 +1011,9 @@ static tlWeaveParameters *tl_pattern_from_ptn_file_v2(unsigned char *data,
             data = tl_read_ptn_section(param,data,ptn_entry_weave_params);
             param->yarn_types = (tlYarnType*)calloc(param->num_yarn_types,
                     sizeof(tlYarnType));
+            for (int i = 0; i < param->num_yarn_types; i++) {
+                param->yarn_types[i] = tl_default_yarn_type;
+            }
             uint32_t pattern_size = param->pattern_width*param->pattern_height;
             param->pattern = (PatternEntry*)calloc(pattern_size,
                     sizeof(PatternEntry));
