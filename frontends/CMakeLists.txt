@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
+project(thunderloom_frontends)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

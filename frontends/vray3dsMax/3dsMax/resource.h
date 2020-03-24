@@ -184,6 +184,7 @@
 #define IDC_YRN_TEX_specular_strength_BUTTON 1199
 #define IDC_YRN_TEX_yarnsize_BUTTON     1200
 #define IDC_YRN_TEX_specular_color_BUTTON 1202
+#define IDC_specular_LABEL 1203
 
 // Next default values for new objects
 // 
@@ -191,7 +192,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        112
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1203
+#define _APS_NEXT_CONTROL_VALUE         1204
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

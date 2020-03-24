@@ -33,7 +33,7 @@ set(LIBS "")
 # Platform specific libs and files
 IF (WIN32)
     set(LIB_DIRS ${LIB_DIRS} 
-        ${PROJECT_SOURCE_DIR}/../dependencies/glfw/lib-vc2012)
+        ${PROJECT_SOURCE_DIR}/../dependencies/glfw/lib-vc2015)
     set(LIBS ${LIBS} 
         "glfw3"
         "opengl32")

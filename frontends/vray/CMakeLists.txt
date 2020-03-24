@@ -39,7 +39,7 @@ IF (WIN32)
 
     # "C:/Program Files/Chaos Group/V-Ray/Standalone for x64/lib/x64/vc14"
     set(LIB_DIRS ${LIB_DIRS} 
-        "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/lib/x64/vc14"
+        "C:/Program Files/Chaos Group/V-Ray/Maya ${MAYA_VERSION} for x64/lib/"
     )
 
     ADD_DEFINITIONS(-DUNICODE)

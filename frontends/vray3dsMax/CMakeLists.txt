@@ -15,9 +15,9 @@ set(3DSMAXSDK_ROOT $ENV{ADSK_3DSMAX_SDK_${3DSMAX_VERSION}} CACHE PATH "Path to 3
 set(3DSMAXSDK_INCLUDE "${3DSMAXSDK_ROOT}/include" CACHE PATH "Path to 3dsMax SDK include dir. Will use MAYA_ROOT as starting point if not set.")
 set(3DSMAXSDK_LIB "${3DSMAXSDK_ROOT}/lib/x64/Release" CACHE PATH "Path to 3dsMax SDK library dir. Will use MAYA_ROOT as starting point if not set.")
 
-set(VRAY3DSMAX_ROOT $ENV{VRAY_OSL_PATH_3DSMAX${3DSMAX_VERSION}_x64}/../ CACHE PATH "Path to V-Ray for 3dsMax")
+set(VRAY3DSMAX_ROOT $ENV{VRAY_OSL_PATH_3DSMAX${3DSMAX_VERSION}}/../ CACHE PATH "Path to V-Ray for 3dsMax")
 set(VRAY3DSMAX_INCLUDE "${VRAY3DSMAX_ROOT}/include/" CACHE PATH "Path to V-Ray for 3dsMax include dir. Will use VRAYMAYA_ROOT as starting point if not set.")
-set(VRAY3DSMAX_LIB "${VRAY3DSMAX_ROOT}/lib/x64/" CACHE PATH "Path to V-Ray for 3dsMax Library dir. Will use VRAYMAYA_ROOT as starting point if not set.")
+set(VRAY3DSMAX_LIB "${VRAY3DSMAX_ROOT}/lib/" CACHE PATH "Path to V-Ray for 3dsMax Library dir. Will use VRAYMAYA_ROOT as starting point if not set.")
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${OUTPUT_3DSMAX_PATH})
@@ -88,12 +88,14 @@ target_link_libraries (thunderLoomVRay3dsMax
     "comctl32"
     "odbc32"
     "odbccp32"
-    "vray2017"
-    "vrender2017"
-	"vc14/vutils_s"
-	"vc14/plugman_s"
+    "vray${3DSMAX_VERSION}"
+    "vrender${3DSMAX_VERSION}"
+
+	"vutils_s"
+	"plugman_s"
     "glfw3"
     "opengl32"
+
 	)
 
 add_custom_command(TARGET thunderLoomVRay3dsMax POST_BUILD
