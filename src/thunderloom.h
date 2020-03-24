@@ -6,7 +6,7 @@
  */
 
 #define TL_VERSION_MAJOR 0
-#define TL_VERSION_MINOR 94
+#define TL_VERSION_MINOR 95
 #define TL_VERSION_PATCH 0
 
 /* --- Basic usage ---

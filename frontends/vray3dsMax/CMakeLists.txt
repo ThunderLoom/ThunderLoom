@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.12)
 
 IF(NOT WIN32)
     message(FATAL_ERROR "thunderLoom for V-Ray for 3dsMax can only be built on windows!")
@@ -7,99 +7,92 @@ ENDIF()
 project(thunderLoomVRay3dsMax)
 
 # Variables
-set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
-set(3DSMAX_VERSION "2017" CACHE STRING "3dsMax version (year)")
-set(OUTPUT_3DSMAX_PATH "${RELEASE_DIR}/V-Ray for 3dsMax${3DSMAX_VERSION}/")
-
-set(3DSMAXSDK_ROOT $ENV{ADSK_3DSMAX_SDK_${3DSMAX_VERSION}} CACHE PATH "Path to 3dsMax SDK.")
-set(3DSMAXSDK_INCLUDE "${3DSMAXSDK_ROOT}/include" CACHE PATH "Path to 3dsMax SDK include dir. Will use MAYA_ROOT as starting point if not set.")
-set(3DSMAXSDK_LIB "${3DSMAXSDK_ROOT}/lib/x64/Release" CACHE PATH "Path to 3dsMax SDK library dir. Will use MAYA_ROOT as starting point if not set.")
-
-set(VRAY3DSMAX_ROOT $ENV{VRAY_OSL_PATH_3DSMAX${3DSMAX_VERSION}}/../ CACHE PATH "Path to V-Ray for 3dsMax")
-set(VRAY3DSMAX_INCLUDE "${VRAY3DSMAX_ROOT}/include/" CACHE PATH "Path to V-Ray for 3dsMax include dir. Will use VRAYMAYA_ROOT as starting point if not set.")
-set(VRAY3DSMAX_LIB "${VRAY3DSMAX_ROOT}/lib/" CACHE PATH "Path to V-Ray for 3dsMax Library dir. Will use VRAYMAYA_ROOT as starting point if not set.")
-
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
-set(LIBRARY_OUTPUT_PATH ${OUTPUT_3DSMAX_PATH})
-
-# Additional includes
-set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../src)
-set(GL3W_SRC ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/src)
-set(GL3W_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/include)
-set(GLFW_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/glfw/include)
-set(IMGUI_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/imgui)
+set(3DSMAX_VERSIONS "2019;2020" CACHE STRING "3dsMax versions (year)")
 
 # Additional library directories
 set(GLFW_LIB ${PROJECT_SOURCE_DIR}/../dependencies/glfw/lib-vc2015)
+link_directories(
+	${GLFW_LIB}
+)
 
-ADD_DEFINITIONS(-DUNICODE)
-ADD_DEFINITIONS(-D_UNICODE)
-ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS) # supress MSVC warn C4996
+foreach(3DSMAX_VERSION ${3DSMAX_VERSIONS})
 
-set  (SOURCES
-    "3dsMax/3dsMaxThunderLoom.h"
-    "3dsMax/3dsMaxThunderLoom.cpp"
-    "3dsMax/Eval.h"
-    "3dsMax/Eval.cpp"
-    "3dsMax/resource.h"
-    "3dsMax/vrayblinnmtl.rc"
-    "3dsMax/DllEntry.cpp"
-    "3dsMax/VrayThunderLoomBRDF.h"
-    "3dsMax/VrayThunderLoomBRDF.cpp"
-    "3dsMax/plugin.def"
-    "${GL3W_SRC}/gl3w.c"
-    "${IMGUI_INCLUDE}/imgui.cpp"
-    "${IMGUI_INCLUDE}/imgui_draw.cpp"
-    "${IMGUI_INCLUDE}/imgui_impl_glfw_gl3.cpp")
+	set(3DSMAXSDK_ROOT${3DSMAX_VERSION} $ENV{ADSK_3DSMAX_SDK_${3DSMAX_VERSION}} )
+	set(3DSMAXSDK_INCLUDE${3DSMAX_VERSION} "${3DSMAXSDK_ROOT${3DSMAX_VERSION}}/include/" )
+	set(3DSMAXSDK_LIB${3DSMAX_VERSION} "${3DSMAXSDK_ROOT${3DSMAX_VERSION}}/lib/x64/Release/" )
 
-# Properties->C/C++->General->Additional Include Directories
-include_directories (${TL_H_SOURCE_DIR}
-    ${GL3W_INCLUDE}
-    ${GLFW_INCLUDE}
-    ${IMGUI_INCLUDE}
-    ${3DSMAXSDK_INCLUDE}
-    ${VRAY3DSMAX_INCLUDE})
+	set(VRAY3DSMAX_ROOT${3DSMAX_VERSION} $ENV{VRAY_OSL_PATH_3DSMAX${3DSMAX_VERSION}}/../)
+	set(VRAY3DSMAX_INCLUDE${3DSMAX_VERSION} "${VRAY3DSMAX_ROOT${3DSMAX_VERSION}}/include/" )
+	set(VRAY3DSMAX_LIB${3DSMAX_VERSION} "${VRAY3DSMAX_ROOT${3DSMAX_VERSION}}/lib/" )
 
-# Properties->Linker->General->Additional Library Directories
-link_directories(${GLFW_LIB}
-    ${3DSMAXSDK_LIB}
-    ${VRAY3DSMAX_LIB}
-    ${VRAY3DSMAX_LIB}/vc11)
+	# Additional includes
+	set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../src)
+	set(GL3W_SRC ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/src)
+	set(GL3W_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/include)
+	set(GLFW_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/glfw/include)
+	set(IMGUI_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/imgui)
 
-# Set Properties->General->Configuration Type to Dynamic Library(.dll)
-# Creates math.dll with the listed sources collected in the variables
-# Also adds sources to the Solution Explorer
-add_library(thunderLoomVRay3dsMax MODULE ${SOURCES})
-set_target_properties(thunderLoomVRay3dsMax PROPERTIES SUFFIX ".dlt")
-IF(MSVC)
-    set_target_properties( thunderLoomVRay3dsMax PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH} )
-    set_target_properties( thunderLoomVRay3dsMax PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${LIBRARY_OUTPUT_PATH} )
-    set_target_properties( thunderLoomVRay3dsMax PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${LIBRARY_OUTPUT_PATH} )
-    set_target_properties( thunderLoomVRay3dsMax PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${LIBRARY_OUTPUT_PATH} )
-ENDIF(MSVC)
 
-# Properties->Linker->Input->Additional Dependencies
-target_link_libraries (thunderLoomVRay3dsMax
-    "paramblk2"
-    "core"
-    "geom"
-    "maxutil"
-    "bmm"
-    "comctl32"
-    "odbc32"
-    "odbccp32"
-    "vray${3DSMAX_VERSION}"
-    "vrender${3DSMAX_VERSION}"
+	ADD_DEFINITIONS(-DUNICODE)
+	ADD_DEFINITIONS(-D_UNICODE)
+	ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS) # supress MSVC warn C4996
 
-	"vutils_s"
-	"plugman_s"
-    "glfw3"
-    "opengl32"
+	set  (SOURCES
+		"3dsMax/3dsMaxThunderLoom.h"
+		"3dsMax/3dsMaxThunderLoom.cpp"
+		"3dsMax/Eval.h"
+		"3dsMax/Eval.cpp"
+		"3dsMax/resource.h"
+		"3dsMax/vrayblinnmtl.rc"
+		"3dsMax/DllEntry.cpp"
+		"3dsMax/VrayThunderLoomBRDF.h"
+		"3dsMax/VrayThunderLoomBRDF.cpp"
+		"3dsMax/plugin.def"
+		"${GL3W_SRC}/gl3w.c"
+		"${IMGUI_INCLUDE}/imgui.cpp"
+		"${IMGUI_INCLUDE}/imgui_draw.cpp"
+		"${IMGUI_INCLUDE}/imgui_impl_glfw_gl3.cpp")
 
+	add_library(thunderLoomVRay3dsMax${3DSMAX_VERSION} MODULE ${SOURCES})
+
+	target_include_directories (
+		thunderLoomVRay3dsMax${3DSMAX_VERSION}
+		PUBLIC
+		${TL_H_SOURCE_DIR}
+		${GL3W_INCLUDE}
+		${GLFW_INCLUDE}
+		${IMGUI_INCLUDE}
+		${3DSMAXSDK_INCLUDE${3DSMAX_VERSION}}
+		${VRAY3DSMAX_INCLUDE${3DSMAX_VERSION}}
 	)
 
-add_custom_command(TARGET thunderLoomVRay3dsMax POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${PROJECT_SOURCE_DIR}/README.md
-                ${RELEASE_DIR}/README_3dsMax.md
-                )
+
+	set_target_properties(thunderLoomVRay3dsMax${3DSMAX_VERSION} PROPERTIES SUFFIX ".dlt")
+
+	# Properties->Linker->Input->Additional Dependencies
+	target_link_libraries (thunderLoomVRay3dsMax${3DSMAX_VERSION}
+		"${3DSMAXSDK_LIB${3DSMAX_VERSION}}Paramblk2.lib"
+		"${3DSMAXSDK_LIB${3DSMAX_VERSION}}core.lib"
+		"${3DSMAXSDK_LIB${3DSMAX_VERSION}}geom.lib"
+		"${3DSMAXSDK_LIB${3DSMAX_VERSION}}maxutil.lib"
+		"${3DSMAXSDK_LIB${3DSMAX_VERSION}}bmm.lib"
+		"comctl32"
+		"odbc32"
+		"odbccp32"
+		"${VRAY3DSMAX_LIB${3DSMAX_VERSION}}vray${3DSMAX_VERSION}.lib"
+		"${VRAY3DSMAX_LIB${3DSMAX_VERSION}}vrender${3DSMAX_VERSION}.lib"
+
+		"${VRAY3DSMAX_LIB${3DSMAX_VERSION}}vutils_s.lib"
+		"${VRAY3DSMAX_LIB${3DSMAX_VERSION}}plugman_s.lib"
+		"glfw3"
+		"opengl32"
+		)
+
+	set(DEST thunderLoomVRay3dsMax)
+	install(TARGETS thunderLoomVRay3dsMax${3DSMAX_VERSION} DESTINATION ${DEST})
+endforeach(3DSMAX_VERSION)
+install(FILES PackageContents.xml DESTINATION ${DEST})
+install(FILES make_installer.nsi DESTINATION thunderLoomVRay3dsMax_installer)
+install(FILES LICENSE.txt DESTINATION thunderLoomVRay3dsMax_installer)
+install(FILES make_installer.bat DESTINATION thunderLoomVRay3dsMax_installer)
+install(FILES installer_sidebar.bmp DESTINATION thunderLoomVRay3dsMax_installer)

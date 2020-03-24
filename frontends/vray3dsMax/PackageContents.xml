@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ApplicationPackage SchemaVersion="1.0" AutodeskProduct="3ds Max" ProductType="Application"
+    ProductCode="BA0AAC4C-CE71-40A1-914B-096A588B46A0"
+    UpgradeCode="BA0AAC4C-CE71-40A1-914B-096A588B46A0"
+    Name="Thunderloom"
+    AppVersion="000.095.000"
+>
+    <CompanyDetails Name="Thunderloom" Url="https://github.com/Thunderloom"/>
+    <Components Description="plugins parts">
+        <RuntimeRequirements OS="Win64" Platform="3ds Max" SeriesMin="2019" SeriesMax="2019" />
+        <ComponentEntry ModuleName="thunderLoomVRay3dsMax2019.dlt" />
+    </Components>
+    <Components Description="plugins parts">
+        <RuntimeRequirements OS="Win64" Platform="3ds Max" SeriesMin="2020" SeriesMax="2020" />
+        <ComponentEntry ModuleName="thunderLoomVRay3dsMax2020.dlt" />
+    </Components>
+</ApplicationPackage>
