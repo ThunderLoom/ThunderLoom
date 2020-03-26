@@ -536,7 +536,7 @@ tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param)
                         ImGui::Text(#name); \
                         ImGui::Checkbox("",(bool*)&(yt+i)->name##_enabled); \
                         ImGui::SameLine(); \
-                        ImGui::ColorEdit3(" ",(float*)&(yt+i)->name); \
+                        ImGui::ColorEdit4(" ",(float*)&(yt+i)->name); \
                         ImGui::PopID(); 
 
                         TL_YARN_PARAMETERS

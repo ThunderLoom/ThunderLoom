@@ -21,11 +21,11 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("twist", 0.5f, -1, "How strongly to simulate the twisting nature of the yarn. Usually synthetic yarns, such as polyester, have less twist than organic yarns, such as cotton.");
         addParamTextureFloat("phase_alpha", 0.05f, -1, "Alpha value. Constant term to the fiber scattering function.");
         addParamTextureFloat("phase_beta", 4.f, -1, "Beta value. Directionality intensity of the fiber scattering function.");
-        addParamTexture("specular_color", Color(0.4f, 0.4f, 0.4f), -1, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
+        addParamTexture("specular_color", AColor(0.4f, 0.4f, 0.4f, 1.0f), -1, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
         addParamTextureFloat("specular_color_amount", 1.0f, -1, "Factor to multiply specular color with.");
         addParamTextureFloat("specular_noise", 0.4f, -1, "Noise on specular reflections.");
         addParamTextureFloat("highlight_width", 0.4f, -1, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
-        addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
+        addParamTexture("diffuse_color", AColor(0.f, 0.3f, 0.f, 1.0f), -1, "Diffuse color.");
         addParamTextureFloat("diffuse_color_amount", 1.0f, -1, "Factor to multiply diffuse color with.");
         
         // Stored as lists, just like above. These parameters allow us to 
@@ -256,9 +256,12 @@ TL_VRAY_FLOAT_PARAMS
 
         if (is_param_valid(diffuse_color, i)) {
             if (!set_texparam(diffuse_color, &yarn_type->color_texmap, i)) {
-                Color tmp_diffuse_color = diffuse_color->getColor(i);
+                AColor tmp_diffuse_color = diffuse_color->getAColor(i);
                 tlColor tl_diffuse_color;
-                tl_diffuse_color.r = tmp_diffuse_color.r; tl_diffuse_color.g = tmp_diffuse_color.g; tl_diffuse_color.b = tmp_diffuse_color.b;
+                tl_diffuse_color.r = tmp_diffuse_color.color.r;
+                tl_diffuse_color.g = tmp_diffuse_color.color.g;
+                tl_diffuse_color.b = tmp_diffuse_color.color.b;
+                tl_diffuse_color.a = tmp_diffuse_color.alpha;
                 yarn_type->color = tl_diffuse_color;
             }
         }
@@ -318,6 +321,7 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
     m_tl_wparams = tl_wparams;
     if(!m_tl_wparams || m_tl_wparams->pattern ==0) { // Invalid pattern
         m_diffuse_color = ShadeCol(1.0f,1.0f,0.f);
+        m_diffuse_color_alpha = 1.f;
         m_yarn_type = tl_default_yarn_type;
         m_yarn_type_id = 0;
         return;
@@ -342,6 +346,7 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
     m_yarn_type = m_tl_wparams->yarn_types[pattern_data.yarn_type];
     tlColor d = tl_eval_diffuse( intersection_data, pattern_data, m_tl_wparams);
 	m_diffuse_color.set(d.r, d.g, d.b);
+	m_diffuse_color_alpha = d.a;
 
     return;
 }
@@ -376,7 +381,8 @@ ShadeCol BRDFThunderLoomSampler::getLightMult(ShadeCol &lightColor) {
 
 // Returns transparency of the BRDF at the given point.
 ShadeCol BRDFThunderLoomSampler::getTransparency(const VR::VRayContext &rc) {
-	return ShadeCol(0.f);
+	return ShadeCol(1.f - m_diffuse_color_alpha);
+
 }
 
 // Returns the amount of light transmitted from the given direction into the viewing direction.

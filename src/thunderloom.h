@@ -30,7 +30,7 @@ void tl_prepare(tlWeaveParameters *params);
  * with the relevant information about the current shading point,
  * and call tl_shade to recieve the reflected color.
  */
-typedef struct {float r,g,b;} tlColor;
+typedef struct {float r,g,b,a;} tlColor;
 typedef struct tlIntersectionData tlIntersectionData;
 tlColor tl_shade(tlIntersectionData intersection_data,
         const tlWeaveParameters *params);
@@ -246,10 +246,10 @@ tlYarnType tl_default_yarn_type =
 	0.05f, //alpha
 	4.f,   //beta
 	0.3f,  //delta_x
-    {0.4f, 0.4f, 0.4f},  //specular color
+    {0.4f, 0.4f, 0.4f, 1.f},  //specular color
     1.f,   //specular_amount
     0.f,   //specular_noise
-    {0.3f, 0.3f, 0.3f},  //color
+    {0.3f, 0.3f, 0.3f, 1.f},  //color
     1.f,   //color_amount
     0
 };
@@ -1842,12 +1842,18 @@ tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
     tlColor color = {
         yarn_type->color.r,
         yarn_type->color.g,
-        yarn_type->color.b
+        yarn_type->color.b,
+        yarn_type->color.a,
     };
 	if(yarn_type->color_texmap){
 		color = tl_eval_texmap_color(yarn_type->color_texmap,
             intersection_data.context);
 	}
+
+    // Pre-multiply alpha
+    color.r *= color.a;
+    color.g *= color.a;
+    color.b *= color.a;
 
     // Apply multiplier
     float color_amount = tl_yarn_type_get_color_amount(params, data.yarn_type,
@@ -1885,7 +1891,7 @@ tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
 tlColor tl_eval_specular(tlIntersectionData intersection_data,
         tlPatternData data, const tlWeaveParameters *params)
 {
-    tlColor ret={0.f,0.f,0.f};
+    tlColor ret={0.f,0.f,0.f,1.f};
     // Depending on the given psi parameter the yarn is considered
     // staple or filament. They are treated differently in order
     // to work better numerically. 
@@ -1947,7 +1953,7 @@ float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context)
 
 tlColor tl_eval_texmap_color(void *texmap, void *context)
 {
-    tlColor ret = {1.f,1.f,1.f};
+    tlColor ret = {1.f,1.f,1.f,1.f};
     return ret;
 }
 #endif

@@ -8,7 +8,8 @@ namespace VUtils {
 
 class MyBaseBSDF: public BRDFSampler, public BSDFSampler {
 protected:
-	ShadeCol diffuse_color;
+	ShadeCol m_diffuse_color;
+	float m_diffuse_color_alpha;
 
 	ShadeVec normal, gnormal;
     int orig_backside;

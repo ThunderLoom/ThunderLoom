@@ -9,10 +9,11 @@
 
 void EvalDiffuseFunc (const VUtils::VRayContext &rc,
     tlWeaveParameters *weave_parameters, VUtils::ShadeCol *diffuse_color,
-	tlYarnType* yarn_type, int* yarn_type_id)
+    float *diffuse_color_alpha, tlYarnType* yarn_type, int* yarn_type_id)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
         *diffuse_color = VUtils::ShadeCol(1.f,1.f,0.f);
+        *diffuse_color_alpha = 1.f;
 		*yarn_type = tl_default_yarn_type;
 		*yarn_type_id = 0;
         return;
@@ -38,6 +39,7 @@ void EvalDiffuseFunc (const VUtils::VRayContext &rc,
     tlColor d = 
         tl_eval_diffuse( intersection_data, pattern_data, weave_parameters);
 	diffuse_color->set(d.r, d.g, d.b);
+    *diffuse_color_alpha = d.a;
 }
 
 void EvalSpecularFunc ( const VUtils::VRayContext &rc,

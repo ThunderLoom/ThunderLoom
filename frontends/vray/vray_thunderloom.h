@@ -28,6 +28,7 @@ class BRDFThunderLoomSampler: public VR::BRDFSampler, public VR::BSDFSampler {
     VR::ShadeVec m_uv;
     VR::ShadeTransform m_uv_tm;
     VR::ShadeCol m_diffuse_color;
+    float m_diffuse_color_alpha;
     tlYarnType m_yarn_type;
     int m_yarn_type_id;
 

@@ -19,11 +19,11 @@ BRDFThunderLoomParamsUpdated::BRDFThunderLoomParamsUpdated(void) {
 	addParamPlugin("twist", EXT_TEXTURE_FLOAT, 0, "How strongly to simulate the twisting nature of the yarn. Usually synthetic yarns, such as polyester, have less twist than organic yarns, such as cotton.");
 	addParamPlugin("phase_alpha", EXT_TEXTURE_FLOAT, 0, "Alpha value. Constant term to the fiber scattering function.");
 	addParamPlugin("phase_beta", EXT_TEXTURE_FLOAT, 0, "Beta value. Directionality intensity of the fiber scattering function.");
-	addParamTexture("specular_color", Color(0.4f, 0.4f, 0.4f), 0, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
+	addParamTexture("specular_color", AColor(0.4f, 0.4f, 0.4f, 1.f), 0, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
 	addParamPlugin("specular_color_amount", EXT_TEXTURE_FLOAT, 0, "Factor to multiply specular color with.");
 	addParamPlugin("specular_noise", EXT_TEXTURE_FLOAT, 0, "Noise on specular reflections.");
 	addParamPlugin("highlight_width", EXT_TEXTURE_FLOAT, 0, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
-	addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), 0, "Diffuse color.");
+	addParamTexture("diffuse_color", AColor(0.f, 0.3f, 0.f, 1.f), 0, "Diffuse color.");
 	addParamPlugin("diffuse_color_amount", EXT_TEXTURE_FLOAT, 0, "Factor to multiply diffuse color with.");
 	
 	// Stored as lists, just like above. These parameters allow us to 
@@ -201,9 +201,12 @@ TL_VRAY_FLOAT_PARAMS
 
         if (is_param_valid(diffuse_color, i)) {
             if (!set_texparam(diffuse_color, &yarn_type->color_texmap, i)) {
-                Color tmp_diffuse_color = diffuse_color->getColor(i);
+                AColor tmp_diffuse_color = diffuse_color->getAColor(i);
                 tlColor tl_diffuse_color;
-                tl_diffuse_color.r = tmp_diffuse_color.r; tl_diffuse_color.g = tmp_diffuse_color.g; tl_diffuse_color.b = tmp_diffuse_color.b;
+                tl_diffuse_color.r = tmp_diffuse_color.color.r;
+                tl_diffuse_color.g = tmp_diffuse_color.color.g;
+                tl_diffuse_color.b = tmp_diffuse_color.color.b;
+                tl_diffuse_color.a = tmp_diffuse_color.alpha;
                 yarn_type->color = tl_diffuse_color;
             }
         }
