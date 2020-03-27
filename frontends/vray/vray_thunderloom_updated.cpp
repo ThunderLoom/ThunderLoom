@@ -25,8 +25,8 @@ BRDFThunderLoomParamsUpdated::BRDFThunderLoomParamsUpdated(void) {
 	addParamPlugin("highlight_width", EXT_TEXTURE_FLOAT, 0, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
 	addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), 0, "Diffuse color.");
 	addParamPlugin("diffuse_color_amount", EXT_TEXTURE_FLOAT, 0, "Factor to multiply diffuse color with.");
-	addParamTexture("opacity", Color(1.f,1.f,1.f), -1, "Opacity.");
-	addParamTexture("opacity_amount", Color(1.f,1.f,1.f), -1, "Factor to multiply opacity with.");
+	addParamTexture("opacity", Color(1.f,1.f,1.f), 0, "Opacity.");
+	addParamPlugin("opacity_amount", EXT_TEXTURE_FLOAT, 0, "Factor to multiply opacity with.");
 	
 	// Stored as lists, just like above. These parameters allow us to 
 	// specify what parameters we want to override, for a specific yarn.
@@ -41,7 +41,7 @@ BRDFThunderLoomParamsUpdated::BRDFThunderLoomParamsUpdated(void) {
 	addParamBool("highlight_width_on",          false, 0, "");
 	addParamBool("diffuse_color_on",            false, 0, "");
 	addParamBool("diffuse_color_amount_on",     false, 0, "");
-	addParamBool("opacity_on",                  false, 0, "");
+	addParamBool("opacity_on",            false, 0, "");
 	addParamBool("opacity_amount_on",           false, 0, "");
 }
 
@@ -161,6 +161,7 @@ void BRDFThunderLoomUpdated::frameBegin(VRayRenderer *vray) {
         TL_VRAY_INIT_PARAM(specular_color_amount)\
         TL_VRAY_INIT_PARAM(specular_noise)\
         TL_VRAY_INIT_PARAM(diffuse_color_amount)\
+        TL_VRAY_INIT_PARAM(opacity_amount)\
 
     TL_VRAY_FLOAT_PARAMS
 
@@ -221,15 +222,15 @@ TL_VRAY_FLOAT_PARAMS
             yarn_type->color_enabled = yarnCache.diffuse_color_on[i];
 
         if (is_param_valid(opacity, i)) {
-            if (!set_texparam(opacity, &yarn_type->color_texmap, i)) {
+            if (!set_texparam(opacity, &yarn_type->opacity_texmap, i)) {
                 Color tmp_opacity = opacity->getColor(i);
                 tlColor tl_opacity;
                 tl_opacity.r = tmp_opacity.r; tl_opacity.g = tmp_opacity.g; tl_opacity.b = tmp_opacity.b;
-                yarn_type->color = tl_opacity;
+                yarn_type->opacity = tl_opacity;
             }
         }
         if (yarnCache.opacity_on.count() > i)
-            yarn_type->color_enabled = yarnCache.opacity_on[i];
+            yarn_type->opacity_enabled = yarnCache.opacity_on[i];
     }
 
     tl_prepare(m_tl_wparams);

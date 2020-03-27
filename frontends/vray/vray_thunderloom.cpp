@@ -28,7 +28,7 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
         addParamTextureFloat("diffuse_color_amount", 1.0f, -1, "Factor to multiply diffuse color with.");
         addParamTexture("opacity", Color(1.f,1.f,1.f), -1, "Opacity.");
-        addParamTexture("opacity_amount", Color(1.f,1.f,1.f), -1, "Factor to multiply opacity with.");
+        addParamTextureFloat("opacity_amount", 1.0f, -1, "Factor to multiply opacity with.");
         
         // Stored as lists, just like above. These parameters allow us to 
         // specify what parameters we want to override, for a specific yarn.
@@ -44,7 +44,7 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamBool("diffuse_color_on",            false, -1, "");
         addParamBool("diffuse_color_amount_on",     false, -1, "");
         addParamBool("opacity_on",                  false, -1, "");
-        addParamBool("opacity_amount_on",            false, -1, "");
+        addParamBool("opacity_amount_on",           false, -1, "");
 
         // MAYA FIX
         // It seems that only float params can be retrieved from Maya into the 
@@ -61,7 +61,7 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("highlight_width_on_float",       false, -1, "");
         addParamTextureFloat("diffuse_color_on_float",         false, -1, "");
         addParamTextureFloat("diffuse_color_amount_on_float",  false, -1, "");
-        addParamTextureFloat("opacity_on_float",               false, -1, "");
+        addParamTextureFloat("opacity_on_float",         false, -1, "");
         addParamTextureFloat("opacity_amount_on_float",        false, -1, "");
         
         addParamFloat("bends2", 0.5f, -1, "");
@@ -283,7 +283,7 @@ TL_VRAY_FLOAT_PARAMS
             yarn_type->color_enabled = get_bool(diffuse_color_on_float, i, rc);
 
         if (is_param_valid(opacity, i)) {
-            if (!set_texparam(opacity, &yarn_type->color_texmap, i)) {
+            if (!set_texparam(opacity, &yarn_type->opacity_texmap, i)) {
                 Color tmp_opacity = opacity->getColor(i);
                 tlColor tl_opacity;
                 tl_opacity.r = tmp_opacity.r; tl_opacity.g = tmp_opacity.g; tl_opacity.b = tmp_opacity.b;

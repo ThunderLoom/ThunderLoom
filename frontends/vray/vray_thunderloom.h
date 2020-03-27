@@ -110,7 +110,6 @@ struct YarnCache {
     VR::VRayPluginList specular_noise;
     VR::VRayPluginList highlight_width;
     VR::VRayPluginList diffuse_color_amount;
-    VR::VRayPluginList opacity;
     VR::VRayPluginList opacity_amount;
 
     VR::IntList bend_on;
