@@ -25,6 +25,8 @@ BRDFThunderLoomParamsUpdated::BRDFThunderLoomParamsUpdated(void) {
 	addParamPlugin("highlight_width", EXT_TEXTURE_FLOAT, 0, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
 	addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), 0, "Diffuse color.");
 	addParamPlugin("diffuse_color_amount", EXT_TEXTURE_FLOAT, 0, "Factor to multiply diffuse color with.");
+	addParamTexture("opacity", Color(1.f,1.f,1.f), -1, "Opacity.");
+	addParamTexture("opacity_amount", Color(1.f,1.f,1.f), -1, "Factor to multiply opacity with.");
 	
 	// Stored as lists, just like above. These parameters allow us to 
 	// specify what parameters we want to override, for a specific yarn.
@@ -39,6 +41,8 @@ BRDFThunderLoomParamsUpdated::BRDFThunderLoomParamsUpdated(void) {
 	addParamBool("highlight_width_on",          false, 0, "");
 	addParamBool("diffuse_color_on",            false, 0, "");
 	addParamBool("diffuse_color_amount_on",     false, 0, "");
+	addParamBool("opacity_on",                  false, 0, "");
+	addParamBool("opacity_amount_on",           false, 0, "");
 }
 
 struct YarnData {
@@ -51,6 +55,7 @@ struct YarnData {
     Table<TextureFloatInterface*> specular_noise;
     Table<TextureFloatInterface*> highlight_width;
     Table<TextureFloatInterface*> diffuse_color_amount;
+    Table<TextureFloatInterface*> opacity_amount;
 };
 
 BRDFThunderLoomUpdated::BRDFThunderLoomUpdated(VRayPluginDesc *pluginDesc):VRayBSDF(pluginDesc) {
@@ -67,6 +72,7 @@ BRDFThunderLoomUpdated::BRDFThunderLoomUpdated(VRayPluginDesc *pluginDesc):VRayB
 	paramList->setParamCache("specular_noise", &yarnCache.specular_noise);
 	paramList->setParamCache("highlight_width", &yarnCache.highlight_width);
 	paramList->setParamCache("diffuse_color_amount", &yarnCache.diffuse_color_amount);
+	paramList->setParamCache("opacity_amount", &yarnCache.opacity_amount);
 
 	paramList->setParamCache("bend_on", &yarnCache.bend_on);
 	paramList->setParamCache("yarnsize_on", &yarnCache.yarnsize_on);
@@ -79,6 +85,8 @@ BRDFThunderLoomUpdated::BRDFThunderLoomUpdated(VRayPluginDesc *pluginDesc):VRayB
 	paramList->setParamCache("highlight_width_on", &yarnCache.highlight_width_on);
 	paramList->setParamCache("diffuse_color_on", &yarnCache.diffuse_color_on);
 	paramList->setParamCache("diffuse_color_amount_on", &yarnCache.diffuse_color_amount_on);
+	paramList->setParamCache("opacity_on", &yarnCache.opacity_on);
+	paramList->setParamCache("opacity_amount_on", &yarnCache.opacity_amount_on);
 }
 
 //Param helpers
@@ -133,7 +141,8 @@ void BRDFThunderLoomUpdated::frameBegin(VRayRenderer *vray) {
 
 	// For these VRay doesn't support caching still
     VRayPluginParameter* specular_color = this->getParameter("specular_color");
-    VRayPluginParameter* diffuse_color = this->getParameter("diffuse_color");
+    VRayPluginParameter* diffuse_color  = this->getParameter("diffuse_color");
+    VRayPluginParameter* opacity        = this->getParameter("opacity");
 
 	// Here we get them from the cache and save them as TextureFloatInterfaces in the tables
 	// So we can use them more easily in the trasnsforming to TL params below
@@ -182,6 +191,7 @@ void BRDFThunderLoomUpdated::frameBegin(VRayRenderer *vray) {
         TL_VRAY_SET_PARAM(specular_color_amount, specular_amount)\
         TL_VRAY_SET_PARAM(specular_noise, specular_noise)\
         TL_VRAY_SET_PARAM(diffuse_color_amount, color_amount)\
+        TL_VRAY_SET_PARAM(opacity_amount, opacity_amount)\
 
 TL_VRAY_FLOAT_PARAMS
 
@@ -210,6 +220,16 @@ TL_VRAY_FLOAT_PARAMS
         if (yarnCache.diffuse_color_on.count() > i)
             yarn_type->color_enabled = yarnCache.diffuse_color_on[i];
 
+        if (is_param_valid(opacity, i)) {
+            if (!set_texparam(opacity, &yarn_type->color_texmap, i)) {
+                Color tmp_opacity = opacity->getColor(i);
+                tlColor tl_opacity;
+                tl_opacity.r = tmp_opacity.r; tl_opacity.g = tmp_opacity.g; tl_opacity.b = tmp_opacity.b;
+                yarn_type->color = tl_opacity;
+            }
+        }
+        if (yarnCache.opacity_on.count() > i)
+            yarn_type->color_enabled = yarnCache.opacity_on[i];
     }
 
     tl_prepare(m_tl_wparams);

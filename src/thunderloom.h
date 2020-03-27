@@ -83,7 +83,10 @@ void tl_free_weave_parameters(tlWeaveParameters *params);
 	TL_FLOAT_PARAM(specular_amount)\
 	TL_FLOAT_PARAM(specular_noise)\
     TL_COLOR_PARAM(color) \
-	TL_FLOAT_PARAM(color_amount)
+	TL_FLOAT_PARAM(color_amount)\
+	TL_COLOR_PARAM(opacity)\
+	TL_FLOAT_PARAM(opacity_amount)\
+//
 
 /* --- Intersection data ---
  * During rendering, before calling tl_shade, the tlIntersectionData struct
@@ -211,6 +214,8 @@ tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
     tlPatternData data, const tlWeaveParameters *params);
 tlColor tl_eval_specular(tlIntersectionData intersection_data,
     tlPatternData data, const tlWeaveParameters *params);
+tlColor tl_eval_opacity(tlIntersectionData intersection_data,
+    tlPatternData data, const tlWeaveParameters *params);
 
 tlWeaveParameters *tl_weave_pattern_from_data(uint8_t *warp_above,
     uint8_t *yarn_type, uint32_t num_yarn_types, tlColor *yarn_colors,
@@ -251,6 +256,8 @@ tlYarnType tl_default_yarn_type =
     0.f,   //specular_noise
     {0.3f, 0.3f, 0.3f},  //color
     1.f,   //color_amount
+    {1.0f, 1.0f, 1.0f},  //opacity
+    1.f,   //opacity_amount
     0
 };
 
@@ -1879,8 +1886,45 @@ tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
     color.g*=specular_strength_complement;
     color.b*=specular_strength_complement;
 
+    tlColor opacity = tl_eval_opacity(intersection_data, data, params);
+    color.r*=opacity.r;
+    color.g*=opacity.g;
+    color.b*=opacity.b;
+
     return color;
 }
+
+tlColor tl_eval_opacity(tlIntersectionData intersection_data,
+        tlPatternData data, const tlWeaveParameters *params)
+{
+
+	tlYarnType *yarn_type = params->yarn_types + data.yarn_type;
+    if(!yarn_type->opacity_enabled || !data.yarn_hit){
+        yarn_type = &params->yarn_types[0];
+    }
+
+    tlColor opacity = {
+        yarn_type->opacity.r,
+        yarn_type->opacity.g,
+        yarn_type->opacity.b
+    };
+	if(yarn_type->opacity_texmap){
+		opacity = tl_eval_texmap_color(yarn_type->opacity_texmap,
+            intersection_data.context);
+	}
+
+    // Apply multiplier
+    float opacity_amount = tl_yarn_type_get_opacity_amount(params, data.yarn_type,
+            intersection_data.context);
+    if (opacity_amount != 1.f) {
+        opacity.r *= opacity_amount;
+        opacity.g *= opacity_amount;
+        opacity.b *= opacity_amount;
+    }
+    
+    return opacity;
+}
+
 
 tlColor tl_eval_specular(tlIntersectionData intersection_data,
         tlPatternData data, const tlWeaveParameters *params)

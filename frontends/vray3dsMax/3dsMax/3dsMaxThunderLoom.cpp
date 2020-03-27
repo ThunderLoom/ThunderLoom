@@ -454,7 +454,9 @@ INT_PTR YarnTypeDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				TL_FLOAT_PARAM(delta_x)\
 				TL_COLOR_PARAM(specular_color)\
 				TL_FLOAT_PARAM(specular_noise)\
-			    TL_COLOR_PARAM(color)
+			    TL_COLOR_PARAM(color)\
+			    TL_COLOR_PARAM(opacity)\
+//
 
             //NOTE(Vidar): Setup spinners
             #define TL_FLOAT_PARAM(name){\

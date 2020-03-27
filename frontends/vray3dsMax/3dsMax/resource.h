@@ -185,6 +185,9 @@
 #define IDC_YRN_TEX_yarnsize_BUTTON     1200
 #define IDC_YRN_TEX_specular_color_BUTTON 1202
 #define IDC_specular_LABEL 1203
+#define IDC_opacity_SWATCH 1204
+#define IDC_YRN_TEX_opacity_BUTTON 1205
+#define IDC_opacity_OVERRIDE 1206
 
 // Next default values for new objects
 // 
