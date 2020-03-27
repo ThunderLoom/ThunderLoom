@@ -27,6 +27,8 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("highlight_width", 0.4f, -1, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
         addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
         addParamTextureFloat("diffuse_color_amount", 1.0f, -1, "Factor to multiply diffuse color with.");
+        addParamTexture("opacity", Color(1.f,1.f,1.f), -1, "Opacity.");
+        addParamTexture("opacity_amount", Color(1.f,1.f,1.f), -1, "Factor to multiply opacity with.");
         
         // Stored as lists, just like above. These parameters allow us to 
         // specify what parameters we want to override, for a specific yarn.
@@ -41,6 +43,8 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamBool("highlight_width_on",          false, -1, "");
         addParamBool("diffuse_color_on",            false, -1, "");
         addParamBool("diffuse_color_amount_on",     false, -1, "");
+        addParamBool("opacity_on",                  false, -1, "");
+        addParamBool("opacity_amount_on",            false, -1, "");
 
         // MAYA FIX
         // It seems that only float params can be retrieved from Maya into the 
@@ -57,6 +61,8 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         addParamTextureFloat("highlight_width_on_float",       false, -1, "");
         addParamTextureFloat("diffuse_color_on_float",         false, -1, "");
         addParamTextureFloat("diffuse_color_amount_on_float",  false, -1, "");
+        addParamTextureFloat("opacity_on_float",               false, -1, "");
+        addParamTextureFloat("opacity_amount_on_float",        false, -1, "");
         
         addParamFloat("bends2", 0.5f, -1, "");
     }
@@ -209,6 +215,14 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     VRayPluginParameter* diffuse_color_amount_on = this->getParameter("diffuse_color_amount_on");
     VRayPluginParameter* diffuse_color_amount_on_float = this->getParameter("diffuse_color_amount_on_float");
 
+    VRayPluginParameter* opacity = this->getParameter("opacity");
+    VRayPluginParameter* opacity_on = this->getParameter("opacity_on");
+    VRayPluginParameter* opacity_on_float = this->getParameter("opacity_on_float");
+
+    VRayPluginParameter* opacity_amount = this->getParameter("opacity_amount");
+    VRayPluginParameter* opacity_amount_on = this->getParameter("opacity_amount_on");
+    VRayPluginParameter* opacity_amount_on_float = this->getParameter("opacity_amount_on_float");
+
 
     // Loop through yarn types and set parameters from list
     for (unsigned int i=0; i < m_tl_wparams->num_yarn_types; i++) {
@@ -235,6 +249,7 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
         TL_VRAY_SET_PARAM(specular_color_amount, specular_amount)\
         TL_VRAY_SET_PARAM(specular_noise, specular_noise)\
         TL_VRAY_SET_PARAM(diffuse_color_amount, color_amount)\
+        TL_VRAY_SET_PARAM(opacity_amount, opacity_amount)\
 
 TL_VRAY_FLOAT_PARAMS
 
@@ -266,6 +281,19 @@ TL_VRAY_FLOAT_PARAMS
             yarn_type->color_enabled = get_bool(diffuse_color_on, i, rc);
         else if (is_param_valid(diffuse_color_on_float, i))
             yarn_type->color_enabled = get_bool(diffuse_color_on_float, i, rc);
+
+        if (is_param_valid(opacity, i)) {
+            if (!set_texparam(opacity, &yarn_type->color_texmap, i)) {
+                Color tmp_opacity = opacity->getColor(i);
+                tlColor tl_opacity;
+                tl_opacity.r = tmp_opacity.r; tl_opacity.g = tmp_opacity.g; tl_opacity.b = tmp_opacity.b;
+                yarn_type->opacity = tl_opacity;
+            }
+        }
+        if (is_param_valid(opacity_on, i))
+            yarn_type->opacity_enabled = get_bool(opacity_on, i, rc);
+        else if (is_param_valid(opacity_on_float, i))
+            yarn_type->opacity_enabled = get_bool(opacity_on_float, i, rc);
 
     }
 
@@ -318,8 +346,10 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
     m_tl_wparams = tl_wparams;
     if(!m_tl_wparams || m_tl_wparams->pattern ==0) { // Invalid pattern
         m_diffuse_color = ShadeCol(1.0f,1.0f,0.f);
+        m_opacity_color = ShadeCol(1.0f,1.0f,0.f);
         m_yarn_type = tl_default_yarn_type;
         m_yarn_type_id = 0;
+		m_yarn_hit = 0;
         return;
     } 
 
@@ -340,8 +370,11 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
 
     m_yarn_type_id = pattern_data.yarn_type;
     m_yarn_type = m_tl_wparams->yarn_types[pattern_data.yarn_type];
+	m_yarn_hit = pattern_data.yarn_hit;
     tlColor d = tl_eval_diffuse( intersection_data, pattern_data, m_tl_wparams);
 	m_diffuse_color.set(d.r, d.g, d.b);
+    tlColor o = tl_eval_opacity( intersection_data, pattern_data, m_tl_wparams);
+	m_opacity_color.set(o.r, o.g, o.b);
 
     return;
 }
@@ -369,6 +402,9 @@ ShadeCol BRDFThunderLoomSampler::getLightMult(ShadeCol &lightColor) {
         && m_tl_wparams->num_yarn_types > 0){
         s = m_tl_wparams->yarn_types[0].specular_color;
     }
+	if (!m_yarn_hit) {
+		s.r = 0.f; s.g = 0.f; s.b = 0.f;
+	}
     ShadeCol ret = (m_diffuse_color + ShadeCol(s.r,s.g,s.b)) * lightColor;
     lightColor.makeZero();
     return ret;
@@ -376,7 +412,7 @@ ShadeCol BRDFThunderLoomSampler::getLightMult(ShadeCol &lightColor) {
 
 // Returns transparency of the BRDF at the given point.
 ShadeCol BRDFThunderLoomSampler::getTransparency(const VR::VRayContext &rc) {
-	return ShadeCol(0.f);
+	return VUtils::ShadeCol(1.f,1.f,1.f) - m_opacity_color;
 }
 
 // Returns the amount of light transmitted from the given direction into the viewing direction.

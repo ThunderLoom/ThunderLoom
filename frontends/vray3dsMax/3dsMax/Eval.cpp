@@ -9,12 +9,16 @@
 
 void EvalDiffuseFunc (const VUtils::VRayContext &rc,
     tlWeaveParameters *weave_parameters, VUtils::ShadeCol *diffuse_color,
-	tlYarnType* yarn_type, int* yarn_type_id)
+	VUtils::ShadeCol *opacity_color,
+	tlYarnType* yarn_type, int* yarn_type_id,
+	int *yarn_hit)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
         *diffuse_color = VUtils::ShadeCol(1.f,1.f,0.f);
+        *opacity_color = VUtils::ShadeCol(1.f,1.f,1.f);
 		*yarn_type = tl_default_yarn_type;
 		*yarn_type_id = 0;
+		*yarn_hit = 0;
         return;
     }
     tlIntersectionData intersection_data;
@@ -35,9 +39,13 @@ void EvalDiffuseFunc (const VUtils::VRayContext &rc,
         weave_parameters);
 	*yarn_type_id = pattern_data.yarn_type;
 	*yarn_type = weave_parameters->yarn_types[pattern_data.yarn_type];
+	*yarn_hit = pattern_data.yarn_hit;
     tlColor d = 
         tl_eval_diffuse( intersection_data, pattern_data, weave_parameters);
 	diffuse_color->set(d.r, d.g, d.b);
+    tlColor o = 
+        tl_eval_opacity( intersection_data, pattern_data, weave_parameters);
+	opacity_color->set(o.r, o.g, o.b);
 }
 
 void EvalSpecularFunc ( const VUtils::VRayContext &rc,

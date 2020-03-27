@@ -13,8 +13,8 @@ using namespace VUtils;
 // throughout all directions, such as computing the diffuse color.
 void MyBaseBSDF::init(const VRayContext &rc, tlWeaveParameters *weave_parameters) {
     m_weave_parameters = weave_parameters;
-    EvalDiffuseFunc(rc,weave_parameters,&diffuse_color,&m_yarn_type,
-		&m_yarn_type_id);
+    EvalDiffuseFunc(rc,weave_parameters,&m_diffuse_color, &m_opacity_color,&m_yarn_type,
+		&m_yarn_type_id,&m_yarn_hit);
     orig_backside = rc.rayresult.realBack;
 
     const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);
@@ -39,7 +39,7 @@ VUtils::ShadeVec MyBaseBSDF::getDiffuseNormal(const VR::VRayContext &rc)
     return rc.rayresult.origNormal;
 }
 VUtils::ShadeCol MyBaseBSDF::getDiffuseColor(VUtils::ShadeCol &lightColor) {
-    VUtils::ShadeCol ret = diffuse_color*lightColor;
+    VUtils::ShadeCol ret = m_diffuse_color*lightColor;
 	lightColor.makeZero();
     return ret;
 }
@@ -49,12 +49,15 @@ VUtils::ShadeCol MyBaseBSDF::getLightMult(VUtils::ShadeCol &lightColor) {
         && m_weave_parameters->num_yarn_types > 0){
         s = m_weave_parameters->yarn_types[0].specular_color;
     }
-    VUtils::ShadeCol ret = (diffuse_color + VUtils::ShadeCol(s.r,s.g,s.b)) * lightColor;
+	if (!m_yarn_hit) {
+		s.r = 0.f; s.g = 0.f; s.b = 0.f;
+	}
+    VUtils::ShadeCol ret = (m_diffuse_color + VUtils::ShadeCol(s.r,s.g,s.b)) * lightColor;
     lightColor.makeZero();
     return ret;
 }
 VUtils::ShadeCol MyBaseBSDF::getTransparency(const VRayContext &rc) {
-	return VUtils::ShadeCol(0.f);
+	return VUtils::ShadeCol(1.f,1.f,1.f) - m_opacity_color;
 }
 
 ShadeCol MyBaseBSDF::eval( const VRayContext &rc, const ShadeVec &direction, ShadeCol &shadowedLight,
@@ -75,7 +78,7 @@ ShadeCol MyBaseBSDF::eval( const VRayContext &rc, const ShadeVec &direction, Sha
             //NOTE(Vidar): Multiple importance sampling factor
             k = cs*getReflectionWeight(probLight, probReflection);
         }
-        ret += diffuse_color * k;
+        ret += m_diffuse_color * k;
     }
     if((flags & FBRDF_SPECULAR) && ((rc.rayparams.rayType & RT_NOSPECULAR) == 0)){
         VUtils::ShadeCol reflect_color;
@@ -99,16 +102,16 @@ ShadeCol MyBaseBSDF::eval( const VRayContext &rc, const ShadeVec &direction, Sha
 //NOTE(Vidar): Called whenever a reflection ray is to be calculated
 void MyBaseBSDF::traceForward(VRayContext &rc, int doDiffuse) {
 	BRDFSampler::traceForward(rc, doDiffuse);
-	if (doDiffuse) rc.mtlresult.color+=rc.evalDiffuse()*diffuse_color;
+	if (doDiffuse) rc.mtlresult.color+=rc.evalDiffuse()*m_diffuse_color;
     Fragment *f=rc.mtlresult.fragment;
     if(f){
         VUtils::ShadeCol raw_gi=rc.evalDiffuse();
-        VUtils::ShadeCol diffuse_gi=raw_gi*diffuse_color;
+        VUtils::ShadeCol diffuse_gi=raw_gi*m_diffuse_color;
         f->setChannelDataByAlias(REG_CHAN_VFB_RAWGI,&raw_gi);
         f->setChannelDataByAlias(REG_CHAN_VFB_RAWTOTALLIGHT,&raw_gi);
         f->setChannelDataByAlias(REG_CHAN_VFB_GI,&diffuse_gi);
         f->setChannelDataByAlias(REG_CHAN_VFB_TOTALLIGHT,&diffuse_gi);
-        f->setChannelDataByAlias(REG_CHAN_VFB_DIFFUSE,&diffuse_color);
+        f->setChannelDataByAlias(REG_CHAN_VFB_DIFFUSE,&m_diffuse_color);
     }
 }
 
@@ -132,6 +135,9 @@ VRayContext* MyBaseBSDF::getNewContext(const VRayContext &rc, int &samplerID, in
         m_weave_parameters->num_yarn_types > 0){
         s = m_weave_parameters->yarn_types[0].specular_color;
     }
+	if (!m_yarn_hit) {
+		s.r = 0.f; s.g = 0.f; s.b = 0.f;
+	}
     VUtils::ShadeCol reflect_filter = VUtils::ShadeCol(s.r,s.g,s.b);
 	VUtils::RayFlags ray_flags(RT_REFLECT | RT_GLOSSY | RT_ENVIRONMENT);
 	VRayContext &nrc=rc.newSpawnContext(2, reflect_filter, ray_flags, normal);

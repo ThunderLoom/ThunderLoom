@@ -8,7 +8,8 @@ namespace VUtils {
 
 class MyBaseBSDF: public BRDFSampler, public BSDFSampler {
 protected:
-	ShadeCol diffuse_color;
+	ShadeCol m_diffuse_color;
+	ShadeCol m_opacity_color;
 
 	ShadeVec normal, gnormal;
     int orig_backside;
@@ -17,6 +18,7 @@ protected:
 	Texmap **m_texmaps;
 	tlYarnType m_yarn_type;
 	int m_yarn_type_id;
+	int m_yarn_hit;
 
 public:
 

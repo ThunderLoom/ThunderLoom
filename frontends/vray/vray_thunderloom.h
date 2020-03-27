@@ -28,8 +28,10 @@ class BRDFThunderLoomSampler: public VR::BRDFSampler, public VR::BSDFSampler {
     VR::ShadeVec m_uv;
     VR::ShadeTransform m_uv_tm;
     VR::ShadeCol m_diffuse_color;
+    VR::ShadeCol m_opacity_color;
     tlYarnType m_yarn_type;
     int m_yarn_type_id;
+	int m_yarn_hit;
 
 public:
     // Initialization
@@ -108,6 +110,8 @@ struct YarnCache {
     VR::VRayPluginList specular_noise;
     VR::VRayPluginList highlight_width;
     VR::VRayPluginList diffuse_color_amount;
+    VR::VRayPluginList opacity;
+    VR::VRayPluginList opacity_amount;
 
     VR::IntList bend_on;
     VR::IntList yarnsize_on;
@@ -120,6 +124,8 @@ struct YarnCache {
     VR::IntList highlight_width_on;
     VR::IntList diffuse_color_on;
     VR::IntList diffuse_color_amount_on;
+    VR::IntList opacity_on;
+    VR::IntList opacity_amount_on;
 };
 
 
