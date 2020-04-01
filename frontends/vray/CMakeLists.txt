@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
+project(vray_thunderLoom)
 set(CMAKE_MACOSX_RPATH 1)
 
 # Varibles
@@ -9,7 +10,6 @@ set(MAYA_VERSION "2018" CACHE STRING "Maya version (year)")
 set(LIBRARY_OUTPUT_PATH ${RELEASE_DIR}/V-Ray/)
 
 # Additional includes
-set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../src)
 
 set(SOURCES vray_thunderloom.cpp
 			vray_thunderloom_updated.cpp

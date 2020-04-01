@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
+project(thunderLoomVRayMaya)
 set(CMAKE_MACOSX_RPATH 1)
 
 # Varibles
@@ -36,7 +37,6 @@ file(MAKE_DIRECTORY "${OUTPUT_MAYA_PATH}/thunderloom_maya_module/scripts")
 file(MAKE_DIRECTORY "${OUTPUT_MAYA_PATH}/vray_plugin")
 
 
-set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../src)
 
 set(SOURCES 
     "maya_pluginmain.cpp"

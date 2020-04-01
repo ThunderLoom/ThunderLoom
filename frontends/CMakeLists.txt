@@ -23,6 +23,8 @@ set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME})
 set(MAYA_VERSION "2017" CACHE STRING "Maya version (year)")
 set(3DSMAX_VERSIONS 2019 2020 2021 CACHE STRING "3dsMax versions (year)")
 
+set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../src)
+
 IF(WIN32)
 add_subdirectory(installer)
 add_subdirectory(vray3dsMax)
