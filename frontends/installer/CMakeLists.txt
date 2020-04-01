@@ -28,7 +28,7 @@ configure_file (
 )
 configure_file (
     "PackageContents.xml.in"
-    "${PROJECT_BINARY_DIR}/PackageContents.xml"
+    "${CMAKE_BINARY_DIR}/PackageContents.xml"
 )
 configure_file (
     "thunderloom.wxs.in"
@@ -37,4 +37,3 @@ configure_file (
 install(DIRECTORY data/ DESTINATION thunderloom_installer)
 install(FILES "${PROJECT_BINARY_DIR}/thunderloom.wxs" DESTINATION thunderloom_installer)
 install(FILES "${PROJECT_BINARY_DIR}/make_installer.bat" DESTINATION thunderloom_installer)
-install(FILES "${PROJECT_BINARY_DIR}/PackageContents.xml" DESTINATION thunderloom_installer)

@@ -14,14 +14,14 @@
       <Directory Id='AppDataFolder'>
         <Directory Id='adsk' Name='Autodesk'>
           <Directory Id='applugs' Name='ApplicationPlugins'>
-            <Directory Id='INSTALLFOLDER' Name='thunderloom'>
+            <Directory Id='INSTALLFOLDER' Name='thunderloomVRay3dsMax'>
               <Component Id='ThunderloomAutodesk' Guid='F2EEC2C3-1261-4875-B6C4-59746C11A3BA'>
                 <RegistryValue Root='HKCU' Key='Software\Thunderloom\Thunderloom'
                           Name='autodesk_plugin_installed' Value='1' Type='integer' KeyPath='yes' />
                 <RemoveFolder Id='RemoveAdsk' Directory='adsk' On='uninstall'/>
                 <RemoveFolder Id='RemoveApplugs' Directory='applugs' On='uninstall'/>
                 <RemoveFolder Id='RemoveInstallfolder' Directory='INSTALLFOLDER' On='uninstall'/>
-                <File Id='PackageContents.xml' Source='PackageContents.xml'/>
+                <File Id='PackageContents.xml' Source='../thunderLoomVRay3dsMax/PackageContents.xml'/>
 				@WX_3DS_MAX@
               </Component>
             </Directory>

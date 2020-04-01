@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
 
+project(thunderLoomVRay3dsMax)
 IF(NOT WIN32)
     message(FATAL_ERROR "thunderLoom for V-Ray for 3dsMax can only be built on windows!")
 ENDIF()
 
 # Additional library directories
-set(GLFW_LIB ${PROJECT_SOURCE_DIR}/dependencies/glfw/lib-vc2015)
+set(GLFW_LIB ${PROJECT_SOURCE_DIR}/../dependencies/glfw/lib-vc2015)
 link_directories(
 	${GLFW_LIB}
 )
@@ -21,11 +22,10 @@ foreach(3DSMAX_VERSION ${3DSMAX_VERSIONS})
 	set(VRAY3DSMAX_LIB${3DSMAX_VERSION} "${VRAY3DSMAX_ROOT${3DSMAX_VERSION}}/lib/" )
 
 	# Additional includes
-	set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../src)
-	set(GL3W_SRC ${PROJECT_SOURCE_DIR}/dependencies/gl3w/src)
-	set(GL3W_INCLUDE ${PROJECT_SOURCE_DIR}/dependencies/gl3w/include)
-	set(GLFW_INCLUDE ${PROJECT_SOURCE_DIR}/dependencies/glfw/include)
-	set(IMGUI_INCLUDE ${PROJECT_SOURCE_DIR}/dependencies/imgui)
+	set(GL3W_SRC ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/src)
+	set(GL3W_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/include)
+	set(GLFW_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/glfw/include)
+	set(IMGUI_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/imgui)
 
 
 	ADD_DEFINITIONS(-DUNICODE)
@@ -86,4 +86,4 @@ foreach(3DSMAX_VERSION ${3DSMAX_VERSIONS})
 	set(DEST thunderLoomVRay3dsMax)
 	install(TARGETS thunderLoomVRay3dsMax${3DSMAX_VERSION} DESTINATION ${DEST})
 endforeach(3DSMAX_VERSION)
-install(FILES "${PROJECT_BINARY_DIR}/PackageContents.xml" DESTINATION ${DEST})
+install(FILES "${CMAKE_BINARY_DIR}/PackageContents.xml" DESTINATION ${DEST})
