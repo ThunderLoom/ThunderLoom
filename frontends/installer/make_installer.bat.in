@@ -1,0 +1,2 @@
+"C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe" thunderloom.wxs
+"C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe" -ext WixUIExtension thunderloom.wixobj -out thunderloom_v@TL_VERSION_MAJOR@_@TL_VERSION_MINOR@_@TL_VERSION_PATCH@.msi

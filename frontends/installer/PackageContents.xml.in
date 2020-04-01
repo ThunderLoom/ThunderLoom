@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage SchemaVersion="1.0" AutodeskProduct="3ds Max" ProductType="Application"
+    ProductCode="@PRODUCT_GUID@"
+    UpgradeCode="E9D474CB-38A1-4254-9C59-0F8241835C6B"
+    Name="Thunderloom"
+    AppVersion="@TL_VERSION_MAJOR@.@TL_VERSION_MINOR@.@TL_VERSION_PATCH@"
+>
+<CompanyDetails Name="Thunderloom" Url="https://github.com/Thunderloom"/>
+@PC_3DS_MAX@
+</ApplicationPackage>

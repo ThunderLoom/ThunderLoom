@@ -1,0 +1,4 @@
+<Components Description = "plugins parts">
+<RuntimeRequirements OS = "Win64" Platform = "3ds Max" SeriesMin = "@3DSMAX_VERSION@" SeriesMax = "@3DSMAX_VERSION@" />
+<ComponentEntry ModuleName = "thunderLoomVRay3dsMax@3DSMAX_VERSION@.dlt" />
+</Components>
