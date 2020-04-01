@@ -2,7 +2,7 @@
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Product Name='Thunderloom' Manufacturer='Thunderloom'
       Id='*'
-      UpgradeCode='E9D474CB-38A1-4254-9C59-0F8241835C6B'
+      UpgradeCode='AB174C04-C991-4E6B-8D3E-CA12ADA097A9'
       Language='1033' Codepage='1252' Version='@TL_VERSION_MAJOR@.@TL_VERSION_MINOR@.@TL_VERSION_PATCH@'>
     <Package Id='*' Keywords='Installer' Description='Thunderloom installer'
         Manufacturer='Thunderloom'
@@ -15,7 +15,7 @@
         <Directory Id='adsk' Name='Autodesk'>
           <Directory Id='applugs' Name='ApplicationPlugins'>
             <Directory Id='INSTALLFOLDER' Name='thunderloom'>
-              <Component Id='ThunderloomAutodesk' Guid='0EB47201-2E06-4531-BB3E-113CBAA3D5A3'>
+              <Component Id='ThunderloomAutodesk' Guid='F2EEC2C3-1261-4875-B6C4-59746C11A3BA'>
                 <RegistryValue Root='HKCU' Key='Software\Thunderloom\Thunderloom'
                           Name='autodesk_plugin_installed' Value='1' Type='integer' KeyPath='yes' />
                 <RemoveFolder Id='RemoveAdsk' Directory='adsk' On='uninstall'/>
