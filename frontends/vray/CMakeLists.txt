@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MACOSX_RPATH 1)
 
-project(vray_thunderLoom)
-
 # Varibles
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
@@ -11,7 +9,7 @@ set(MAYA_VERSION "2018" CACHE STRING "Maya version (year)")
 set(LIBRARY_OUTPUT_PATH ${RELEASE_DIR}/V-Ray/)
 
 # Additional includes
-set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../src)
+set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../src)
 
 set(SOURCES vray_thunderloom.cpp
 			vray_thunderloom_updated.cpp
@@ -126,6 +124,6 @@ target_link_libraries(vray_thunderLoom ${LIBS})
 
 add_custom_command(TARGET vray_thunderLoom POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
-                ${PROJECT_SOURCE_DIR}/README.md
+                ${CMAKE_CURRENT_SOURCE_DIR}/README.md
                 ${RELEASE_DIR}/README_V-Ray_Standalone.md
                 )

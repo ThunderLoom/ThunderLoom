@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Product Name='Thunderloom' Manufacturer='Thunderloom'
+      Id='*'
+      UpgradeCode='E9D474CB-38A1-4254-9C59-0F8241835C6B'
+      Language='1033' Codepage='1252' Version='@TL_VERSION_MAJOR@.@TL_VERSION_MINOR@.@TL_VERSION_PATCH@'>
+    <Package Id='*' Keywords='Installer' Description='Thunderloom installer'
+        Manufacturer='Thunderloom'
+        InstallerVersion='100' Languages='1033' Compressed='yes' SummaryCodepage='1252' />
+
+    <MediaTemplate EmbedCab='yes' />
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='AppDataFolder'>
+        <Directory Id='adsk' Name='Autodesk'>
+          <Directory Id='applugs' Name='ApplicationPlugins'>
+            <Directory Id='INSTALLFOLDER' Name='thunderloom'>
+              <Component Id='ThunderloomAutodesk' Guid='0EB47201-2E06-4531-BB3E-113CBAA3D5A3'>
+                <RegistryValue Root='HKCU' Key='Software\Thunderloom\Thunderloom'
+                          Name='autodesk_plugin_installed' Value='1' Type='integer' KeyPath='yes' />
+                <RemoveFolder Id='RemoveAdsk' Directory='adsk' On='uninstall'/>
+                <RemoveFolder Id='RemoveApplugs' Directory='applugs' On='uninstall'/>
+                <RemoveFolder Id='RemoveInstallfolder' Directory='INSTALLFOLDER' On='uninstall'/>
+                <File Id='PackageContents.xml' Source='PackageContents.xml'/>
+				@WX_3DS_MAX@
+              </Component>
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <Feature Id='Thunderloom' Title='Thunderloom' Level='1'>
+      <ComponentRef Id='ThunderloomAutodesk' />
+    </Feature>
+
+    <MajorUpgrade AllowDowngrades='yes'/>
+
+    <UIRef Id='WixUI_Minimal' />
+    <WixVariable Id='WixUILicenseRtf' Value='license.rtf' />
+    <WixVariable Id='WixUIDialogBmp' Value='installer_bkg.bmp' />
+    <WixVariable Id='WixUIBannerBmp' Value='installer_banner.bmp' />
+  </Product>
+</Wix>
+
