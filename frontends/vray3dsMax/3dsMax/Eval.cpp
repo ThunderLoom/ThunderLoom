@@ -1,13 +1,41 @@
-//#include "stdafx.h"
-#include "Eval.h"
+extern "C" {
+#include "dynamic_load.h"
+}
+
+#define TL_THUNDERLOOM_IMPLEMENTATION
+#define TL_PUBLIC_FUNC_PREFIX DYNAMIC_FUNC_PREFIX
+#include "thunderloom.h"
+
+#define TL_PATTERN_EDITOR_IMPLEMENTATION
+#include "pattern_editor.h"
+
+#define WIN32_LEAN_AND_MEAN 
+#include <windows.h>
+
+// Disable some MSVC warnings for external headers.
+#pragma warning( push )
+#pragma warning( disable : 4251)
+#pragma warning( disable : 4996 )
+#include "vraybase.h"
+#include "vrayinterface.h"
+#include "vraycore.h"
+#include "vrayrenderer.h"
+#include "dbgprint.h"
+#include "thunderloom.h"
+#include "imtl.h"
+#include "object.h"
+#include "render.h"
 #include "shadedata_new.h"
+#pragma warning( pop ) 
 
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+
 //using namespace VUtils;
 
-void EvalDiffuseFunc (const VUtils::VRayContext &rc,
+DYNAMIC_FUNC_PREFIX
+void EvalDiffuseFunc (const VUtils::VRayContext *rc,
     tlWeaveParameters *weave_parameters, VUtils::ShadeCol *diffuse_color,
 	VUtils::ShadeCol *opacity_color,
 	tlYarnType* yarn_type, int* yarn_type_id,
@@ -23,7 +51,7 @@ void EvalDiffuseFunc (const VUtils::VRayContext &rc,
     }
     tlIntersectionData intersection_data;
    
-    const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);
+    const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(*rc);
 	VR::VRayInterface &vri=const_cast<VR::VRayInterface&>(vri_const);
 	ShadeContext &sc=static_cast<ShadeContext&>(vri);
 
@@ -48,8 +76,9 @@ void EvalDiffuseFunc (const VUtils::VRayContext &rc,
 	opacity_color->set(o.r, o.g, o.b);
 }
 
-void EvalSpecularFunc ( const VUtils::VRayContext &rc,
-const VUtils::ShadeVec &direction, tlWeaveParameters *weave_parameters, VUtils::ShadeCol *reflection_color)
+DYNAMIC_FUNC_PREFIX
+void EvalSpecularFunc ( const VUtils::VRayContext *rc,
+const VUtils::ShadeVec *direction, tlWeaveParameters *weave_parameters, VUtils::ShadeCol *reflection_color)
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
 		float s = 0.1f;
@@ -58,7 +87,7 @@ const VUtils::ShadeVec &direction, tlWeaveParameters *weave_parameters, VUtils::
     }
     tlIntersectionData intersection_data;
    
-    const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);
+    const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(*rc);
 	VR::VRayInterface &vri=const_cast<VR::VRayInterface&>(vri_const);
 	ShadeContext &sc=static_cast<ShadeContext&>(vri);
 
@@ -66,15 +95,15 @@ const VUtils::ShadeVec &direction, tlWeaveParameters *weave_parameters, VUtils::
 
     //Convert the view and light directions to the correct coordinate system
     Point3 viewDir, lightDir;
-    viewDir.x = -rc.rayparams.viewDir.x();
-    viewDir.y = -rc.rayparams.viewDir.y();
-    viewDir.z = -rc.rayparams.viewDir.z();
+    viewDir.x = -rc->rayparams.viewDir.x();
+    viewDir.y = -rc->rayparams.viewDir.y();
+    viewDir.z = -rc->rayparams.viewDir.z();
     viewDir = sc.VectorFrom(viewDir,REF_WORLD);
     viewDir = viewDir.Normalize();
 
-    lightDir.x = direction.x();
-    lightDir.y = direction.y();
-    lightDir.z = direction.z();
+    lightDir.x = direction->x();
+    lightDir.y = direction->y();
+    lightDir.z = direction->z();
     lightDir = sc.VectorFrom(lightDir,REF_WORLD);
     lightDir = lightDir.Normalize();
 

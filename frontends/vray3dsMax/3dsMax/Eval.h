@@ -19,12 +19,12 @@
 #include "shadedata_new.h"
 #pragma warning( pop ) 
 
-void EvalDiffuseFunc (const VUtils::VRayContext &rc,
+void EvalDiffuseFunc (const VUtils::VRayContext *rc,
     tlWeaveParameters *weave_parameters, VUtils::ShadeCol *diffuse_color,
 	VUtils::ShadeCol *opacity_color,
 	tlYarnType* yarn_type, int* yarn_type_id,
 	int *yarn_hit)
 ;
 
-void EvalSpecularFunc(const VUtils::VRayContext &rc,
-	const VUtils::ShadeVec &direction, tlWeaveParameters *weave_parameters, VUtils::ShadeCol *reflection_color) ;
+void EvalSpecularFunc(const VUtils::VRayContext *rc,
+	const VUtils::ShadeVec *direction, tlWeaveParameters *weave_parameters, VUtils::ShadeCol *reflection_color) ;

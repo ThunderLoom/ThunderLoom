@@ -5,6 +5,10 @@
 
 #include "VrayThunderLoomBRDF.h"
 
+extern "C" {
+#include "dynamic_load.h"
+}
+
 using namespace VUtils;
 
 //NOTE(Vidar): This function is called for each intersection with the material
@@ -13,8 +17,11 @@ using namespace VUtils;
 // throughout all directions, such as computing the diffuse color.
 void MyBaseBSDF::init(const VRayContext &rc, tlWeaveParameters *weave_parameters) {
     m_weave_parameters = weave_parameters;
-    EvalDiffuseFunc(rc,weave_parameters,&m_diffuse_color, &m_opacity_color,&m_yarn_type,
-		&m_yarn_type_id,&m_yarn_hit);
+#define DYNAMIC_FUNC_ARG_TYPES const VUtils::VRayContext *, tlWeaveParameters*, VUtils::ShadeCol*, VUtils::ShadeCol*, tlYarnType*, int*, int*
+#define DYNAMIC_FUNC_ARG_NAMES &rc,weave_parameters,&m_diffuse_color, &m_opacity_color,&m_yarn_type, &m_yarn_type_id,&m_yarn_hit
+		CALL_DYNAMIC_FUNC_VOID(EvalDiffuseFunc)
+#undef DYNAMIC_FUNC_ARG_TYPES
+#undef DYNAMIC_FUNC_ARG_NAMES
     orig_backside = rc.rayresult.realBack;
 
     const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(rc);
@@ -84,7 +91,11 @@ ShadeCol MyBaseBSDF::eval( const VRayContext &rc, const ShadeVec &direction, Sha
         VUtils::ShadeCol reflect_color;
         //TODO(Vidar):Better importance sampling... Cosine weighted for now
         float probReflection=cs;
-		EvalSpecularFunc(rc,direction,m_weave_parameters,&reflect_color);
+#define DYNAMIC_FUNC_ARG_TYPES const VUtils::VRayContext *, const VUtils::ShadeVec *, tlWeaveParameters *, VUtils::ShadeCol *
+#define DYNAMIC_FUNC_ARG_NAMES &rc, &direction,m_weave_parameters,&reflect_color
+		CALL_DYNAMIC_FUNC_VOID(EvalSpecularFunc)
+#undef DYNAMIC_FUNC_ARG_TYPES
+#undef DYNAMIC_FUNC_ARG_NAMES
 
         //NOTE(Vidar): Multiple importance sampling factor
         float weight = getReflectionWeight(probLight,probReflection);
