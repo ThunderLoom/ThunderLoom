@@ -86,4 +86,6 @@ foreach(3DSMAX_VERSION ${3DSMAX_VERSIONS})
 	set(DEST thunderLoomVRay3dsMax)
 	install(TARGETS thunderLoomVRay3dsMax${3DSMAX_VERSION} DESTINATION ${DEST})
 endforeach(3DSMAX_VERSION)
-install(FILES "${CMAKE_BINARY_DIR}/PackageContents.xml" DESTINATION ${DEST})
+
+#NOTE(Vidar): This file is created in the installer project
+install(FILES "${CMAKE_BINARY_DIR}/PackageContents_3ds_max.xml" DESTINATION ${DEST} RENAME "PackageContents.xml")

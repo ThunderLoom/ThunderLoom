@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 
+project(installer)
+
 set(PRODUCT_GUID_NAMESPACE "DF9F7430-86AE-47A7-A832-3C14DF03B3CB")
 string(
     UUID PRODUCT_GUID 
@@ -27,8 +29,8 @@ configure_file (
     "${PROJECT_BINARY_DIR}/make_installer.bat"
 )
 configure_file (
-    "PackageContents.xml.in"
-    "${CMAKE_BINARY_DIR}/PackageContents.xml"
+    "PackageContents_3ds_max.xml.in"
+    "${CMAKE_BINARY_DIR}/PackageContents_3ds_max.xml"
 )
 configure_file (
     "thunderloom.wxs.in"

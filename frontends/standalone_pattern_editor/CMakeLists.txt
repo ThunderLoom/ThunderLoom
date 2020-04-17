@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(patternEditor)
-
-# Varibles
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
-set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
-set(EXECUTABLE_OUTPUT_PATH ${RELEASE_DIR}/PatternEditor/)
+project(thunderloom_pattern_editor)
 
 # Additional includes
 set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../src)
@@ -53,19 +48,22 @@ link_directories(${LIB_DIRS})
 
 # Build
 IF (WIN32)
-    add_executable(patternEditor WIN32 ${SOURCES})
+    add_executable(thunderloom_pattern_editor WIN32 ${SOURCES})
 ENDIF (WIN32)
 IF(APPLE)
-    add_executable(patternEditor MACOSX_BUNDLE ${SOURCES})
+    add_executable(thunderloom_pattern_editor MACOSX_BUNDLE ${SOURCES})
 ENDIF(APPLE)
 
 # Link Libs
-target_link_libraries(patternEditor ${LIBS})
+target_link_libraries(thunderloom_pattern_editor ${LIBS})
 
 # Set warnings
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    target_compile_options(patternEditor PRIVATE 
+    target_compile_options(thunderloom_pattern_editor PRIVATE 
         "-Wall"
         "-Wno-unused-function"
         )
 endif()
+
+# Install
+install(TARGETS thunderloom_pattern_editor  DESTINATION thunderloom_pattern_editor)
