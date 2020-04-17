@@ -6,9 +6,12 @@
  */
 
 #define TL_VERSION_MAJOR 0
-#define TL_VERSION_MINOR 95
+#define TL_VERSION_MINOR 96
 #define TL_VERSION_PATCH 0
 
+#ifndef TL_PUBLIC_FUNC_PREFIX
+#define TL_PUBLIC_FUNC_PREFIX 
+#endif
 /* --- Basic usage ---
  * 
  * In one of your source files, define TL_THUNDERLOOM_IMPLEMENTATION
@@ -20,10 +23,12 @@
  * Before rendering, call tl_weave_pattern_from_file to load a weaving pattern.
  */
 typedef struct tlWeaveParameters tlWeaveParameters; //Forward decl.
+TL_PUBLIC_FUNC_PREFIX
 tlWeaveParameters *tl_weave_pattern_from_file(const char *filename,const char **error);
 
 /* Before each frame, call tl_prepare to apply all changes to parameters
  */
+TL_PUBLIC_FUNC_PREFIX
 void tl_prepare(tlWeaveParameters *params);
 
 /* During rendering, fill out an instance of tlIntersectionData
@@ -32,12 +37,14 @@ void tl_prepare(tlWeaveParameters *params);
  */
 typedef struct {float r,g,b;} tlColor;
 typedef struct tlIntersectionData tlIntersectionData;
+TL_PUBLIC_FUNC_PREFIX
 tlColor tl_shade(tlIntersectionData intersection_data,
         const tlWeaveParameters *params);
 
 /* When you're done, call tl_free_weave_parameters to free the memory
  * used by the weaving pattern.
  */
+TL_PUBLIC_FUNC_PREFIX
 void tl_free_weave_parameters(tlWeaveParameters *params);
 
 /* --- Fabric Parameters ---
@@ -121,10 +128,13 @@ struct tlIntersectionData
  * TL_NO_TEXTURE_CALLBACKS is defined when you include thunderloom.h
  */
 //TODO(Vidar): Send these callbacks as parameters instead??
+TL_PUBLIC_FUNC_PREFIX
 float tl_eval_texmap_mono_lookup(void *texmap, float u, float v, void *context);
 // Called when a texture is applied to a float parameter.
+TL_PUBLIC_FUNC_PREFIX
 float tl_eval_texmap_mono(void *texmap, void *context);
 // Called when a texture is applied to a color parameter.
+TL_PUBLIC_FUNC_PREFIX
 tlColor tl_eval_texmap_color(void *texmap, void *context);
 
 /* --- Separating diffuse and specular reflection ---
@@ -132,10 +142,7 @@ tlColor tl_eval_texmap_color(void *texmap, void *context);
  */ 
 
 
-/* ------------ Implementation --------------------- */
-
 #include <stdint.h>
-
 
 typedef struct
 {
@@ -208,29 +215,40 @@ typedef struct
     uint8_t ext_between_parallel; //True if extensionis between to adjascent parallel yarns. -> bend should be zero
 } tlPatternData;
 
+TL_PUBLIC_FUNC_PREFIX
 tlPatternData tl_get_pattern_data(tlIntersectionData intersection_data,
     const tlWeaveParameters *params);
+TL_PUBLIC_FUNC_PREFIX
 tlColor tl_eval_diffuse(tlIntersectionData intersection_data,
     tlPatternData data, const tlWeaveParameters *params);
+TL_PUBLIC_FUNC_PREFIX
 tlColor tl_eval_specular(tlIntersectionData intersection_data,
     tlPatternData data, const tlWeaveParameters *params);
+TL_PUBLIC_FUNC_PREFIX
 tlColor tl_eval_opacity(tlIntersectionData intersection_data,
     tlPatternData data, const tlWeaveParameters *params);
 
+TL_PUBLIC_FUNC_PREFIX
 tlWeaveParameters *tl_weave_pattern_from_data(uint8_t *warp_above,
     uint8_t *yarn_type, uint32_t num_yarn_types, tlColor *yarn_colors,
     uint32_t pattern_width, uint32_t pattern_height);
 /* tl_weave_pattern_from_file calles one of the functions below depending on
  * file extension*/
+TL_PUBLIC_FUNC_PREFIX
 tlWeaveParameters *tl_weave_pattern_from_wif(unsigned char *data,long len,
                 const char **error);
+TL_PUBLIC_FUNC_PREFIX
 tlWeaveParameters *tl_weave_pattern_from_ptn(unsigned char *data,long len,
                 const char **error);
 
 #ifdef TL_WCHAR
+TL_PUBLIC_FUNC_PREFIX
 tlWeaveParameters *tl_weave_pattern_from_wif_wchar(const wchar_t *filename,
 	const char **error);
 #endif
+
+TL_PUBLIC_FUNC_PREFIX
+unsigned char * tl_pattern_to_ptn_file(tlWeaveParameters *param, long *ret_len);
 
 typedef struct
 {
@@ -261,6 +279,7 @@ tlYarnType tl_default_yarn_type =
     0
 };
 
+TL_PUBLIC_FUNC_PREFIX
 tlYarnSegment tl_get_yarn_segment(float total_u, float total_v,
 	const tlWeaveParameters *params, const tlIntersectionData *intersection_data);
 
@@ -301,7 +320,7 @@ static float tl_yarn_type_get_lookup_yarnsize(const tlWeaveParameters *p,
 		}\
 	}\
 	return ret;}
-#define TL_COLOR_PARAM(param) static tlColor tl_yarn_type_get_##param\
+#define TL_COLOR_PARAM(param)  static tlColor tl_yarn_type_get_##param\
     (const tlWeaveParameters *p, uint32_t i, void* context){\
 	tlYarnType yarn_type = p->yarn_types[i];\
     tlColor ret;\
@@ -893,7 +912,7 @@ static unsigned char* tl_buffer_from_ptn_write_commands(int num_write_commands,
     return data;
 }
 
-static unsigned char * tl_pattern_to_ptn_file(tlWeaveParameters *param,
+unsigned char * tl_pattern_to_ptn_file(tlWeaveParameters *param,
     long *ret_len)
 {
     uint32_t pattern_size = param->pattern_width*param->pattern_height;

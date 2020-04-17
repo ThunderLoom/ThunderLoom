@@ -10,8 +10,10 @@ const int PARAM_VERSION= PARAM_VERSION_HIGH*100 + PARAM_VERSION_LOW;
 // Check http://docs.autodesk.com/3DSMAX/16/ENU/3ds-Max-SDK-Programmer-Guide/index.html?url=files/GUID-F35959BB-2660-492F-B082-56304C70293A.htm,topicNumber=d30e52807
 // When adding new parameters
 
-#define TL_THUNDERLOOM_IMPLEMENTATION
 #include "thunderloom.h"
+extern "C" {
+#include "dynamic_load.h"
+}
 
 //The plugin version (Semantic Versioning)
 const int PLUGIN_VERSION_MAJOR=TL_VERSION_MAJOR;
@@ -32,7 +34,6 @@ const int PLUGIN_VERSION_PATCH=TL_VERSION_PATCH;
 
 #include "helper.h"
 
-#define TL_PATTERN_EDITOR_IMPLEMENTATION
 #include "pattern_editor.h"
 
 // no param block script access for VRay free
@@ -273,8 +274,11 @@ public:
                                 GetOpenFileNameA(&openfilename);
                                 if(filename[0]!=0){
                                     const char *error=0;
-                                    tlWeaveParameters *param =
-                                        tl_weave_pattern_from_file(filename,&error);
+									#define DYNAMIC_FUNC_ARG_TYPES const char *, const char **
+									#define DYNAMIC_FUNC_ARG_NAMES  filename, &error
+											CALL_DYNAMIC_FUNC(tl_weave_pattern_from_file, tlWeaveParameters *, param)
+									#undef DYNAMIC_FUNC_ARG_TYPES
+									#undef DYNAMIC_FUNC_ARG_NAMES
                                     if(error){
                                         MessageBoxA(NULL,error,"ERROR!",MB_OK|MB_ICONERROR);
                                     } else{
@@ -324,8 +328,12 @@ public:
 							{
 								HWND parent_hwnd=GetAncestor(hWnd,GA_ROOT);
 								EnableWindow(parent_hwnd,false);
-								sm->m_weave_parameters = 
-									tl_pattern_editor(sm->m_weave_parameters);
+#define DYNAMIC_FUNC_ARG_TYPES tlWeaveParameters *
+#define DYNAMIC_FUNC_ARG_NAMES sm->m_weave_parameters
+								CALL_DYNAMIC_FUNC(tl_pattern_editor, tlWeaveParameters *, param)
+#undef DYNAMIC_FUNC_ARG_TYPES
+#undef DYNAMIC_FUNC_ARG_NAMES
+									sm->m_weave_parameters = param;
 								EnableWindow(parent_hwnd,true);
                                 SetForegroundWindow(parent_hwnd);
 								//NOTE(Vidar):Set parameters...
@@ -664,9 +672,12 @@ void ThunderLoomMtl::Reset() {
 	yarn_colors[0].r = 0.3f; yarn_colors[0].g = 0.3f; yarn_colors[0].b = 0.3f;
 	yarn_colors[1].r = 1.f; yarn_colors[1].g = 1.f; yarn_colors[1].b = 1.f;
 	uint32_t num_yarn_types = 2;
-	m_weave_parameters = tl_weave_pattern_from_data(
-		warp_above, yarn_type, num_yarn_types, yarn_colors,
-		pattern_width, pattern_height);
+#define DYNAMIC_FUNC_ARG_TYPES uint8_t*, uint8_t*,  uint32_t, tlColor*, uint32_t, uint32_t
+#define DYNAMIC_FUNC_ARG_NAMES  warp_above, yarn_type, num_yarn_types, yarn_colors, pattern_width, pattern_height
+		CALL_DYNAMIC_FUNC(tl_weave_pattern_from_data, tlWeaveParameters *, param)
+#undef DYNAMIC_FUNC_ARG_TYPES
+#undef DYNAMIC_FUNC_ARG_NAMES
+	m_weave_parameters = param;
     m_i_mtl_params = 0;
 	ivalid.SetEmpty();
 	thunderLoomDesc.Reset(this);
@@ -825,7 +836,11 @@ IOResult ThunderLoomMtl::Save(ISave *isave)
 	isave->BeginChunk(YARN_TYPE_CHUNK);
 	//NOTE(Vidar):Save yarn types
     long len=0;
-    unsigned char *data = tl_pattern_to_ptn_file(m_weave_parameters,&len);
+	#define DYNAMIC_FUNC_ARG_TYPES tlWeaveParameters*, long*
+	#define DYNAMIC_FUNC_ARG_NAMES m_weave_parameters, &len
+			CALL_DYNAMIC_FUNC(tl_pattern_to_ptn_file, unsigned char *, data)
+	#undef DYNAMIC_FUNC_ARG_TYPES
+	#undef DYNAMIC_FUNC_ARG_NAMES
 	ULONG nb;
     int version=2;
 	isave->Write((unsigned char*)&version,
@@ -858,12 +873,22 @@ IOResult ThunderLoomMtl::Load(ILoad *iload) {
                     unsigned char *data=(unsigned char *)calloc(len+sizeof(int),1);
                     *(int*)data=1;
                     iload->Read(data+sizeof(int),len,&nb);
-                    m_weave_parameters=tl_weave_pattern_from_ptn(data,len,&error_buffer);
+#define DYNAMIC_FUNC_ARG_TYPES unsigned char*, long, const char **
+#define DYNAMIC_FUNC_ARG_NAMES data, len, &error_buffer
+					CALL_DYNAMIC_FUNC(tl_weave_pattern_from_ptn, tlWeaveParameters *, param)
+#undef DYNAMIC_FUNC_ARG_TYPES
+#undef DYNAMIC_FUNC_ARG_NAMES
+					m_weave_parameters = param;
                     free(data);
                 }else{
                     unsigned char *data=(unsigned char *)calloc(len,1);
                     iload->Read(data,len,&nb);
-                    m_weave_parameters=tl_weave_pattern_from_ptn(data,len,&error_buffer);
+#define DYNAMIC_FUNC_ARG_TYPES unsigned char*, long, const char **
+#define DYNAMIC_FUNC_ARG_NAMES data, len, &error_buffer
+					CALL_DYNAMIC_FUNC(tl_weave_pattern_from_ptn, tlWeaveParameters *, param)
+#undef DYNAMIC_FUNC_ARG_TYPES
+#undef DYNAMIC_FUNC_ARG_NAMES
+					m_weave_parameters = param;
                     free(data);
                 }
                 //TODO(Vidar):Initialize m_weave_parameters to default pattern if there was an error
@@ -990,10 +1015,13 @@ float ThunderLoomMtl::WireSize(int mtlNum, BOOL backFace) {
 void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 	ivalid.SetInfinite();
 
-	//default values for the time being.
-	//these paramters will be removed later, is the plan
-
-	tl_prepare(m_weave_parameters);
+	lock_dynamic_library();
+	
+	#define DYNAMIC_FUNC_ARG_TYPES tlWeaveParameters *
+	#define DYNAMIC_FUNC_ARG_NAMES  m_weave_parameters
+			CALL_DYNAMIC_FUNC_VOID(tl_prepare)
+	#undef DYNAMIC_FUNC_ARG_TYPES
+	#undef DYNAMIC_FUNC_ARG_NAMES
     
     if(m_weave_parameters->pattern){
 		for(int i=0;i<m_weave_parameters->num_yarn_types;i++){
@@ -1011,6 +1039,7 @@ void ThunderLoomMtl::renderBegin(TimeValue t, VR::VRayRenderer *vray) {
 }
 
 void ThunderLoomMtl::renderEnd(VR::VRayRenderer *vray) {
+	unlock_dynamic_library();
 	bsdfPool.freeMem();
 	renderChannels.freeMem();
 }

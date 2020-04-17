@@ -1,5 +1,6 @@
 #pragma once
 #include "thunderloom.h"
+TL_PUBLIC_FUNC_PREFIX
 tlWeaveParameters *tl_pattern_editor(tlWeaveParameters *param);
 
 // -- Usage --
