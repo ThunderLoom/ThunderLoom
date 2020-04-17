@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_MACOSX_RPATH 1)
-
-
 project(thunderLoomVRayMaya)
+set(CMAKE_MACOSX_RPATH 1)
 
 # Varibles
 set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME} CACHE PATH "Release output")
@@ -39,7 +37,6 @@ file(MAKE_DIRECTORY "${OUTPUT_MAYA_PATH}/thunderloom_maya_module/scripts")
 file(MAKE_DIRECTORY "${OUTPUT_MAYA_PATH}/vray_plugin")
 
 
-set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../src)
 
 set(SOURCES 
     "maya_pluginmain.cpp"
@@ -130,18 +127,18 @@ target_link_libraries(thunderLoomVRayMaya ${LIBS})
 # Setup build directory
 add_custom_command(TARGET thunderLoomVRayMaya POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
-                ${PROJECT_SOURCE_DIR}/README.md
+                ${CMAKE_CURRENT_SOURCE_DIR}/README.md
                 ${RELEASE_DIR}/README_Maya.md
         COMMAND ${CMAKE_COMMAND} -E copy
-                ${PROJECT_SOURCE_DIR}/thunderloom.mod
+                ${CMAKE_CURRENT_SOURCE_DIR}/thunderloom.mod
                 ${OUTPUT_MAYA_PATH}/
         COMMAND ${CMAKE_COMMAND} -E copy
-                ${PROJECT_SOURCE_DIR}/vraythunderloommtl.txt
+                ${CMAKE_CURRENT_SOURCE_DIR}/vraythunderloommtl.txt
                 ${OUTPUT_MAYA_PATH}/
         COMMAND ${CMAKE_COMMAND} -E make_directory
                 ${OUTPUT_MAYA_PATH}/thunderloom_maya_module/scripts
         COMMAND ${CMAKE_COMMAND} -E copy
-                ${PROJECT_SOURCE_DIR}/AEVRayThunderLoomMtlTemplate.mel
+                ${CMAKE_CURRENT_SOURCE_DIR}/AEVRayThunderLoomMtlTemplate.mel
                 ${OUTPUT_MAYA_PATH}/thunderloom_maya_module/scripts/
                 )
 

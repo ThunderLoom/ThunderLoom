@@ -1,0 +1,73 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Product Name='Thunderloom' Manufacturer='Thunderloom'
+      Id='*'
+      UpgradeCode='AB174C04-C991-4E6B-8D3E-CA12ADA097A9'
+      Language='1033' Codepage='1252' Version='@TL_VERSION_MAJOR@.@TL_VERSION_MINOR@.@TL_VERSION_PATCH@'>
+    <Package Id='*' Keywords='Installer' Description='Thunderloom installer'
+        Manufacturer='Thunderloom'
+        InstallerVersion='200' Languages='1033' Compressed='yes' SummaryCodepage='1252' />
+
+    <MediaTemplate EmbedCab='yes' />
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='AppDataFolder'>
+        <Directory Id='adsk' Name='Autodesk'>
+          <Directory Id='applugs' Name='ApplicationPlugins'>
+            <Directory Id='INSTALLFOLDER' Name='thunderloomVRay3dsMax'>
+              <Component Id='Thunderloom3dsMax' Guid='F2EEC2C3-1261-4875-B6C4-59746C11A3BA'>
+                <RegistryValue Root='HKCU' Key='Software\Thunderloom\Thunderloom'
+                          Name='3ds_max_plugin_installed' Value='1' Type='integer' KeyPath='yes' />
+                <RemoveFolder Id='RemoveAdsk' Directory='adsk' On='uninstall'/>
+                <RemoveFolder Id='RemoveApplugs' Directory='applugs' On='uninstall'/>
+                <RemoveFolder Id='RemoveInstallfolder' Directory='INSTALLFOLDER' On='uninstall'/>
+                <File Id='PackageContents.xml' Source='../thunderLoomVRay3dsMax/PackageContents.xml'/>
+                @WX_3DS_MAX@
+              </Component>
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="ThunderloomFolder" Name="Thunderloom">
+          <Component Id="ThunderloomLocationComponent" Guid="*">
+            <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]'
+                      Name='program_directory' Value='[ThunderloomFolder]' Type='string' KeyPath='yes' />
+            <RemoveFolder Id='RemoveThunderloomFolder' Directory='ThunderloomFolder' On='uninstall'></RemoveFolder>
+          </Component>
+          <Component Id="ThunderloomPatternEditor" Guid="*">
+            <File Id="thunderloom_pattern_editor.exe" Source="../thunderloom_pattern_editor/thunderloom_pattern_editor.exe"></File>
+          </Component>
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Thunderloom">
+          <Component Id="ApplicationShortcut" Guid="*">
+            <Shortcut Id="ApplicationStartMenuShortcut"
+                      Name="Thunderloom Pattern Editor"
+                      Description="Edit and create weaving patterns"
+                      Target="[ThunderloomFolder]thunderloom_pattern_editor.exe"
+                      WorkingDirectory="ThunderloomFolder"/>
+            <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>
+            <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="shortcuts_installed" Type="integer" Value="1" KeyPath="yes"/>
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <Feature Id='Thunderloom' Title='Thunderloom' Level='1'>
+      <ComponentRef Id='Thunderloom3dsMax' />
+      <ComponentRef Id='ThunderloomLocationComponent' />
+      <ComponentRef Id='ThunderloomPatternEditor' />
+      <ComponentRef Id='ApplicationShortcut' />
+    </Feature>
+
+    <MajorUpgrade AllowDowngrades='yes'/>
+
+    <UIRef Id='WixUI_Minimal' />
+    <WixVariable Id='WixUILicenseRtf' Value='license.rtf' />
+    <WixVariable Id='WixUIDialogBmp' Value='installer_bkg.bmp' />
+    <WixVariable Id='WixUIBannerBmp' Value='installer_banner.bmp' />
+  </Product>
+</Wix>
+

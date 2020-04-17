@@ -1,13 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
 
+project(thunderLoomVRay3dsMax)
 IF(NOT WIN32)
     message(FATAL_ERROR "thunderLoom for V-Ray for 3dsMax can only be built on windows!")
 ENDIF()
-
-project(thunderLoomVRay3dsMax)
-
-# Variables
-set(3DSMAX_VERSIONS "2019;2020" CACHE STRING "3dsMax versions (year)")
 
 # Additional library directories
 set(GLFW_LIB ${PROJECT_SOURCE_DIR}/../dependencies/glfw/lib-vc2015)
@@ -115,8 +111,6 @@ foreach(3DSMAX_VERSION ${3DSMAX_VERSIONS})
 
 
 endforeach(3DSMAX_VERSION)
-install(FILES PackageContents.xml DESTINATION ${DEST})
-install(FILES make_installer.nsi DESTINATION thunderLoomVRay3dsMax_installer)
-install(FILES LICENSE.txt DESTINATION thunderLoomVRay3dsMax_installer)
-install(FILES make_installer.bat DESTINATION thunderLoomVRay3dsMax_installer)
-install(FILES installer_sidebar.bmp DESTINATION thunderLoomVRay3dsMax_installer)
+
+#NOTE(Vidar): This file is created in the installer project
+install(FILES "${CMAKE_BINARY_DIR}/PackageContents_3ds_max.xml" DESTINATION ${DEST} RENAME "PackageContents.xml")
