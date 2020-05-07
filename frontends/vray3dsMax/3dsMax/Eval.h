@@ -27,4 +27,9 @@ void EvalDiffuseFunc (const VUtils::VRayContext *rc,
 ;
 
 void EvalSpecularFunc(const VUtils::VRayContext *rc,
-	const VUtils::ShadeVec *direction, tlWeaveParameters *weave_parameters, VUtils::ShadeCol *reflection_color) ;
+	const VUtils::ShadeVec *direction, tlWeaveParameters *weave_parameters, VUtils::ShadeCol *reflection_color)
+;
+
+void EvalSampleFunc(const VUtils::VRayContext *rc,
+	VUtils::ShadeVec *direction, tlWeaveParameters *weave_parameters, float *prob, float r) 
+;
