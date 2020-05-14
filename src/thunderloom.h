@@ -661,7 +661,7 @@ tlVector tl_sample (tlIntersectionData intersection_data,
 
     float wos = tlVector_dot(wo, svec);
     float wor = tlVector_dot(wo, rvec);
-    float mu = atan2f(wos,wor);
+    float mu = atan2f(wor,wos);
 
     float c = 2.f * rho / (1.f + rho * rho);
     float sin_mu = sinf(mu);
@@ -671,7 +671,6 @@ tlVector tl_sample (tlIntersectionData intersection_data,
     float xi = 2.f*M_PI*rnd;
     float V = cosf(xi);
     float theta = acosf((V + c) / (1.f + V * c)) + mu;
-
 
     float t_compl = sqrtf(1.f - t * t);
     float r = t_compl*cosf(theta);
@@ -1315,6 +1314,9 @@ static void calculate_length_of_segment(uint8_t warp_above, uint32_t pattern_x,
 }
 
 static float wrapped_cauchy(float cos_x, float rho) {
+    if (rho > 0.999f) {
+        return 0.f;
+    }
     float rho2 = rho * rho;
     return M_1_PI * 0.5f * (1.f - rho2) / (1.f - 2.f * rho * cos_x + rho2);
 }
@@ -1750,19 +1752,36 @@ float tl_eval_staple_specular(tlIntersectionData intersection_data,
         // Check that we are in the highlight width area.
         // This takes the role of Chi in the irawan paper.
         if (fabsf(specular_x - x) < delta_x) {
-            float rho  = tl_yarn_type_get_rho( params,data.yarn_type,
-				intersection_data.context);
+            float rho = tl_yarn_type_get_rho(params, data.yarn_type,
+                intersection_data.context);
 
             // ALG: 'COMPUTE G_v USING (5)'
             float a = 1.f; // radius of yarn
-            float R = 1.f/(sin(umax)); // radius of curvature
-            float Gv = a*(R + a*cosf(specular_v))/(
-                tlVector_magnitude(tlVector_add(wi,wo)) *
-                tlVector_dot(highlight_normal,H) * fabsf(sinf(psi)));
+            float R = 1.f / (sin(umax)); // radius of curvature
+            float Gv = a * (R + a * cosf(specular_v)) / (
+                tlVector_magnitude(tlVector_add(wi, wo)) *
+                tlVector_dot(highlight_normal, H) * fabsf(sinf(psi)));
 
             // ALG: 'COMPUTE f_c USING (7)'
-            float cos_x = -tlVector_dot(wi, wo);
-            float fc = wrapped_cauchy(cos_x, rho);
+            float fc;
+            {
+				float tx = -cosf(specular_v)*sinf(psi);
+				float ty = cosf(u)*cosf(psi) + sinf(u)*sinf(specular_v)*sinf(psi);
+				float tz = -sinf(u)*cosf(psi) + cosf(u)*sinf(specular_v)*sinf(psi);
+
+				tlVector tvec = tlvector(tx,ty,tz);
+				tlVector svec = tlVector_normalize(tlVector_cross(tvec, highlight_normal));
+				tlVector rvec = tlVector_normalize(tlVector_cross(tvec, svec));
+
+				float wos = tlVector_dot(wo, svec);
+				float wor = tlVector_dot(wo, rvec);
+
+				float wis = tlVector_dot(wi, svec);
+				float wir = tlVector_dot(wi, rvec);
+
+				float cos_x = (wis*wos + wir*wor)/sqrtf((wis*wis+wir*wir)*(wos*wos+wor*wor));
+				fc = wrapped_cauchy(cos_x, rho);
+			}
 
             // ALG: 'COMPUTE A USING (8)'
             float widotn = tlVector_dot(wi, highlight_normal);
@@ -1880,8 +1899,25 @@ float tl_eval_filament_specular(tlIntersectionData intersection_data,
 				intersection_data.context);
 
             // ALG: 'COMPUTE f_c USING (7)'
-            float cos_x = -tlVector_dot(wi, wo);
-            float fc = wrapped_cauchy(cos_x, rho);
+            float fc;
+            {
+				float tx = 0.f;
+				float ty = cosf(specular_u);
+				float tz = -sinf(specular_u);
+
+				tlVector tvec = tlvector(tx,ty,tz);
+				tlVector svec = tlVector_normalize(tlVector_cross(tvec, highlight_normal));
+				tlVector rvec = tlVector_normalize(tlVector_cross(tvec, svec));
+
+				float wos = tlVector_dot(wo, svec);
+				float wor = tlVector_dot(wo, rvec);
+
+				float wis = tlVector_dot(wi, svec);
+				float wir = tlVector_dot(wi, rvec);
+
+				float cos_x = (wis*wos + wir*wor)/sqrtf((wis*wis+wir*wir)*(wos*wos+wor*wor));
+				fc = wrapped_cauchy(cos_x, rho);
+			}
 
             // ALG: 'COMPUTE A USING (8)'
             float widotn = tlVector_dot(wi, highlight_normal);
