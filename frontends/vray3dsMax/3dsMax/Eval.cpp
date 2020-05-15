@@ -137,12 +137,12 @@ const VUtils::ShadeVec *direction, tlWeaveParameters *weave_parameters, VUtils::
 }
 
 DYNAMIC_FUNC_PREFIX
-void EvalSampleFunc(const VUtils::VRayContext *rc,
+float EvalSampleFunc(const VUtils::VRayContext *rc,
 	VUtils::ShadeVec *direction, tlWeaveParameters *weave_parameters, float *prob, float r) 
 {
     if(weave_parameters->pattern == 0){ //Invalid pattern
 		//TODO(Vidar):What to do here?
-        return;
+        return 0.f;
     }
     tlIntersectionData intersection_data;
    
@@ -182,7 +182,8 @@ void EvalSampleFunc(const VUtils::VRayContext *rc,
     tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
         weave_parameters);
 
-	tlVector vec = tl_sample(intersection_data, pattern_data, weave_parameters,r);
+	float fac = 1.f;
+	tlVector vec = tl_sample(intersection_data, pattern_data, weave_parameters,r,&fac);
 
 	//direction->set(vec.x, vec.y, vec.z);
 	Point3 d = vec.x*u_vec + vec.y*v_vec + vec.z*n_vec;
@@ -192,6 +193,7 @@ void EvalSampleFunc(const VUtils::VRayContext *rc,
 	//Point3 d = intersection_data.wo_x * u_vec + intersection_data.wo_y * v_vec + intersection_data.wo_z * n_vec;
 	d = sc.VectorTo(d, REF_WORLD);
 	direction->set(d.x, d.y, d.z);
+	return fac;
 }
 
 class SCTexture: public ShadeContext {

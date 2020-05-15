@@ -174,13 +174,12 @@ ValidType MyBaseBSDF::setupContext(const VRayContext &rc, VRayContext &nrc, floa
     //TODO(Vidar):Better importance sampling... Cosine weighted for now
     //ShadeVec dir = getDiffuseDir3f(uc, BRDFSampler::getDMCParam(nrc,1),nrc.rayparams.rayProbability);
     ShadeVec dir = gnormal;
-	float prob = 1.f;
 #define DYNAMIC_FUNC_ARG_TYPES const VUtils::VRayContext *, VUtils::ShadeVec *, tlWeaveParameters *, float *,float
 #define DYNAMIC_FUNC_ARG_NAMES &rc,&dir,m_weave_parameters,&prob,uc
-		CALL_DYNAMIC_FUNC_VOID(EvalSampleFunc)
+		CALL_DYNAMIC_FUNC(EvalSampleFunc, float, prob)
 #undef DYNAMIC_FUNC_ARG_TYPES
 #undef DYNAMIC_FUNC_ARG_NAMES
-	nrc.rayparams.rayProbability = 1.f;
+	nrc.rayparams.rayProbability = prob;
     if (dir*gnormal<0.0f) return false;
     VR::getReflectDerivs(rc.rayparams.viewDir, dir, rc.rayparams.dDdx, rc.rayparams.dDdy, nrc.rayparams.dDdx, nrc.rayparams.dDdy);
     nrc.rayparams.tracedRay.dir=nrc.rayparams.viewDir=dir;

@@ -363,7 +363,7 @@ typedef struct
 } tlVector;
 
 tlVector tl_sample (tlIntersectionData intersection_data,
-    tlPatternData data, const tlWeaveParameters *params, float rnd)
+    tlPatternData data, const tlWeaveParameters *params, float rnd, float *factor)
 ;
 
 /* ----------- IMPLEMENTATION --------------- */
@@ -628,7 +628,7 @@ void calculate_segment_uv_and_normal(tlPatternData *pattern_data,
 }
 
 tlVector tl_sample (tlIntersectionData intersection_data,
-    tlPatternData data, const tlWeaveParameters *params, float rnd)
+    tlPatternData data, const tlWeaveParameters *params, float rnd, float *factor)
 {
 	tlVector n  = tlvector(0.f,0.f,1.f);
 	tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y, intersection_data.wo_z);
@@ -677,6 +677,20 @@ tlVector tl_sample (tlIntersectionData intersection_data,
     float s = t_compl*sinf(theta);
 	tlVector wi = tlVector_add(tlVector_scale(t,tvec),tlVector_add(tlVector_scale(s,svec),tlVector_scale(r,rvec)));
     wi.z = fabsf(wi.z);
+
+
+	// ALG: 'COMPUTE A USING (8)'
+	float widotn = tlVector_dot(wi, n);
+	float wodotn = tlVector_dot(wo, n);
+	widotn = (widotn < 0.f) ? 0.f : widotn;   
+	wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
+
+	float A = 0.f;
+	if(widotn > 0.f && wodotn > 0.f){
+		A = 1.f / (4.0f * (float)M_PI) * (widotn*wodotn)/(widotn + wodotn);
+	}
+    *factor = A;
+
     return wi;
 }
 
