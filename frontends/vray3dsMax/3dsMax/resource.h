@@ -80,13 +80,13 @@
 #define cs_blend1                       1037
 #define IDC_delta_x_LABEL               1038
 #define ed_texmap_blend_mult1           1039
-#define IDC_alpha_LABEL                 1040
+#define IDC_rho_LABEL                 1040
 #define cs_blend2                       1041
-#define IDC_alpha_EDIT                  1042
+#define IDC_rho_EDIT                  1042
 #define ed_texmap_blend_mult2           1043
-#define IDC_alpha_SPIN                  1044
+#define IDC_rho_SPIN                  1044
 #define cs_blend3                       1045
-#define IDC_alpha_LABEL2                1046
+#define IDC_rho_LABEL2                1046
 #define ed_texmap_blend_mult3           1047
 #define IDC_beta_EDIT                   1048
 #define cs_blend4                       1049
@@ -127,7 +127,7 @@
 #define IDC_YRN_TEX_DIFFUSE_LABEL       1082
 #define IDD_YARN_TYPE                   1083
 #define IDC_specular_strength_OVERRIDE  1085
-#define IDC_alpha_OVERRIDE              1086
+#define IDC_rho_OVERRIDE                1086
 #define IDC_beta_OVERRIDE               1087
 #define IDC_SIMPLE_SPIN                 1088
 #define IDC_color_OVERRIDE              1089

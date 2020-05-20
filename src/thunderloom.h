@@ -83,8 +83,8 @@ void tl_free_weave_parameters(tlWeaveParameters *params);
 	TL_FLOAT_PARAM(umax)\
 	TL_FLOAT_PARAM(yarnsize)\
 	TL_FLOAT_PARAM(psi)\
-	TL_FLOAT_PARAM(alpha)\
-	TL_FLOAT_PARAM(beta)\
+	TL_FLOAT_PARAM(alpha) /* NOTE - deprecated -*/\
+	TL_FLOAT_PARAM(beta) /*NOTE - deprecated - */\
 	TL_FLOAT_PARAM(delta_x)\
 	TL_COLOR_PARAM(specular_color)\
 	TL_FLOAT_PARAM(specular_amount)\
@@ -93,6 +93,7 @@ void tl_free_weave_parameters(tlWeaveParameters *params);
 	TL_FLOAT_PARAM(color_amount)\
 	TL_COLOR_PARAM(opacity)\
 	TL_FLOAT_PARAM(opacity_amount)\
+	TL_FLOAT_PARAM(rho)\
 //
 
 /* --- Intersection data ---
@@ -141,6 +142,9 @@ tlColor tl_eval_texmap_color(void *texmap, void *context);
  * ...
  */ 
 
+
+
+/* ------------ Implementation --------------------- */
 
 #include <stdint.h>
 
@@ -266,8 +270,8 @@ tlYarnType tl_default_yarn_type =
 	0.5f,  //umax
 	1.0f,  //yarnsize
 	0.5f,  //psi
-	0.05f, //alpha
-	4.f,   //beta
+	0.05f, //alpha - deprecated
+	4.f,   //beta - deprecated
 	0.3f,  //delta_x
     {0.4f, 0.4f, 0.4f},  //specular color
     1.f,   //specular_amount
@@ -276,6 +280,7 @@ tlYarnType tl_default_yarn_type =
     1.f,   //color_amount
     {1.0f, 1.0f, 1.0f},  //opacity
     1.f,   //opacity_amount
+	0.67f, //rho
     0
 };
 
@@ -352,6 +357,15 @@ TL_YARN_PARAMETERS
 #undef TL_COLOR_PARAM
 ;
 
+typedef struct
+{
+    float x,y,z,w;
+} tlVector;
+
+tlVector tl_sample (tlIntersectionData intersection_data,
+    tlPatternData data, const tlWeaveParameters *params, float rnd, float *factor)
+;
+
 /* ----------- IMPLEMENTATION --------------- */
 
 #ifdef TL_THUNDERLOOM_IMPLEMENTATION
@@ -372,10 +386,6 @@ TL_YARN_PARAMETERS
 #include <stdio.h>
 
 // -- 3D Vector data structure -- //
-typedef struct
-{
-    float x,y,z,w;
-} tlVector;
 
 static tlVector tlvector(float x, float y, float z)
 {
@@ -418,6 +428,15 @@ static tlVector tlVector_add(tlVector a, tlVector b)
     ret.x = a.x + b.x;
     ret.y = a.y + b.y;
     ret.z = a.z + b.z;
+    return ret;
+}
+
+static tlVector tlVector_scale(float a, tlVector b)
+{
+    tlVector ret;
+    ret.x = a * b.x;
+    ret.y = a * b.y;
+    ret.z = a * b.z;
     return ret;
 }
 
@@ -606,6 +625,73 @@ void calculate_segment_uv_and_normal(tlPatternData *pattern_data,
     pattern_data->normal_x = normal_x;
     pattern_data->normal_y = normal_y;
     pattern_data->normal_z = normal_z;
+}
+
+tlVector tl_sample (tlIntersectionData intersection_data,
+    tlPatternData data, const tlWeaveParameters *params, float rnd, float *factor)
+{
+	tlVector n  = tlvector(0.f,0.f,1.f);
+	tlVector wo = tlvector(intersection_data.wo_x, intersection_data.wo_y, intersection_data.wo_z);
+	tlVector refl = tlvector(-wo.x,-wo.y,wo.z);
+
+    float x = -wo.x;
+    data.u;
+    data.normal_x;
+
+    float u = data.u;
+    float v = data.v;
+    float psi = tl_yarn_type_get_psi(params,data.yarn_type,
+		intersection_data.context);
+	float rho  = tl_yarn_type_get_rho( params,data.yarn_type,
+		intersection_data.context);
+    float tx = -cosf(v)*sinf(psi);
+    float ty = cosf(u)*cosf(psi) + sinf(u)*sinf(v)*sinf(psi);
+    float tz = -sinf(u)*cosf(psi) + cosf(u)*sinf(v)*sinf(psi);
+    if(!data.warp_above){
+        float tmp = tx;
+        tx  = ty;
+        ty  = -tmp;
+    }
+
+    tlVector tvec = tlvector(tx,ty,tz);
+    tlVector svec = tlVector_normalize(tlVector_cross(tvec, n));
+    tlVector rvec = tlVector_normalize(tlVector_cross(tvec, svec));
+
+    float t = tlVector_dot(wo, tvec);
+
+    float wos = tlVector_dot(wo, svec);
+    float wor = tlVector_dot(wo, rvec);
+    float mu = atan2f(wor,wos);
+
+    float c = 2.f * rho / (1.f + rho * rho);
+    float sin_mu = sinf(mu);
+    float xi_min = acosf((sin_mu-c)/(1.f-c*sin_mu));
+    float xi_max = acosf((-sin_mu-c)/(1.f+c*sin_mu));
+
+    float xi = 2.f*M_PI*rnd;
+    float V = cosf(xi);
+    float theta = acosf((V + c) / (1.f + V * c)) + mu;
+
+    float t_compl = sqrtf(1.f - t * t);
+    float r = t_compl*cosf(theta);
+    float s = t_compl*sinf(theta);
+	tlVector wi = tlVector_add(tlVector_scale(t,tvec),tlVector_add(tlVector_scale(s,svec),tlVector_scale(r,rvec)));
+    wi.z = fabsf(wi.z);
+
+
+	// ALG: 'COMPUTE A USING (8)'
+	float widotn = tlVector_dot(wi, n);
+	float wodotn = tlVector_dot(wo, n);
+	widotn = (widotn < 0.f) ? 0.f : widotn;   
+	wodotn = (wodotn < 0.f) ? 0.f : wodotn;   
+
+	float A = 0.f;
+	if(widotn > 0.f && wodotn > 0.f){
+		A = 1.f / (4.0f * (float)M_PI) * (widotn*wodotn)/(widotn + wodotn);
+	}
+    *factor = A;
+
+    return wi;
 }
 
 
@@ -1241,23 +1327,12 @@ static void calculate_length_of_segment(uint8_t warp_above, uint32_t pattern_x,
     } while(*incremented_coord != initial_coord);
 }
 
-static float von_mises(float cos_x, float b) {
-    // assumes a = 0, b > 0 is a concentration parameter.
-    float I0, absB = fabsf(b);
-    if (fabsf(b) <= 3.75f) {
-        float t = absB / 3.75f;
-        t = t * t;
-        I0 = 1.0f + t*(3.5156229f + t*(3.0899424f + t*(1.2067492f
-            + t*(0.2659732f + t*(0.0360768f + t*0.0045813f)))));
-    } else {
-        float t = 3.75f / absB;
-        I0 = expf(absB) / sqrtf(absB) * (0.39894228f + t*(0.01328592f
-            + t*(0.00225319f + t*(-0.00157565f + t*(0.00916281f
-            + t*(-0.02057706f + t*(0.02635537f + t*(-0.01647633f
-            + t*0.00392377f))))))));
+static float wrapped_cauchy(float cos_x, float rho) {
+    if (rho > 0.999f) {
+        return 0.f;
     }
-
-    return expf(b * cos_x) / (2 * (float)M_PI * I0);
+    float rho2 = rho * rho;
+    return M_1_PI * 0.5f * (1.f - rho2) / (1.f - 2.f * rho * cos_x + rho2);
 }
 
 static void lookup_pattern_entry(PatternEntry* entry, const tlWeaveParameters* params, const int8_t x, const int8_t y) {
@@ -1691,21 +1766,36 @@ float tl_eval_staple_specular(tlIntersectionData intersection_data,
         // Check that we are in the highlight width area.
         // This takes the role of Chi in the irawan paper.
         if (fabsf(specular_x - x) < delta_x) {
-            float alpha = tl_yarn_type_get_alpha(params,data.yarn_type,
-				intersection_data.context);
-            float beta  = tl_yarn_type_get_beta( params,data.yarn_type,
-				intersection_data.context);
+            float rho = tl_yarn_type_get_rho(params, data.yarn_type,
+                intersection_data.context);
 
             // ALG: 'COMPUTE G_v USING (5)'
             float a = 1.f; // radius of yarn
-            float R = 1.f/(sin(umax)); // radius of curvature
-            float Gv = a*(R + a*cosf(specular_v))/(
-                tlVector_magnitude(tlVector_add(wi,wo)) *
-                tlVector_dot(highlight_normal,H) * fabsf(sinf(psi)));
+            float R = 1.f / (sin(umax)); // radius of curvature
+            float Gv = a * (R + a * cosf(specular_v)) / (
+                tlVector_magnitude(tlVector_add(wi, wo)) *
+                tlVector_dot(highlight_normal, H) * fabsf(sinf(psi)));
 
             // ALG: 'COMPUTE f_c USING (7)'
-            float cos_x = -tlVector_dot(wi, wo);
-            float fc = alpha + von_mises(cos_x, beta);
+            float fc;
+            {
+				float tx = -cosf(specular_v)*sinf(psi);
+				float ty = cosf(u)*cosf(psi) + sinf(u)*sinf(specular_v)*sinf(psi);
+				float tz = -sinf(u)*cosf(psi) + cosf(u)*sinf(specular_v)*sinf(psi);
+
+				tlVector tvec = tlvector(tx,ty,tz);
+				tlVector svec = tlVector_normalize(tlVector_cross(tvec, highlight_normal));
+				tlVector rvec = tlVector_normalize(tlVector_cross(tvec, svec));
+
+				float wos = tlVector_dot(wo, svec);
+				float wor = tlVector_dot(wo, rvec);
+
+				float wis = tlVector_dot(wi, svec);
+				float wir = tlVector_dot(wi, rvec);
+
+				float cos_x = (wis*wos + wir*wor)/sqrtf((wis*wis+wir*wir)*(wos*wos+wor*wor));
+				fc = wrapped_cauchy(cos_x, rho);
+			}
 
             // ALG: 'COMPUTE A USING (8)'
             float widotn = tlVector_dot(wi, highlight_normal);
@@ -1819,14 +1909,29 @@ float tl_eval_filament_specular(tlIntersectionData intersection_data,
                 tlVector_magnitude(tlVector_add(wi,wo)) *
                 fabsf((tlVector_cross(highlight_tangent,H).x)) );
 
-            float alpha = tl_yarn_type_get_alpha(params, data.yarn_type,
-				intersection_data.context);
-            float beta = tl_yarn_type_get_beta(params, data.yarn_type,
+            float rho = tl_yarn_type_get_rho(params, data.yarn_type,
 				intersection_data.context);
 
             // ALG: 'COMPUTE f_c USING (7)'
-            float cos_x = -tlVector_dot(wi, wo);
-            float fc = alpha + von_mises(cos_x, beta);
+            float fc;
+            {
+				float tx = 0.f;
+				float ty = cosf(specular_u);
+				float tz = -sinf(specular_u);
+
+				tlVector tvec = tlvector(tx,ty,tz);
+				tlVector svec = tlVector_normalize(tlVector_cross(tvec, highlight_normal));
+				tlVector rvec = tlVector_normalize(tlVector_cross(tvec, svec));
+
+				float wos = tlVector_dot(wo, svec);
+				float wor = tlVector_dot(wo, rvec);
+
+				float wis = tlVector_dot(wi, svec);
+				float wir = tlVector_dot(wi, rvec);
+
+				float cos_x = (wis*wos + wir*wor)/sqrtf((wis*wis+wir*wir)*(wos*wos+wor*wor));
+				fc = wrapped_cauchy(cos_x, rho);
+			}
 
             // ALG: 'COMPUTE A USING (8)'
             float widotn = tlVector_dot(wi, highlight_normal);

@@ -114,8 +114,8 @@ const VUtils::ShadeVec *direction, tlWeaveParameters *weave_parameters, VUtils::
     Point3 n_vec = sc.Normal().Normalize();
     Point3 u_vec = dpdUVW[0].Normalize();
     Point3 v_vec = dpdUVW[1].Normalize();
-    u_vec = v_vec ^ n_vec;
-    v_vec = n_vec ^ u_vec;
+    u_vec = (v_vec ^ n_vec).Normalize();
+    v_vec = (n_vec ^ u_vec).Normalize();
 
     intersection_data.wi_x = DotProd(lightDir, u_vec);
     intersection_data.wi_y = DotProd(lightDir, v_vec);
@@ -134,6 +134,66 @@ const VUtils::ShadeVec *direction, tlWeaveParameters *weave_parameters, VUtils::
         weave_parameters);
     tlColor s = tl_eval_specular(intersection_data, pattern_data, weave_parameters);
     reflection_color->set(s.r, s.g, s.b);
+}
+
+DYNAMIC_FUNC_PREFIX
+float EvalSampleFunc(const VUtils::VRayContext *rc,
+	VUtils::ShadeVec *direction, tlWeaveParameters *weave_parameters, float *prob, float r) 
+{
+    if(weave_parameters->pattern == 0){ //Invalid pattern
+		//TODO(Vidar):What to do here?
+        return 0.f;
+    }
+    tlIntersectionData intersection_data;
+   
+    const VR::VRayInterface &vri_const=static_cast<const VR::VRayInterface&>(*rc);
+	VR::VRayInterface &vri=const_cast<VR::VRayInterface&>(vri_const);
+	ShadeContext &sc=static_cast<ShadeContext&>(vri);
+
+    Point3 uv = sc.UVW(1);
+
+    //Convert the view and light directions to the correct coordinate system
+    Point3 viewDir;
+    viewDir.x = -rc->rayparams.viewDir.x();
+    viewDir.y = -rc->rayparams.viewDir.y();
+    viewDir.z = -rc->rayparams.viewDir.z();
+    viewDir = sc.VectorFrom(viewDir,REF_WORLD);
+    viewDir = viewDir.Normalize();
+
+    // UVW derivatives
+    Point3 dpdUVW[3];
+    sc.DPdUVW(dpdUVW,1);
+
+    Point3 n_vec = sc.Normal().Normalize();
+    Point3 u_vec = dpdUVW[0].Normalize();
+    Point3 v_vec = dpdUVW[1].Normalize();
+    u_vec = (v_vec ^ n_vec).Normalize();
+    v_vec = (n_vec ^ u_vec).Normalize();
+
+    intersection_data.wo_x = DotProd(viewDir, u_vec);
+    intersection_data.wo_y = DotProd(viewDir, v_vec);
+    intersection_data.wo_z = DotProd(viewDir, n_vec);
+
+    intersection_data.uv_x = uv.x;
+    intersection_data.uv_y = uv.y;
+
+    intersection_data.context = &sc;
+
+    tlPatternData pattern_data = tl_get_pattern_data(intersection_data,
+        weave_parameters);
+
+	float fac = 1.f;
+	tlVector vec = tl_sample(intersection_data, pattern_data, weave_parameters,r,&fac);
+
+	//direction->set(vec.x, vec.y, vec.z);
+	Point3 d = vec.x*u_vec + vec.y*v_vec + vec.z*n_vec;
+	//Point3 d = -viewDir + n_vec * DotProd(n_vec, viewDir) * 2.f;
+	//Point3 d = n_vec;
+	//Point3 d = viewDir;
+	//Point3 d = intersection_data.wo_x * u_vec + intersection_data.wo_y * v_vec + intersection_data.wo_z * n_vec;
+	d = sc.VectorTo(d, REF_WORLD);
+	direction->set(d.x, d.y, d.z);
+	return fac;
 }
 
 class SCTexture: public ShadeContext {
