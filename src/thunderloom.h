@@ -183,8 +183,6 @@ typedef struct
 }PatternEntry;
 #define TL_MAX_YARN_TYPES 256
 
-//TODO(Vidar): Give all parameters default values
-
 struct tlWeaveParameters
 {
 #define TL_FLOAT_PARAM(name) float name;
@@ -201,7 +199,7 @@ TL_FABRIC_PARAMETERS
     uint32_t num_yarn_types;
     PatternEntry *pattern;
     tlYarnType *yarn_types;
-    float specular_normalization;
+    float specular_normalization; //Deprecated
     float pattern_realheight;
     float pattern_realwidth;
 };
@@ -717,86 +715,6 @@ static void halton_4(int n, float val[]){
 
 void tl_prepare(tlWeaveParameters *params)
 {
-    //Calculate normalization factor for the specular reflection
-	if (params->pattern) {
-		int nLocationSamples = 100;
-		int nDirectionSamples = 1000;
-		params->specular_normalization = 1.f;
-
-		float highest_result = 0.f;
-
-		//NOTE(Vidar):We copy the weave parameters and change some settings
-		tlYarnType *tmp_yarn_types = (tlYarnType*)calloc(params->num_yarn_types, sizeof(tlYarnType));
-		memcpy(tmp_yarn_types, params->yarn_types, params->num_yarn_types * sizeof(tlYarnType));
-		tlWeaveParameters *tmp_params = (tlWeaveParameters*)calloc(1, sizeof(tlWeaveParameters));
-		memcpy(tmp_params, params, sizeof(tlWeaveParameters));
-		tmp_params->yarn_types = tmp_yarn_types;
-
-
-		// Temporarily disable textures and speuclar noise...
-		float tmp_specular_noise[TL_MAX_YARN_TYPES];
-		for(unsigned int i=0;i<tmp_params->num_yarn_types;i++){
-			tmp_yarn_types[i].specular_noise = 0.f;
-			tmp_yarn_types[i].specular_color.r = 1.f;
-			tmp_yarn_types[i].specular_color_texmap = 0;
-			tmp_yarn_types[i].specular_amount = 1.f;
-			tmp_yarn_types[i].specular_amount_texmap = 0;
-		}
-
-		// Normalize by the largest reflection across all uv coords and
-		// incident directions
-		for(unsigned int yarn_type = 0; yarn_type < tmp_params->num_yarn_types;
-			yarn_type++){
-
-			for (int i = 0; i < nLocationSamples; i++) {
-				float result = 0.0f;
-				float halton_point[4];
-				halton_4(i + 50, halton_point);
-				tlPatternData pattern_data;
-				// Pick a random location on a segment rectangle...
-				pattern_data.x = -1.f + 2.f*halton_point[0];
-				pattern_data.y = -1.f + 2.f*halton_point[1];
-				pattern_data.length = 1.f;
-				pattern_data.width = 1.f;
-				pattern_data.warp_above = 0;
-				pattern_data.yarn_type = yarn_type;
-				pattern_data.yarn_hit = 1;
-				tlIntersectionData intersection_data = { 0 };
-				calculate_segment_uv_and_normal(&pattern_data, tmp_params,
-					&intersection_data);
-				pattern_data.total_index_x = 0;
-				pattern_data.total_index_y = 0;
-
-				sample_uniform_hemisphere(halton_point[2], halton_point[3],
-					&intersection_data.wi_x, &intersection_data.wi_y,
-					&intersection_data.wi_z);
-
-				for (int j = 0; j < nDirectionSamples; j++) {
-					float halton_direction[4];
-					halton_4(j + 50 + nLocationSamples, halton_direction);
-					// Since we use cosine sampling here, we can ignore the cos term
-					// in the integral
-					sample_cosine_hemisphere(halton_direction[0], halton_direction[1],
-						&intersection_data.wo_x, &intersection_data.wo_y,
-						&intersection_data.wo_z);
-					result += tl_eval_specular(intersection_data, pattern_data, tmp_params).r;
-				}
-				if (result > highest_result) {
-					highest_result = result;
-				}
-			}
-		}
-		free(tmp_yarn_types);
-		free(tmp_params);
-
-		if (highest_result <= 0.0001f) {
-			params->specular_normalization = 0.f;
-		}
-		else {
-			params->specular_normalization =
-				(float)nDirectionSamples / highest_result;
-		}
-	}
 }
 
 tlWeaveParameters *tl_weave_pattern_from_data(uint8_t *warp_above, uint8_t *yarn_type,
@@ -2085,7 +2003,7 @@ tlColor tl_eval_specular(tlIntersectionData intersection_data,
         data.yarn_type,intersection_data.context);
     float specular_amount = tl_yarn_type_get_specular_amount(params,
         data.yarn_type,intersection_data.context);
-	float factor = reflection * params->specular_normalization * noise * specular_amount;
+	float factor = reflection * 7.f * noise * specular_amount; //NOTE(Vidar): The magic constant here is to give the highlights a reasonable strength
     ret.r=specular_color.r*factor;
     ret.g=specular_color.g*factor;
     ret.b=specular_color.b*factor;
