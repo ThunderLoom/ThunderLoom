@@ -6,7 +6,7 @@
  */
 
 #define TL_VERSION_MAJOR 0
-#define TL_VERSION_MINOR 96
+#define TL_VERSION_MINOR 97
 #define TL_VERSION_PATCH 0
 
 #ifndef TL_PUBLIC_FUNC_PREFIX
