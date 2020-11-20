@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.11)
 
 project(thunderloom_pattern_editor)
 
@@ -67,3 +67,4 @@ endif()
 
 # Install
 install(TARGETS thunderloom_pattern_editor  DESTINATION thunderloom_pattern_editor)
+install(FILES $<TARGET_PDB_FILE:thunderloom_pattern_editor> DESTINATION pdbs OPTIONAL)

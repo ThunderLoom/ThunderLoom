@@ -21,7 +21,7 @@
                 <RemoveFolder Id='RemoveAdsk' Directory='adsk' On='uninstall'/>
                 <RemoveFolder Id='RemoveApplugs' Directory='applugs' On='uninstall'/>
                 <RemoveFolder Id='RemoveInstallfolder' Directory='INSTALLFOLDER' On='uninstall'/>
-                <File Id='PackageContents.xml' Source='../thunderLoomVRay3dsMax/PackageContents.xml'/>
+                <File Id='PackageContents.xml' Source='../thunderloomVRay3dsMax/PackageContents.xml'/>
                 @WX_3DS_MAX@
               </Component>
             </Directory>

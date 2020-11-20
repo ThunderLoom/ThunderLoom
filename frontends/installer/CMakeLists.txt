@@ -10,6 +10,8 @@ string(
     TYPE SHA1 UPPER
 )
 
+set(WIX_BIN_PATH "C:/Program Files (x86)/WiX Toolset v3.11/bin" CACHE PATH "Path to WiX installer toolset bin dir.")
+
 file(STRINGS "PackageContents_per_3ds_max_version.xml.in" PC_PER_3DS_MAX )
 file(STRINGS "thunderloom_per_3ds_max_version.wxs.in" WX_PER_3DS_MAX )
 foreach(3DSMAX_VERSION ${3DSMAX_VERSIONS})

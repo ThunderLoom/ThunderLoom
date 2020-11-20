@@ -16,33 +16,31 @@ string(REGEX REPLACE ${VERSION_PATCH_REGEX} "\\1" TL_VERSION_PATCH "${TL_VERSION
 project(thunderloom_frontends)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/out/install/${CMAKE_SYSTEM_NAME} CACHE PATH "")
 
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
-set(RELEASE_DIR ${CMAKE_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME})
 
-set(MAYA_VERSION "2017" CACHE STRING "Maya version (year)")
+set(BUILD_MAYA FALSE CACHE BOOL "Build Maya frontend")
+set(BUILD_3DSMAX FALSE CACHE BOOL "Build 3dsMax frontend")
+set(BUILD_VRAYSTANDALONE FALSE CACHE BOOL "Build VRay Standalone frontend")
+
+set(MAYA_VERSIONS 2019 CACHE STRING "Maya versions (year)")
 set(3DSMAX_VERSIONS 2019 2020 2021 CACHE STRING "3dsMax versions (year)")
 
 set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../src)
 
-IF(WIN32)
-add_subdirectory(installer)
-add_subdirectory(vray3dsMax)
-ENDIF()
-
-add_subdirectory(vray)
-
-add_subdirectory(vraymaya)
-
 add_subdirectory(standalone_pattern_editor)
 
-# Copy V-Ray standalone to Maya plugin, when building for Maya
-add_custom_target(vraymaya_copy_vrayplugin ALL
-    DEPENDS ${RELEASE_DIR}/V-Ray\ for\ Maya${MAYA_VERSION}/vray_plugin/${CMAKE_SHARED_LIBRARY_PREFIX}vray_thunderLoom${CMAKE_SHARED_LIBRARY_SUFFIX}
-    )
-add_custom_command(
-    OUTPUT ${RELEASE_DIR}/V-Ray\ for\ Maya${MAYA_VERSION}/vray_plugin/${CMAKE_SHARED_LIBRARY_PREFIX}vray_thunderLoom${CMAKE_SHARED_LIBRARY_SUFFIX}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${RELEASE_DIR}/V-Ray/ ${RELEASE_DIR}/V-Ray\ for\ Maya${MAYA_VERSION}/vray_plugin/
-    )
-add_dependencies(vraymaya_copy_vrayplugin vray_thunderLoom)
-add_dependencies(thunderLoomVRayMaya vraymaya_copy_vrayplugin)
+IF(WIN32)
+    IF(BUILD_3DSMAX)
+        add_subdirectory(installer)
+        add_subdirectory(vray3dsMax)
+    ENDIF()
+ENDIF()
+
+IF(BUILD_VRAYSTANDALONE OR BUILD_MAYA)
+    add_subdirectory(vray)
+ENDIF()
+
+IF(BUILD_MAYA)
+    add_subdirectory(vraymaya)
+ENDIF()

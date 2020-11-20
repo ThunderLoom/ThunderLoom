@@ -2,16 +2,24 @@
    frontends/dependencies/README.txt
 
 2. Generate build files
+    We use cmake to setup building. Set flags for the frontends you wish to
+    build. The standalone pattern editor will always be built.
 
-    mkdir _build
-    cd _build
-    cmake -DMAYA_VERSION=2017 ..
+    E.g. for 3dsMax:
+        mkdir _build
+        cd _build
+        cmake -DBUILD_3DSMAX=true -D3DSMAX_VERSIONS="2019;2021" ..
 
-    On Windows: 
-    cmake -DMAYA_VERSION=2017 -D3DSMAX_VERSION=2017 -G "Visual Studio 11 Win64" ..
+    Possible options are:
+        BUILD_3DSMAX (bool)
+        BUILD_MAYA (bool)
+        BUILD_VRAYSTANDALONE (bool)
+    
+    Ther are also settings for where to look for SDK paths. Consult the
+    CMakeLists.txt files.
 
 3. Compile projects
 
-    cmake --build . --config relwithdebinfo --clean-first
+    cmake --build . --target install --config relwithdebinfo
 
     Output will be in a newly created frontends/release folder.
