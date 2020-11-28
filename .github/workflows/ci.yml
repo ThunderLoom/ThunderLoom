@@ -1,0 +1,109 @@
+name: CI
+on:
+  push:
+    branches: [ master, ci-test ]
+
+env:
+  artifact_thunderloom_dependencies_windows_x64_version: 0.0.2
+  artifact_thunderloom_sdks_windows_x64_version: 0.0.3
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Restore/cache dependencies
+      uses: actions/cache@v2
+      id: cache_thunderloom_dependencies
+      with:
+        path: ${{ github.workspace }}/frontends/dependencies
+        key: thunderloom_dependencies_win_x64-${{ env.artifact_thunderloom_dependencies_windows_x64_version }}
+    
+    - name: Restore/cache SDKs
+      uses: actions/cache@v2
+      id: cache_thunderloom_sdks
+      with:
+        path: ${{ runner.workspace }}/thunderloom_sdks_windows_x64
+        key: thunderloom_sdks_windows_x64-${{ env.artifact_thunderloom_sdks_windows_x64_version }}
+
+    - name: Set up Python (workaround for Google Cloud)
+      if: steps.cache_thunderloom_dependencies.outputs.cache-hit != 'true' || steps.cache_thunderloom_sdks.outputs.cache-hit != 'true'
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+
+    - name: Set up Google Cloud SDK
+      if: steps.cache_thunderloom_dependencies.outputs.cache-hit != 'true' || steps.cache_thunderloom_sdks.outputs.cache-hit != 'true'
+      uses: google-github-actions/setup-gcloud@master
+      env:
+        CLOUDSDK_PYTHON: ${{ env.pythonLocation }}\python.exe
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Download dependencies from Google Cloud
+      if: steps.cache_thunderloom_dependencies.outputs.cache-hit != 'true'
+      env:
+        CLOUDSDK_PYTHON: ${{ env.pythonLocation }}\python.exe
+      working-directory: ${{ runner.workspace }}
+      run: |
+        gsutil cp gs://thunderloom_ci_blobs/thunderloom_dependencies_windows_x64.zip .
+        Expand-Archive ./thunderloom_dependencies_windows_x64.zip -DestinationPath ./expand
+        Copy-Item ./expand/thunderloom_dependencies_windows_x64/* ${{ github.workspace }}/frontends/dependencies/ -Recurse -Force
+    
+    - name: Download SDKs from Google Cloud
+      if: steps.cache_thunderloom_sdks.outputs.cache-hit != 'true'
+      env:
+        CLOUDSDK_PYTHON: ${{ env.pythonLocation }}\python.exe
+      working-directory: ${{ runner.workspace }}
+      run: |
+        gsutil cp gs://thunderloom_ci_blobs/thunderloom_sdks_windows_x64.zip .
+        Expand-Archive ./thunderloom_sdks_windows_x64.zip -DestinationPath ./expand
+        mv ./expand/thunderloom_sdks_windows_x64 ${{ runner.workspace }}/thunderloom_sdks_windows_x64
+
+    - name: Make build dir
+      run: cmake -E make_directory ${{ runner.workspace }}/build
+
+    - name: Configure CMake
+      working-directory: ${{ runner.workspace }}/build
+      run: >-
+        cmake 
+        -G "Visual Studio 16 2019"
+        -A x64
+        --config RelWithDebInfo
+        -DCMAKE_INSTALL_PREFIX="${{ runner.workspace }}/build/install"
+        -DWIX_BIN_PATH="${{ runner.workspace }}/thunderloom_sdks_windows_x64/wix_bin/WiX Toolset v3.11/bin"
+        -DBUILD_VRAYSTANDALONE=1
+        -DVRAY_STANDALONE_ROOT="${{ runner.workspace }}/thunderloom_sdks_windows_x64/vray/vraystd_adv_43002_x64_vc14"
+        -DBUILD_3DSMAX=1
+        -D3DSMAX_VERSIONS="2019;2021"
+        -D3DSMAXSDK2019_ROOT="${{ runner.workspace }}/thunderloom_sdks_windows_x64/max/3ds Max 2019 SDK/maxsdk"
+        -D3DSMAXSDK2021_ROOT="${{ runner.workspace }}/thunderloom_sdks_windows_x64/max/3ds Max 2021 SDK/maxsdk"
+        -DVRAY_3DSMAX2019_ROOT="${{ runner.workspace }}/thunderloom_sdks_windows_x64/vray/vray_adv_43001_max2019_x64/3ds Max 2019"
+        -DVRAY_3DSMAX2021_ROOT="${{ runner.workspace }}/thunderloom_sdks_windows_x64/vray/vray_adv_43002_max2021_x64/3ds Max 2021"
+        -DBUILD_MAYA=1
+        -DMAYA_VERSIONS="2019;2020"
+        -DMAYASDK2019_ROOT="${{ runner.workspace }}/thunderloom_sdks_windows_x64/maya/maya_2019_update_3"
+        -DMAYASDK2020_ROOT="${{ runner.workspace }}/thunderloom_sdks_windows_x64/maya/maya_2020_update_3"
+        -DVRAY_MAYA2019_ROOT="${{ runner.workspace }}/thunderloom_sdks_windows_x64/vray/vray_adv_43002_maya2019_x64/vray"
+        -DVRAY_MAYA2020_ROOT="${{ runner.workspace }}/thunderloom_sdks_windows_x64/vray/vray_adv_43002_maya2020_x64/vray"
+        ${{ github.workspace }}/frontends
+    
+    - name: CMake build and install
+      working-directory: ${{ runner.workspace }}/build
+      run: cmake --build . --config RelWithDebInfo --target install
+    
+    - name: Make installer
+      working-directory: ${{ runner.workspace }}/build/install/thunderloom_installer
+      run: ./make_installer.bat
+
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: ThunderLoom_Windows_x64_${{ github.sha }}
+        path: ${{ runner.workspace }}/build/install/*
