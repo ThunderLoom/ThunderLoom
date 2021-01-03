@@ -11,6 +11,11 @@
 #include "defparams.h"
 #pragma warning( pop ) 
 
+// NOTE: Some conditional changes in the code to deal with smaller api changes between vray 4 and 5.
+#ifndef BUILD_VRAY5
+#define BUILD_VRAY5 VRAY_DLL_VERSION_MAJOR >= 5
+#endif
+
 #define TL_THUNDERLOOM_IMPLEMENTATION
 #include "thunderloom.h"
 using namespace VUtils;
@@ -226,26 +231,27 @@ static FORCEINLINE int set_texparam(VRayPluginParameter* param, void **target, i
 void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
 	if (!vray) return;
 	VRayBSDF::frameBegin(vray);
-	//NOTE: for vray5: 
-    //{
-		//const VUtils::AssetManager &assetMan=VUtils::getVRayAssetManager(vray);
+#if BUILD_VRAY5
+	//For vray5: 
+    {
+		const VUtils::AssetManager &assetMan=VUtils::getVRayAssetManager(vray);
 
-		////Check for file, at path, then in VRAY_ASSETS_PATH and so forth.n, if exits and abort if not.
-		//if (!assetMan.checkAssetPath(m_filepath, true))
-		//    return;
-    //}
-
-    // NOTE: for vray4
+		// Check for file, at path, then in VRAY_ASSETS_PATH and so forth.n, if exits and abort if not.
+		if (!assetMan.checkAssetPath(m_filepath, true))
+	        return;
+    }
+#else
+    // For vray4
     {
 		// Check for file, at path, then in VRAY_ASSETS_PATH and so forth.
 		VUtils::checkAssetPath(m_filepath, vray->getSequenceData());
+    
+        // Check again, if exits and abort if not.
 		VUtils::ProgressCallback *prog = vray->getSequenceData().progress;
 		if (!VUtils::checkAssetPath(m_filepath, prog, true))
 			return;
     }
-    
-    // Check again, if exits and abort if not.
-
+#endif
 
     VUtils::ProgressCallback *prog = vray->getSequenceData().progress;
 
@@ -411,8 +417,11 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
 
     MappedSurface *mappedSurf=(MappedSurface*) GET_INTERFACE(rc.rayresult.sd, EXT_MAPPED_SURFACE);
     if (mappedSurf) {
-        // mappedSurf->getLocalUVWTransform(rc, -1, m_uv_tm, uvwFlags_default); // for vray 5
-        mappedSurf->getLocalUVWTransform(rc, -1, m_uv_tm); // for vray 4
+#if BUILD_VRAY5
+        mappedSurf->getLocalUVWTransform(rc, -1, m_uv_tm, uvwFlags_default); // for vray5
+#else
+        mappedSurf->getLocalUVWTransform(rc, -1, m_uv_tm); // for vray4
+#endif
         m_uv = m_uv_tm.offs;
     }
     intersection_data.uv_x = m_uv.x();
@@ -649,8 +658,11 @@ struct MyShadeData: public VRayShadeData, public MappedSurface {
     }
 
     // From MappedSurface
-	//void getLocalUVWTransform(const VRayContext &rc, int channel, ShadeTransform &result, const UVWFlags uvwFlags) VRAY_OVERRIDE // for vray5
+#if BUILD_VRAY5
+	void getLocalUVWTransform(const VRayContext &rc, int channel, ShadeTransform &result, const UVWFlags uvwFlags) VRAY_OVERRIDE // for vray5
+#else
 	void getLocalUVWTransform(const VRayContext &rc, int channel, ShadeTransform &result) VRAY_OVERRIDE // for vray4
+#endif
 	{
         // Note that here we initialize the matrix to zero. This will effectively kill any
         // texture filtering. If you want texture filtering, you will need to come up with
