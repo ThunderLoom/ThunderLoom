@@ -39,7 +39,7 @@ SettingsOutput vraySettingsOutput {
   img_height=540;
   img_pixelAspect=1;
   img_file="untitled.png";
-  img_dir="C:/Users/peterwin/Documents/maya/projects/default/images/tmp/";
+  img_dir="C:/Temp/";
   img_file_needFrameNumber=0;
   img_separateAlpha=0;
   img_noAlpha=0;
@@ -439,18 +439,25 @@ GeomStaticNURBS topnurbsCubeShape1@nurbs1 {
   primary_visibility=1;
 }
 
-BRDFThunderLoom BRDFThunderLoom {
-  filepath="C:\Users\peterwin\Code\test.ptn";
+BRDFThunderLoomSource BRDFThunderLoom {
+  filepath="C:\Users\petevo\Code\test.ptn";
   uscale=1;
   vscale=1;
   uvrotation=0;
   bend=0.5;
   yarnsize=1;
   twist=0.5;
-  specular_strength=0.4;
+  specular_color_amount=0.4;
   specular_noise=0.4;
   highlight_width=0.4;
   diffuse_color=AColor(0, 0.3, 0, 1);
+  bend_on=0;
+  yarnsize_on=0;
+  twist_on=0;
+  specular_color_amount_on=0;
+  specular_noise_on=0;
+  highlight_width_on=0;
+  diffuse_color_on=0;
   bend_on=0;
   yarnsize_on=0;
   twist_on=0;
@@ -458,14 +465,6 @@ BRDFThunderLoom BRDFThunderLoom {
   specular_noise_on=0;
   highlight_width_on=0;
   diffuse_color_on=0;
-  bend_on_float=0;
-  yarnsize_on_float=0;
-  twist_on_float=0;
-  specular_strength_on_float=0;
-  specular_noise_on_float=0;
-  highlight_width_on_float=0;
-  diffuse_color_on_float=0;
-  bends2=0.5;
 }
 
 MtlSingleBRDF BRDFThunderLoom@mtlsingle {

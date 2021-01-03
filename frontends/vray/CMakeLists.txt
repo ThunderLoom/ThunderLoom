@@ -43,9 +43,7 @@ foreach(VRAY_VERSION ${VRAY_BUILD_VERSIONS})
     ENDIF()
 
 	# Additional includes
-	set(SOURCES vray_thunderloom.cpp
-				vray_thunderloom_updated.cpp
-				vray_thunderloom.h)
+	set(SOURCES vray_thunderloom.cpp)
 	include_directories(${TL_H_SOURCE_DIR})
 	include_directories(.)
 

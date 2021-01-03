@@ -1,9 +1,57 @@
-// test plugin
+// Disable MSVC warnings for external headers.
+#pragma warning( push )
+#pragma warning( disable : 4251)
+#pragma warning( disable : 4996 )
+#include "vrayplugins.h"
+#include "utils.h"
+#include "vrayinterface.h"
+#include "vrayrenderer.h"
+#include "brdfs.h"
+#include "vraytexutils.h"
+#include "defparams.h"
+#pragma warning( pop ) 
 
 #define TL_THUNDERLOOM_IMPLEMENTATION
-#include "vray_thunderloom.h"
+#include "thunderloom.h"
 using namespace VUtils;
 using namespace VR;
+
+class BRDFThunderLoomSampler: public BRDFSampler, public BSDFSampler {
+    int orig_backside;
+    ShadeVec normal, gnormal;
+    ShadeMatrix nm, inm;
+    int nmInited;
+
+    // Assigned in init()
+    tlWeaveParameters* m_tl_wparams;
+    ShadeVec m_uv;
+    ShadeTransform m_uv_tm;
+    ShadeCol m_diffuse_color;
+    tlYarnType m_yarn_type;
+    int m_yarn_type_id;
+
+public:
+	// Initialization
+	void init(const VRayContext &rc, tlWeaveParameters *weave_parameters);
+
+	// From BRDFSampler
+	ShadeVec getDiffuseNormal(const VR::VRayContext &rc);
+	ShadeCol getDiffuseColor(ShadeCol &lightColor);
+	ShadeCol getLightMult(ShadeCol &lightColor);
+	ShadeCol getTransparency(const VRayContext &rc);
+
+	ShadeCol eval( const VRayContext &rc, const ShadeVec &direction, ShadeCol &shadowedLight, ShadeCol &origLight, float probLight,int flags);
+	void traceForward(VRayContext &rc, int doDiffuse);
+
+	int getNumSamples(const VRayContext &rc, int doDiffuse);
+	VRayContext* getNewContext(const VRayContext &rc, int &samplerID, int doDiffuse);
+	ValidType setupContext(const VRayContext &rc, VRayContext &nrc, float uc, int doDiffuse);
+
+	RenderChannelsInfo* getRenderChannels(void);
+
+	// From BSDFSampler
+	BRDFSampler *getBRDF(BSDFSide side);
+};
 
 
 struct BRDFThunderLoomParams: VRayParameterListDesc {
@@ -16,73 +64,103 @@ struct BRDFThunderLoomParams: VRayParameterListDesc {
         // Yarn settings.
         // These are to be stored as lists in the .vrscene file. The index in
         // the list corresponds to the yarn_type.
-        addParamTextureFloat("bend", 0.5f, -1, "How much each visible yarn segment gets bent.");
-        addParamTextureFloat("yarnsize", 1.0f, -1, "Width of yarn.");
-        addParamTextureFloat("twist", 0.5f, -1, "How strongly to simulate the twisting nature of the yarn. Usually synthetic yarns, such as polyester, have less twist than organic yarns, such as cotton.");
-        addParamTextureFloat("phase_alpha", 0.05f, -1, "Alpha value. Constant term to the fiber scattering function.");
-        addParamTextureFloat("phase_beta", 4.f, -1, "Beta value. Directionality intensity of the fiber scattering function.");
-        addParamTexture("specular_color", Color(0.4f, 0.4f, 0.4f), -1, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
-        addParamTextureFloat("specular_color_amount", 1.0f, -1, "Factor to multiply specular color with.");
-        addParamTextureFloat("specular_noise", 0.4f, -1, "Noise on specular reflections.");
-        addParamTextureFloat("highlight_width", 0.4f, -1, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
-        addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), -1, "Diffuse color.");
-        addParamTextureFloat("diffuse_color_amount", 1.0f, -1, "Factor to multiply diffuse color with.");
-        addParamTexture("opacity", Color(1.f,1.f,1.f), -1, "Opacity.");
-        addParamTextureFloat("opacity_amount", 1.0f, -1, "Factor to multiply opacity with.");
+        addParamPlugin("bend", EXT_TEXTURE_FLOAT, 0, "How much each visible yarn segment gets bent.");
+        addParamPlugin("yarnsize", EXT_TEXTURE_FLOAT, 0, "Width of yarn.");
+        addParamPlugin("twist", EXT_TEXTURE_FLOAT, 0, "How strongly to simulate the twisting nature of the yarn. Usually synthetic yarns, such as polyester, have less twist than organic yarns, such as cotton.");
+        addParamPlugin("phase_alpha", EXT_TEXTURE_FLOAT, 0, "Alpha value. Constant term to the fiber scattering function.");
+        addParamPlugin("phase_beta", EXT_TEXTURE_FLOAT, 0, "Beta value. Directionality intensity of the fiber scattering function.");
+        addParamTexture("specular_color", Color(0.4f, 0.4f, 0.4f), 0, "Color of the specular reflections. This will implicitly affect the strength of the diffuse reflections.");
+        addParamPlugin("specular_color_amount", EXT_TEXTURE_FLOAT, 0, "Factor to multiply specular color with.");
+        addParamPlugin("specular_noise", EXT_TEXTURE_FLOAT, 0, "Noise on specular reflections.");
+        addParamPlugin("highlight_width", EXT_TEXTURE_FLOAT, 0, "Width over which to average the specular reflections. Gives wider highlight streaks on the yarns.");
+        addParamTexture("diffuse_color", Color(0.f, 0.3f, 0.f), 0, "Diffuse color.");
+        addParamPlugin("diffuse_color_amount", EXT_TEXTURE_FLOAT, 0, "Factor to multiply diffuse color with.");
         
         // Stored as lists, just like above. These parameters allow us to 
         // specify what parameters we want to override, for a specific yarn.
-        addParamBool("bend_on",                     false, -1, "");
-        addParamBool("yarnsize_on",                 false, -1, "");
-        addParamBool("twist_on",                    false, -1, "");
-        addParamBool("phase_alpha_on",              false, -1, "");
-        addParamBool("phase_beta_on",               false, -1, "");
-        addParamBool("specular_color_on",           false, -1, "");
-        addParamBool("specular_color_amount_on",    false, -1, "");
-        addParamBool("specular_noise_on",           false, -1, "");
-        addParamBool("highlight_width_on",          false, -1, "");
-        addParamBool("diffuse_color_on",            false, -1, "");
-        addParamBool("diffuse_color_amount_on",     false, -1, "");
-        addParamBool("opacity_on",                  false, -1, "");
-        addParamBool("opacity_amount_on",           false, -1, "");
-
-        // MAYA FIX
-        // It seems that only float params can be retrieved from Maya into the 
-        // vrscene file. And only as a texture if the floats are put into an 
-        // array. We allow the _on params to be specified as a float aswell.
-        addParamTextureFloat("bend_on_float",                  false, -1, "");
-        addParamTextureFloat("yarnsize_on_float",              false, -1, "");
-        addParamTextureFloat("twist_on_float",                 false, -1, "");
-        addParamTextureFloat("phase_alpha_on_float",           false, -1, "");
-        addParamTextureFloat("phase_beta_on_float",            false, -1, "");
-        addParamTextureFloat("specular_color_on_float",        false, -1, "");
-        addParamTextureFloat("specular_color_amount_on_float", false, -1, "");
-        addParamTextureFloat("specular_noise_on_float",        false, -1, "");
-        addParamTextureFloat("highlight_width_on_float",       false, -1, "");
-        addParamTextureFloat("diffuse_color_on_float",         false, -1, "");
-        addParamTextureFloat("diffuse_color_amount_on_float",  false, -1, "");
-        addParamTextureFloat("opacity_on_float",         false, -1, "");
-        addParamTextureFloat("opacity_amount_on_float",        false, -1, "");
-        
-        addParamFloat("bends2", 0.5f, -1, "");
+        addParamBool("bend_on",                     false, 0, "");
+        addParamBool("yarnsize_on",                 false, 0, "");
+        addParamBool("twist_on",                    false, 0, "");
+        addParamBool("phase_alpha_on",              false, 0, "");
+        addParamBool("phase_beta_on",               false, 0, "");
+        addParamBool("specular_color_on",           false, 0, "");
+        addParamBool("specular_color_amount_on",    false, 0, "");
+        addParamBool("specular_noise_on",           false, 0, "");
+        addParamBool("highlight_width_on",          false, 0, "");
+        addParamBool("diffuse_color_on",            false, 0, "");
+        addParamBool("diffuse_color_amount_on",     false, 0, "");
     }
+};
+
+struct YarnCache {
+	VRayPluginList bend;
+	VRayPluginList yarnsize;
+	VRayPluginList twist;
+	VRayPluginList phase_alpha;
+	VRayPluginList phase_beta;
+	VRayPluginList specular_color_amount;
+	VRayPluginList specular_noise;
+	VRayPluginList highlight_width;
+	VRayPluginList diffuse_color_amount;
+
+	IntList bend_on;
+	IntList yarnsize_on;
+	IntList twist_on;
+	IntList phase_alpha_on;
+	IntList phase_beta_on;
+	IntList specular_color_on;
+	IntList specular_color_amount_on;
+	IntList specular_noise_on;
+	IntList highlight_width_on;
+	IntList diffuse_color_on;
+	IntList diffuse_color_amount_on;
+};
+
+struct YarnData {
+	Table<TextureFloatInterface*> bend;
+	Table<TextureFloatInterface*> yarnsize;
+	Table<TextureFloatInterface*> twist;
+	Table<TextureFloatInterface*> phase_alpha;
+	Table<TextureFloatInterface*> phase_beta;
+	Table<TextureFloatInterface*> specular_color_amount;
+	Table<TextureFloatInterface*> specular_noise;
+	Table<TextureFloatInterface*> highlight_width;
+	Table<TextureFloatInterface*> diffuse_color_amount;
 };
 
 struct BRDFThunderLoom: VRayBSDF {
     BRDFThunderLoom(VRayPluginDesc *pluginDesc):VRayBSDF(pluginDesc) {
-        //bends("bend_vals");
         paramList->setParamCache("filepath", &m_filepath);
         paramList->setParamCache("uscale", &m_uscale);
         paramList->setParamCache("vscale", &m_vscale);
         paramList->setParamCache("uvrotation", &m_uvrotation);
-        
+        paramList->setParamCache("bend", &yarnCache.bend);
+        paramList->setParamCache("yarnsize", &yarnCache.yarnsize);
+        paramList->setParamCache("twist", &yarnCache.twist);
+        paramList->setParamCache("phase_alpha", &yarnCache.phase_alpha);
+        paramList->setParamCache("phase_beta", &yarnCache.phase_beta);
+        paramList->setParamCache("specular_color_amount", &yarnCache.specular_color_amount);
+        paramList->setParamCache("specular_noise", &yarnCache.specular_noise);
+        paramList->setParamCache("highlight_width", &yarnCache.highlight_width);
+        paramList->setParamCache("diffuse_color_amount", &yarnCache.diffuse_color_amount);
+
+		paramList->setParamCache("bend_on", &yarnCache.bend_on);
+		paramList->setParamCache("yarnsize_on", &yarnCache.yarnsize_on);
+		paramList->setParamCache("twist_on", &yarnCache.twist_on);
+		paramList->setParamCache("phase_alpha_on", &yarnCache.phase_alpha_on);
+		paramList->setParamCache("phase_beta_on", &yarnCache.phase_beta_on);
+		paramList->setParamCache("specular_color_on", &yarnCache.specular_color_on);
+		paramList->setParamCache("specular_color_amount_on", &yarnCache.specular_color_amount_on);
+		paramList->setParamCache("specular_noise_on", &yarnCache.specular_noise_on);
+		paramList->setParamCache("highlight_width_on", &yarnCache.highlight_width_on);
+		paramList->setParamCache("diffuse_color_on", &yarnCache.diffuse_color_on);
+		paramList->setParamCache("diffuse_color_amount_on", &yarnCache.diffuse_color_amount_on);
     }
 
+	YarnCache yarnCache;
     tlWeaveParameters *m_tl_wparams;
 
     // From VRayBSDF
-    void renderBegin(VRayRenderer *vray) {return;};
-    void renderEnd(VRayRenderer *vray) {return;};
     void frameBegin(VRayRenderer *vray);
     void frameEnd(VRayRenderer *vray);
 
@@ -103,41 +181,73 @@ private:
     BRDFPool<BRDFThunderLoomSampler> pool;
     CharString m_filepath;
     float m_uscale, m_vscale, m_uvrotation;
-
     // Parameters
     PluginBase *baseBRDFParam;
 };
 
+//Param helpers
+static FORCEINLINE int is_param_valid(VRayPluginParameter* param, int i) {
+    // Checks if there is a entry for the paremter with the given index i
+    if (!param)
+        return 0;
 
-FORCEINLINE int get_bool(VRayPluginParameter * param, int i, VRayContext& rc) {
-    if (param->getType(i,0) == VRayParameterType::paramtype_bool && param->getBool(i))
-      return 1;
-    
-    // For maya support ([param]_on_float), float arrays are sent as textures.
-    void* tex;
-    if (set_texparam(param, &tex, i)) {
-        // param was texture and tex is a pointer to it.
-        // Get texture value
-        if (tl_eval_texmap_mono_lookup(tex, 0.f, 0.f, &rc))
-            return 1;
+    int count = param->getCount(0);
+    if (count == -1)
+        count = 1;
+
+    if (i >= count)
+        return 0;
+
+    return 1;
+}
+
+//Param helpers
+static FORCEINLINE int is_texmap_valid(const Table<TextureFloatInterface*>& param, int i) {
+    if (param.count() <= i)
+        return 0;
+
+    return param[i] != nullptr;
+}
+
+static FORCEINLINE int set_texparam(VRayPluginParameter* param, void **target, int i) {
+    // returns true if it is a texture and sets target to the texture pointer.
+	vassert(param != nullptr);
+    VRayParameterType type = param->getType(i, 0);
+
+    if (type == paramtype_object) {
+		PluginBase* newPlug = param->getObject(i);
+		*target = newPlug;
+
+        return 1;
     }
-
     return 0;
 }
 
 void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
-    if (!vray) return;
-	// Calling parent frameBegin so the caching of params can work
-    VRayBSDF::frameBegin(vray);
+	if (!vray) return;
+	VRayBSDF::frameBegin(vray);
+	//NOTE: for vray5: 
+    //{
+		//const VUtils::AssetManager &assetMan=VUtils::getVRayAssetManager(vray);
 
-    //Check for file, at path, then in VRAY_ASSETS_PATH and so forth.
-    VUtils::checkAssetPath(m_filepath, vray->getSequenceData());
-	
-    //Check again, if exits and abort if not.
+		////Check for file, at path, then in VRAY_ASSETS_PATH and so forth.n, if exits and abort if not.
+		//if (!assetMan.checkAssetPath(m_filepath, true))
+		//    return;
+    //}
+
+    // NOTE: for vray4
+    {
+		// Check for file, at path, then in VRAY_ASSETS_PATH and so forth.
+		VUtils::checkAssetPath(m_filepath, vray->getSequenceData());
+		VUtils::ProgressCallback *prog = vray->getSequenceData().progress;
+		if (!VUtils::checkAssetPath(m_filepath, prog, true))
+			return;
+    }
+    
+    // Check again, if exits and abort if not.
+
+
     VUtils::ProgressCallback *prog = vray->getSequenceData().progress;
-    if (!VUtils::checkAssetPath(m_filepath, prog, true))
-        return;
-
 
     // Load file and set the global settings.
     const char* filepath_str = (char*)m_filepath.ptr();
@@ -145,99 +255,64 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
     m_tl_wparams = tl_weave_pattern_from_file(filepath_str, &errors);
     if (errors) {
         prog->error("Error: ThunderLoom: %s", errors);
-        return; //Abort a little nicer
-    }
-
-    if (!m_tl_wparams) {
         return;
     }
 
-    if (m_tl_wparams) {
-        m_tl_wparams->uscale = 1.f;
-        m_tl_wparams->vscale = 1.f;
-        m_tl_wparams->uvrotation = 0.f;
-        m_tl_wparams->realworld_uv = 0;
-        tl_prepare(m_tl_wparams);
-    }
+    if (!m_tl_wparams) {
+		return;
+	}
+
+	m_tl_wparams->uscale = m_uscale;
+	m_tl_wparams->vscale = m_vscale;
+	m_tl_wparams->uvrotation = m_uvrotation;
+	m_tl_wparams->realworld_uv = 0;
+	tl_prepare(m_tl_wparams);
     
     // Make new VRayContext
     VRayThreadData* vr_tdata = vray->getThreadData(0);
     VRayContext rc;
     rc.init(vr_tdata, vray);
-	rc.clear();
-    
-	m_tl_wparams->uscale = m_uscale;
-	m_tl_wparams->vscale = m_vscale;
-	m_tl_wparams->uvrotation = m_uvrotation;
 
     // Yarn type params
-    VRayPluginParameter* bend = this->getParameter("bend");
-    VRayPluginParameter* bend_on = this->getParameter("bend_on");
-    VRayPluginParameter* bend_on_float = this->getParameter("bend_on_float");
-
-    VRayPluginParameter* yarnsize = this->getParameter("yarnsize");
-    VRayPluginParameter* yarnsize_on = this->getParameter("yarnsize_on");
-    VRayPluginParameter* yarnsize_on_float = this->getParameter("yarnsize_on_float");
-
-    VRayPluginParameter* twist = this->getParameter("twist");
-    VRayPluginParameter* twist_on = this->getParameter("twist_on");
-    VRayPluginParameter* twist_on_float = this->getParameter("twist_on_float");
-    
-    VRayPluginParameter* phase_alpha = this->getParameter("phase_alpha");
-    VRayPluginParameter* phase_alpha_on = this->getParameter("phase_alpha_on");
-    VRayPluginParameter* phase_alpha_on_float = this->getParameter("phase_alpha_on_float");
-
-    VRayPluginParameter* phase_beta = this->getParameter("phase_beta");
-    VRayPluginParameter* phase_beta_on = this->getParameter("phase_beta_on");
-    VRayPluginParameter* phase_beta_on_float = this->getParameter("phase_beta_on_float");
+	YarnData yarnData;
 
     VRayPluginParameter* specular_color = this->getParameter("specular_color");
-    VRayPluginParameter* specular_color_on = this->getParameter("specular_color_on");
-    VRayPluginParameter* specular_color_on_float = this->getParameter("specular_color_on_float");
-    
-    VRayPluginParameter* specular_color_amount = this->getParameter("specular_color_amount");
-    VRayPluginParameter* specular_color_amount_on = this->getParameter("specular_color_amount_on");
-    VRayPluginParameter* specular_color_amount_on_float = this->getParameter("specular_color_amount_on_float");
-
-    VRayPluginParameter* specular_noise = this->getParameter("specular_noise");
-    VRayPluginParameter* specular_noise_on = this->getParameter("specular_noise_on");
-    VRayPluginParameter* specular_noise_on_float = this->getParameter("specular_noise_on_float");
-
-    VRayPluginParameter* highlight_width = this->getParameter("highlight_width");
-    VRayPluginParameter* highlight_width_on = this->getParameter("highlight_width_on");
-    VRayPluginParameter* highlight_width_on_float = this->getParameter("highlight_width_on_float");
-    
     VRayPluginParameter* diffuse_color = this->getParameter("diffuse_color");
-    VRayPluginParameter* diffuse_color_on = this->getParameter("diffuse_color_on");
-    VRayPluginParameter* diffuse_color_on_float = this->getParameter("diffuse_color_on_float");
-    
-    VRayPluginParameter* diffuse_color_amount = this->getParameter("diffuse_color_amount");
-    VRayPluginParameter* diffuse_color_amount_on = this->getParameter("diffuse_color_amount_on");
-    VRayPluginParameter* diffuse_color_amount_on_float = this->getParameter("diffuse_color_amount_on_float");
 
-    VRayPluginParameter* opacity = this->getParameter("opacity");
-    VRayPluginParameter* opacity_on = this->getParameter("opacity_on");
-    VRayPluginParameter* opacity_on_float = this->getParameter("opacity_on_float");
+#define TL_VRAY_INIT_PARAM(name) \
+	for (int i = 0; i < yarnCache.name.count(); i++) { \
+		yarnData.name += (TextureFloatInterface*) GET_INTERFACE(yarnCache.name[i], EXT_TEXTURE_FLOAT); \
+	} \
 
-    VRayPluginParameter* opacity_amount = this->getParameter("opacity_amount");
-    VRayPluginParameter* opacity_amount_on = this->getParameter("opacity_amount_on");
-    VRayPluginParameter* opacity_amount_on_float = this->getParameter("opacity_amount_on_float");
+#define TL_VRAY_FLOAT_PARAMS\
+        TL_VRAY_INIT_PARAM(bend)\
+        TL_VRAY_INIT_PARAM(yarnsize)\
+        TL_VRAY_INIT_PARAM(twist)\
+        TL_VRAY_INIT_PARAM(phase_alpha)\
+        TL_VRAY_INIT_PARAM(phase_beta)\
+        TL_VRAY_INIT_PARAM(highlight_width)\
+        TL_VRAY_INIT_PARAM(specular_color_amount)\
+        TL_VRAY_INIT_PARAM(specular_noise)\
+        TL_VRAY_INIT_PARAM(diffuse_color_amount)\
+
+	TL_VRAY_FLOAT_PARAMS
+
+#undef TL_VRAY_FLOAT_PARAMS
+#undef TL_VRAY_INIT_PARAM
 
 
     // Loop through yarn types and set parameters from list
     for (unsigned int i=0; i < m_tl_wparams->num_yarn_types; i++) {
         //get parameter from config string
-        tlYarnType* yarn_type = &m_tl_wparams->yarn_types[i];
+		tlYarnType* yarn_type = &m_tl_wparams->yarn_types[i];
 
+		//if (!set_texparam(name, &yarn_type->tl_name##_texmap, i))
 #define TL_VRAY_SET_PARAM(name,tl_name) \
-        if (is_param_valid(name, i)) {\
-            if (!set_texparam(name, &yarn_type->tl_name##_texmap, i))\
-                yarn_type->tl_name = name->getFloat(i);\
+        if (is_texmap_valid(yarnData.name, i)) {\
+                yarn_type->tl_name = yarnData.name[i]->getTexFloat(rc);\
         }\
-        if (is_param_valid(name##_on, i)) \
-            yarn_type->tl_name##_enabled = get_bool(name##_on, i, rc); \
-        else if (is_param_valid(name##_on_float, i)) \
-            yarn_type->tl_name##_enabled = get_bool(name##_on_float, i, rc);
+        if (yarnCache.name##_on.count() > i) \
+            yarn_type->tl_name##_enabled = yarnCache.name##_on[i]; \
 
 #define TL_VRAY_FLOAT_PARAMS\
         TL_VRAY_SET_PARAM(bend, umax)\
@@ -249,7 +324,6 @@ void BRDFThunderLoom::frameBegin(VRayRenderer *vray) {
         TL_VRAY_SET_PARAM(specular_color_amount, specular_amount)\
         TL_VRAY_SET_PARAM(specular_noise, specular_noise)\
         TL_VRAY_SET_PARAM(diffuse_color_amount, color_amount)\
-        TL_VRAY_SET_PARAM(opacity_amount, opacity_amount)\
 
 TL_VRAY_FLOAT_PARAMS
 
@@ -264,10 +338,8 @@ TL_VRAY_FLOAT_PARAMS
                 yarn_type->color = tl_specular_color;
             }
         }
-        if (is_param_valid(specular_color_on, i))
-            yarn_type->specular_color_enabled = get_bool(specular_color_on, i, rc);
-        else if (is_param_valid(specular_color_on_float, i))
-            yarn_type->specular_color_enabled = get_bool(specular_color_on_float, i, rc);
+        if (yarnCache.specular_color_on.count() > i)
+            yarn_type->specular_color_enabled = yarnCache.specular_color_on[i];
 
         if (is_param_valid(diffuse_color, i)) {
             if (!set_texparam(diffuse_color, &yarn_type->color_texmap, i)) {
@@ -277,23 +349,8 @@ TL_VRAY_FLOAT_PARAMS
                 yarn_type->color = tl_diffuse_color;
             }
         }
-        if (is_param_valid(diffuse_color_on, i))
-            yarn_type->color_enabled = get_bool(diffuse_color_on, i, rc);
-        else if (is_param_valid(diffuse_color_on_float, i))
-            yarn_type->color_enabled = get_bool(diffuse_color_on_float, i, rc);
-
-        if (is_param_valid(opacity, i)) {
-            if (!set_texparam(opacity, &yarn_type->opacity_texmap, i)) {
-                Color tmp_opacity = opacity->getColor(i);
-                tlColor tl_opacity;
-                tl_opacity.r = tmp_opacity.r; tl_opacity.g = tmp_opacity.g; tl_opacity.b = tmp_opacity.b;
-                yarn_type->opacity = tl_opacity;
-            }
-        }
-        if (is_param_valid(opacity_on, i))
-            yarn_type->opacity_enabled = get_bool(opacity_on, i, rc);
-        else if (is_param_valid(opacity_on_float, i))
-            yarn_type->opacity_enabled = get_bool(opacity_on_float, i, rc);
+		if (yarnCache.diffuse_color_on.count() > i)
+			yarn_type->color_enabled = yarnCache.diffuse_color_on[i];
 
     }
 
@@ -304,14 +361,13 @@ TL_VRAY_FLOAT_PARAMS
 }
 
 void BRDFThunderLoom::frameEnd(VRayRenderer *vray) {
+    VRayBSDF::frameEnd(vray);
     pool.freeMem();
-    return;
 }
 
 BSDFSampler* BRDFThunderLoom::newBSDF(const VRayContext &rc, BSDFFlags flags) {
     BRDFThunderLoomSampler *bsdf = pool.newBRDF(rc);
     if (!bsdf) return NULL;
-    //TODO pass along tl_wparams here!
     bsdf->init(rc, this->m_tl_wparams);
     return bsdf;
 }
@@ -346,18 +402,17 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
     m_tl_wparams = tl_wparams;
     if(!m_tl_wparams || m_tl_wparams->pattern ==0) { // Invalid pattern
         m_diffuse_color = ShadeCol(1.0f,1.0f,0.f);
-        m_opacity_color = ShadeCol(1.0f,1.0f,0.f);
         m_yarn_type = tl_default_yarn_type;
         m_yarn_type_id = 0;
-		m_yarn_hit = 0;
         return;
-    } 
+    }
 
     tlIntersectionData intersection_data;
 
     MappedSurface *mappedSurf=(MappedSurface*) GET_INTERFACE(rc.rayresult.sd, EXT_MAPPED_SURFACE);
     if (mappedSurf) {
-        mappedSurf->getLocalUVWTransform(rc, -1, m_uv_tm );
+        // mappedSurf->getLocalUVWTransform(rc, -1, m_uv_tm, uvwFlags_default); // for vray 5
+        mappedSurf->getLocalUVWTransform(rc, -1, m_uv_tm); // for vray 4
         m_uv = m_uv_tm.offs;
     }
     intersection_data.uv_x = m_uv.x();
@@ -370,11 +425,8 @@ void BRDFThunderLoomSampler::init(const VR::VRayContext &rc, tlWeaveParameters *
 
     m_yarn_type_id = pattern_data.yarn_type;
     m_yarn_type = m_tl_wparams->yarn_types[pattern_data.yarn_type];
-	m_yarn_hit = pattern_data.yarn_hit;
     tlColor d = tl_eval_diffuse( intersection_data, pattern_data, m_tl_wparams);
 	m_diffuse_color.set(d.r, d.g, d.b);
-    tlColor o = tl_eval_opacity( intersection_data, pattern_data, m_tl_wparams);
-	m_opacity_color.set(o.r, o.g, o.b);
 
     return;
 }
@@ -402,9 +454,6 @@ ShadeCol BRDFThunderLoomSampler::getLightMult(ShadeCol &lightColor) {
         && m_tl_wparams->num_yarn_types > 0){
         s = m_tl_wparams->yarn_types[0].specular_color;
     }
-	if (!m_yarn_hit) {
-		s.r = 0.f; s.g = 0.f; s.b = 0.f;
-	}
     ShadeCol ret = (m_diffuse_color + ShadeCol(s.r,s.g,s.b)) * lightColor;
     lightColor.makeZero();
     return ret;
@@ -412,7 +461,7 @@ ShadeCol BRDFThunderLoomSampler::getLightMult(ShadeCol &lightColor) {
 
 // Returns transparency of the BRDF at the given point.
 ShadeCol BRDFThunderLoomSampler::getTransparency(const VR::VRayContext &rc) {
-	return VUtils::ShadeCol(1.f,1.f,1.f) - m_opacity_color;
+	return ShadeCol(0.f);
 }
 
 // Returns the amount of light transmitted from the given direction into the viewing direction.
@@ -575,6 +624,7 @@ ValidType BRDFThunderLoomSampler::setupContext(const VR::VRayContext &rc, VR::VR
 
 RenderChannelsInfo* BRDFThunderLoomSampler::getRenderChannels(void) { return &RenderChannelsInfo::reflectChannels; }
 
+
 // Following is used to to allow custom uv lookups in texture maps, see...
 // https://forums.chaosgroup.com/forum/v-ray-for-maya-forums/v-ray-for-maya-sdk/76255-texture-lookup-with-uv-on-non-bitmap-textures
 struct MyShadeData: public VRayShadeData, public MappedSurface {
@@ -599,7 +649,8 @@ struct MyShadeData: public VRayShadeData, public MappedSurface {
     }
 
     // From MappedSurface
-	void getLocalUVWTransform(const VRayContext &rc, int channel, ShadeTransform &result) VRAY_OVERRIDE
+	//void getLocalUVWTransform(const VRayContext &rc, int channel, ShadeTransform &result, const UVWFlags uvwFlags) VRAY_OVERRIDE // for vray5
+	void getLocalUVWTransform(const VRayContext &rc, int channel, ShadeTransform &result) VRAY_OVERRIDE // for vray4
 	{
         // Note that here we initialize the matrix to zero. This will effectively kill any
         // texture filtering. If you want texture filtering, you will need to come up with
@@ -689,70 +740,5 @@ BRDFSampler* BRDFThunderLoomSampler::getBRDF(BSDFSide side) {
 }
 
 
-#define BRDFThunderLoom_PluginID PluginID(LARGE_CONST(2017041301))
-
-// With this explicit library descriptor declaration we are making sure that
-// the correct ThunderLoom version is loaded for the correct VRay version
-
-static BRDFThunderLoomParams pluginParams;
-static BRDFThunderLoomParamsUpdated pluginParamsUpdated;
-
-static struct UserPluginDesc : VRayPluginDesc {
-    UserPluginDesc(void)
-        : VRayPluginDesc(getParams()) {}
-
-    PluginID getPluginID(void) { return BRDFThunderLoom_PluginID; }
-
-    Plugin* newPlugin(PluginHost* host) { 
-		// The only differences than the macro variant are in here and in the delete below
-		if (shouldBeUpdatedVersion()) return new BRDFThunderLoomUpdated(this);
-		else return new BRDFThunderLoom(this); 
-	}
-    void deletePlugin(Plugin* obj) {
-		if (shouldBeUpdatedVersion()) delete (BRDFThunderLoomUpdated*)obj;
-		else delete (BRDFThunderLoom*)obj;
-	}
-
-    bool supportsInterface(InterfaceID id) { return _supportsInterface(id, EXT_VRAY_PLUGIN, EXT_BSDF, +0, 0); }
-    VRAY3_CONST_COMPAT tchar* getName(void) { return "BRDFThunderLoom"; }
-    const tchar* getCopyright(void) { return NULL; }
-    const tchar* getDescription() const { return "Cloth and fabric BRDF"; }
-    const tchar* getDeprecation() const { return NULL; }
-    const tchar* getAliases() const { return NULL; }
-private:
-	static FORCEINLINE bool shouldBeUpdatedVersion() {
-		return getVRayRevision() >= 0x42010;
-	}
-
-	static FORCEINLINE VRayParameterListDesc* getParams() {
-		if (shouldBeUpdatedVersion()) return &pluginParamsUpdated;
-		else return &pluginParams;
-	}
-
-    bool _supportsInterface(InterfaceID id, ...)
-    {
-        va_list vargs;
-        va_start(vargs, id);
-        unsigned long long i;
-        while ((i = va_arg(vargs, unsigned long long))) {
-            if (id == i) {
-                va_end(vargs);
-                return true;
-            }
-        }
-        va_end(vargs);
-        return false;
-    }
-} pluginDesc;
-struct LibDesc : PluginLibDesc {
-    VRAY3_CONST_COMPAT tchar* getName(void) { return "BRDFThunderLoom"; }
-    VRAY3_CONST_COMPAT tchar* getText(void) { return "BRDFThunderLoom"; }
-    int enumPluginDescs(EnumPluginDescCallback* cb)
-    {
-        if (cb)
-            cb->process(&pluginDesc);
-        return 1;
-    }
-} libDesc;
-EXPORT_PLUGIN_LIBRARY(libDesc);
-;
+#define BRDFThunderLoom_PluginID PluginID(LARGE_CONST(2021010201))
+SIMPLE_PLUGIN_LIBRARY(BRDFThunderLoom_PluginID, "BRDFThunderLoomSource", "BRDFThunderLoomSource", "Cloth and fabric BRDF from source code", BRDFThunderLoom, BRDFThunderLoomParams, EXT_BSDF);
