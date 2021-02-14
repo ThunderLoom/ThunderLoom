@@ -15,6 +15,7 @@ set(3DSMAX_DYNAMIC_LOAD false CACHE STRING "Compile to dynamic dll (for developm
 
 # Additional includes
 set(TL_H_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../src)
+set(THUNDERLOOM_VRAY_DIR ${PROJECT_SOURCE_DIR}/../vray)
 set(GL3W_SRC ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/src)
 set(GL3W_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/gl3w/include)
 set(GLFW_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/glfw/include)
@@ -23,16 +24,18 @@ set(IMGUI_INCLUDE ${PROJECT_SOURCE_DIR}/../dependencies/imgui)
 
 
 set (SRC
-	"3dsMax/3dsMaxThunderLoom.cpp"
-	"3dsMax/vrayblinnmtl.rc"
-	"3dsMax/DllEntry.cpp"
-	"3dsMax/VrayThunderLoomBRDF.cpp"
-	"3dsMax/plugin.def"
-	"3dsMax/dynamic_load.c"
+	"ThunderLoomMtl.cpp"
+	"DllEntry.cpp"
+	"ThunderLoomMtl.rc"
+	"plugin.def"
+	"${THUNDERLOOM_VRAY_DIR}/vray_thunderloom.cpp" # TODO: Make dynamic...
+	#"ThunderLoomBSDFDynamic.cpp"
+	#"3dsMax/VrayThunderLoomBRDF.cpp"
+	#"3dsMax/dynamic_load.c"
 	)
 
+# TODO: Make Dynamic load work.
 set (DYNAMIC_LOAD_SOURCES
-	"3dsMax/Eval.cpp"
 	"${GL3W_SRC}/gl3w.c"
 	"${IMGUI_INCLUDE}/imgui.cpp"
 	"${IMGUI_INCLUDE}/imgui_draw.cpp"
@@ -62,6 +65,7 @@ foreach(3DSMAX_VERSION ${3DSMAX_VERSIONS})
 
 	set(INCLUDES 
 		${TL_H_SOURCE_DIR}
+		${THUNDERLOOM_VRAY_DIR}
 		${GL3W_INCLUDE}
 		${GLFW_INCLUDE}
 		${IMGUI_INCLUDE}
@@ -80,8 +84,8 @@ foreach(3DSMAX_VERSION ${3DSMAX_VERSIONS})
 		"odbccp32"
 		"${VRAY_3DSMAX${3DSMAX_VERSION}_LIB}/vray${3DSMAX_VERSION}.lib"
 		"${VRAY_3DSMAX${3DSMAX_VERSION}_LIB}/vrender${3DSMAX_VERSION}.lib"
-
 		"${VRAY_3DSMAX${3DSMAX_VERSION}_LIB}/vutils_s.lib"
+		"${VRAY_3DSMAX${3DSMAX_VERSION}_LIB}/putils_s.lib"
 		"${VRAY_3DSMAX${3DSMAX_VERSION}_LIB}/plugman_s.lib"
 		"glfw3"
 		"opengl32"

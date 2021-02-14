@@ -1,4 +1,4 @@
-#include "3dsMaxThunderLoom.h"
+#include "ThunderLoomMtl.h"
 
 #define MYDLLEXPORT __declspec(dllexport)
 

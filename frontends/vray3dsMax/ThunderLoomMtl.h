@@ -1,5 +1,5 @@
-#ifndef __MTLSKEL__H
-#define __MTLSKEL__H
+#ifndef __THUNDERLOOMMTL__H
+#define __THUNDERLOOMMTL__H
 
 #include "max.h"
 #include <bmmlib.h>
@@ -22,7 +22,7 @@
 #include "brdfs.h"
 #include "vraygeom.h"
 #include "brdfpool.h"
-#include "VrayThunderLoomBRDF.h"
+#include "vray_thunderloom.h"
 #include "pb2template_generator.h"
 #pragma warning( pop ) 
 
@@ -51,7 +51,6 @@ enum {
 #define STR_CLASSNAME _T("ThunderLoom")
 #define STR_LIBDESC _T("ThunderLoom woven cloth material")
 #define STR_DLGTITLE _T("ThunderLoom Parameters")
-
 extern ClassDesc* GetSkeletonMtlDesc();
 
 // Paramblock2 name
@@ -65,8 +64,6 @@ enum {
     mtl_uvrotation,
 	mtl_yarn_type,
     mtl_intensity_fineness,
-	//mtl_texmap_diffuse,
-	//mtl_texmap_specular,
     texmaps, //stores texmaps for each yarntype in a TEXMAPS_TAB pblock
     mtl_dummy,
 };
@@ -78,31 +75,16 @@ static int texmapBtnIDCs[NUMBER_OF_YRN_TEXMAPS] =
 #undef YARN_TYPE_TEXMAP
 };
 
-/*===========================================================================*\
- |	The actual BRDF
-\*===========================================================================*/
-
-//MyBaseBSDF defined in dynamic part is subclass of BSDFSampler
-//From vray docs: This class is used to describe both sides
-//of an object's surface. 
-//An instance of this class is passed to VRayContext::evalLight() 
-//to evaluate the contribution of lights for the surface. 
-//To completely describe the optical properties of a surface, 
-//two BRDFs (one for each side of the surface) are coupled
-//together to form a BSDF (bi-directional scattering distribution function). 
-class MyBlinnBSDF: public VR::MyBaseBSDF {
-public:
-};
-
-/*===========================================================================*\
- |	SkeletonMaterial class defn
-\*===========================================================================*/
-
+// Class for the 3dsMax material.
 class ThunderLoomMtl : public Mtl, public VR::VRenderMtl {
-	VR::BRDFPool<MyBlinnBSDF> bsdfPool;
-	VR::LayeredBSDFRenderChannels renderChannels;
-	VR::Color getBlend(ShadeContext &sc, int i);
+	BRDFThunderLoomSampler* wrapped_vray_brdf;
+	//VR::BRDFPool<ThunderLoomBSDF> bsdfPool;
+	VR::BRDFPool<BRDFThunderLoomSampler> bsdfPool;
+	VR::LayeredBSDFRenderChannels renderChannels; // Check if needed
+	VR::Color getBlend(ShadeContext &sc, int i); // Check if needed
 public:
+	ThunderLoomMtl(BOOL loading);
+    
 	// various variables
 	HWND m_hwMtlEdit;
 	IMtlParams *m_imp;
@@ -119,7 +101,6 @@ public:
 	Interval Validity(TimeValue t);
 	void Reset();
 
-	ThunderLoomMtl(BOOL loading);
 	Class_ID ClassID() { return MTL_CLASSID; }
 	SClass_ID SuperClassID() { return MATERIAL_CLASS_ID; }
 	void GetClassName(TSTR& s) { s=STR_CLASSNAME; }
@@ -140,9 +121,9 @@ public:
 	virtual float GetShinStr(int mtlNum=0, BOOL backFace=FALSE);
 	virtual float WireSize(int mtlNum=0, BOOL backFace=FALSE);
 
-	//This method is called on a material coming into an existing set of ParamDlgs,
-	//once for each secondary ParamDlg and it should set the appropriate 'thing' into
-	//the given dlg (the 'thing' being, for example, a Texout* or UVGen*). 
+	// This method is called on a material coming into an existing set of ParamDlgs,
+	// once for each secondary ParamDlg and it should set the appropriate 'thing' into
+	// the given dlg (the 'thing' being, for example, a Texout* or UVGen*). 
 	BOOL SetDlgThing(ParamDlg* dlg);
 
 	// Loading/Saving
@@ -165,7 +146,7 @@ public:
 	TSTR GetSubTexmapSlotName(int i);
 	TSTR GetSubTexmapTVName(int i);
 
-	//SubAnims
+	// SubAnims
 	// Allows us to update dependent objects
 	// which may be animatable. 
 	// Such as submtls or SubTexmapsmaterials or texmaps
@@ -186,8 +167,8 @@ public:
 	IParamBlock2* GetParamBlock(int i) { return pblock; }
 	IParamBlock2* GetParamBlockByID(BlockID id) { return (pblock->ID() == id) ? pblock : NULL; } 
 
-	//From Mtl, uses integers to identify the interface IDs. 
-	//Used to determine if an animatable can be used as the type a certain interface is representing
+	// From Mtl, uses integers to identify the interface IDs. 
+	// Used to determine if an animatable can be used as the type a certain interface is representing
 	void* GetInterface(ULONG id) {
 		if (id==I_VRAYMTL) return static_cast<VR::VRenderMtl*>(this);
 		return Mtl::GetInterface(id);

@@ -1,63 +1,15 @@
-// Disable MSVC warnings for external headers.
-#pragma warning( push )
-#pragma warning( disable : 4251)
-#pragma warning( disable : 4996 )
-#include "vrayplugins.h"
-#include "utils.h"
-#include "vrayinterface.h"
-#include "vrayrenderer.h"
-#include "brdfs.h"
-#include "vraytexutils.h"
-#include "defparams.h"
-#pragma warning( pop ) 
+// Make thunderloom.h (which is included in vray_thunderloom.h) 
+// expand the implementation code when including here.
+#define TL_THUNDERLOOM_IMPLEMENTATION 
+#include "vray_thunderloom.h"
 
 // NOTE: Some conditional changes in the code to deal with smaller api changes between vray 4 and 5.
 #ifndef BUILD_VRAY5
 #define BUILD_VRAY5 VRAY_DLL_VERSION_MAJOR >= 5
 #endif
 
-#define TL_THUNDERLOOM_IMPLEMENTATION
-#include "thunderloom.h"
 using namespace VUtils;
 using namespace VR;
-
-class BRDFThunderLoomSampler: public BRDFSampler, public BSDFSampler {
-    int orig_backside;
-    ShadeVec normal, gnormal;
-    ShadeMatrix nm, inm;
-    int nmInited;
-
-    // Assigned in init()
-    tlWeaveParameters* m_tl_wparams;
-    ShadeVec m_uv;
-    ShadeTransform m_uv_tm;
-    ShadeCol m_diffuse_color;
-    tlYarnType m_yarn_type;
-    int m_yarn_type_id;
-
-public:
-	// Initialization
-	void init(const VRayContext &rc, tlWeaveParameters *weave_parameters);
-
-	// From BRDFSampler
-	ShadeVec getDiffuseNormal(const VR::VRayContext &rc);
-	ShadeCol getDiffuseColor(ShadeCol &lightColor);
-	ShadeCol getLightMult(ShadeCol &lightColor);
-	ShadeCol getTransparency(const VRayContext &rc);
-
-	ShadeCol eval( const VRayContext &rc, const ShadeVec &direction, ShadeCol &shadowedLight, ShadeCol &origLight, float probLight,int flags);
-	void traceForward(VRayContext &rc, int doDiffuse);
-
-	int getNumSamples(const VRayContext &rc, int doDiffuse);
-	VRayContext* getNewContext(const VRayContext &rc, int &samplerID, int doDiffuse);
-	ValidType setupContext(const VRayContext &rc, VRayContext &nrc, float uc, int doDiffuse);
-
-	RenderChannelsInfo* getRenderChannels(void);
-
-	// From BSDFSampler
-	BRDFSampler *getBRDF(BSDFSide side);
-};
-
 
 struct BRDFThunderLoomParams: VRayParameterListDesc {
     BRDFThunderLoomParams(void) {
